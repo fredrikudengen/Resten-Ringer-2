@@ -56,6 +56,7 @@ class Enemy():
 
         # Micro-wander (små tilfeldige steg når idle)
         self.wander_goal_g = None
+        self.wander_end = False
         now = pygame.time.get_ticks()
         self.next_wander_at: int = now + random.randint(1200, 2500)
         self.WANDER_INTERVAL_MS = constants.ENEMY_WANDER_INTERVAL_MS
@@ -120,78 +121,14 @@ class Enemy():
                 self.state = "chase"
             else:
                 # Micro-wander
-                if self.wander_goal_g is not None:
-                    next_tile_g = self._micro_wander(room, self.wander_goal_g, self.WANDER_RADIUS_TILES)
-                    if next_tile_g:
-                        target_px = self._center_of_tile(*next_tile_g)
-                        wander_end = self._move_towards(target_px, obstacles, dt_ms)
-                    else:
-                        wander_end = True  
-
-                    gx, gy = self._grid_pos()
-                    
-                    if wander_end or (gx, gy) == self.wander_goal_g:
-                        self.wander_goal_g = None
-                        wait = random.randint(*self.WANDER_INTERVAL_MS)
-                        self.next_wander_at = now + wait
-                        
-                elif now >= self.next_wander_at:
-                    start_g = self._grid_pos()
-                    goal = self._pick_random_free_tile(room, start_g, self.WANDER_RADIUS_TILES)
-                    if goal and goal != start_g:
-                        self.wander_goal_g = goal
-                    else:
-                        wait = random.randint(*self.WANDER_INTERVAL_MS)
-                        self.next_wander_at = now + wait
+                self._idle(room, obstacles, dt_ms, now)
 
         elif self.state == "chase":
             self.wander_goal_g = None
             if see_player:
-                # Detect if we're stuck
-                movement = self.pos.distance_to(self._last_pos)
-                self._last_pos.update(self.pos)
                 
-                if movement < 2.0:
-                    self._stuck_counter += 1
-                else:
-                    self._stuck_counter = max(0, self._stuck_counter - 1)  # Decay when moving
-                
-                current_tile = self._grid_pos()
-                T = constants.TILE_SIZE
-                
-                # Check if we've reached current waypoint
-                if self._chase_waypoint:
-                    waypoint_center_px = self._center_of_tile(*self._chase_waypoint)
-                    dist_to_waypoint = self.pos.distance_to(Vector2(waypoint_center_px))
-                    
-                    # Reached waypoint - clear it and get next one
-                    if dist_to_waypoint <= 20:  # Reached center of tile
-                        self._chase_waypoint = None
-                        self._stuck_counter = 0
-                
-                # If stuck and no active waypoint, calculate a new path
-                if self._stuck_counter >= self._stuck_threshold and not self._chase_waypoint:
-                    goal_g = (player_center[0] // T, player_center[1] // T)
-                    next_tile_g = self._astar_next_step(room, goal_g, max_expansions=256)
-                    
-                    if next_tile_g and next_tile_g != current_tile:
-                        self._chase_waypoint = next_tile_g
-                    else:
-                        # A* failed or already at goal tile
-                        self._stuck_counter = 0
-                
-                # Movement: Use waypoint if available, otherwise go direct
-                if self._chase_waypoint:
-                    target_px = self._center_of_tile(*self._chase_waypoint)
-                    self._move_towards(target_px, obstacles, dt_ms)
-                    print(f"→ Moving to waypoint {self._chase_waypoint}, movement: {movement:.2f}")
-                else:
-                    # Direct line of sight or no path needed
-                    self._move_towards(player_center, obstacles, dt_ms)
-                
-                if now >= self.attack_cooldown_until and self._dist2(*player_center, *enemy_center) <= constants.ATTACK_RANGE * constants.ATTACK_RANGE:
-                    self.state = "attack"
-                    self._spawn_debug_attack_rect_towards(player_center)
+                self._see_player(player_center, enemy_center, obstacles, dt_ms, now)
+
             else:
                 if self.last_seen_pos:
                     self.state = "search"
@@ -209,27 +146,104 @@ class Enemy():
             if see_player:
                 self.state = "chase"
             elif self.last_seen_pos:
-                T = constants.TILE_SIZE
-                goal_g = (self.last_seen_pos[0] // T, self.last_seen_pos[1] // T)
-                next_tile_g = self._astar_next_step(room, goal_g, max_expansions=512)
-                if next_tile_g:
-                    target_px = self._center_of_tile(*next_tile_g)
-                    reached = self._move_towards(target_px, obstacles, dt_ms)
-                else:
-                    # fallback: forsøk rett mot pikselpos (kan kile, men holder ting i bevegelse)
-                    reached = self._move_towards(self.last_seen_pos, obstacles, dt_ms)
 
-                timedout = self.search_started and (now - self.search_started > constants.LOSE_SIGHT_TIME)
-                if reached or timedout:
-                    self.state = "idle"
-                    self.last_seen_pos = None
-                    self.search_started = None   
+                self._search(obstacles, room, dt_ms, now) 
+
             else:
                 self.state = "idle"
 
         elif self.state == "dead":
             return
         
+    def _idle(self, room, obstacles, dt_ms, now):
+        if self.wander_goal_g is not None:
+            next_tile_g = self._micro_wander(room, self.wander_goal_g, self.WANDER_RADIUS_TILES)
+            if next_tile_g:
+                target_px = self._center_of_tile(*next_tile_g)
+                wander_end = self._move_towards(target_px, obstacles, dt_ms)
+            else:
+                wander_end = True  
+
+            gx, gy = self._grid_pos()
+                    
+            if wander_end or (gx, gy) == self.wander_goal_g:
+                self.wander_goal_g = None
+                wait = random.randint(*self.WANDER_INTERVAL_MS)
+                self.next_wander_at = now + wait
+                        
+        elif now >= self.next_wander_at:
+            start_g = self._grid_pos()
+            goal = self._pick_random_free_tile(room, start_g, self.WANDER_RADIUS_TILES)
+            if goal and goal != start_g:
+                self.wander_goal_g = goal
+            else:
+                wait = random.randint(*self.WANDER_INTERVAL_MS)
+                self.next_wander_at = now + wait
+    
+    def _see_player(self, player_center, enemy_center, obstacles, dt_ms, now):
+    # Detect if we're stuck
+        movement = self.pos.distance_to(self._last_pos)
+        self._last_pos.update(self.pos)
+                    
+        if movement < 2.0:
+            self._stuck_counter += 1
+        else:
+            self._stuck_counter = max(0, self._stuck_counter - 1)  # Decay when moving
+                    
+        current_tile = self._grid_pos()
+        T = constants.TILE_SIZE
+                    
+        # Check if we've reached current waypoint
+        if self._chase_waypoint:
+            waypoint_center_px = self._center_of_tile(*self._chase_waypoint)
+            dist_to_waypoint = self.pos.distance_to(Vector2(waypoint_center_px))
+                        
+            # Reached waypoint - clear it and get next one
+            if dist_to_waypoint <= 20:  # Reached center of tile
+                self._chase_waypoint = None
+                self._stuck_counter = 0
+                    
+        # If stuck and no active waypoint, calculate a new path
+        if self._stuck_counter >= self._stuck_threshold and not self._chase_waypoint:
+            goal_g = (player_center[0] // T, player_center[1] // T)
+            next_tile_g = self._astar_next_step(room, goal_g, max_expansions=256)
+                        
+            if next_tile_g and next_tile_g != current_tile:
+                self._chase_waypoint = next_tile_g
+            else:
+                # A* failed or already at goal tile
+                self._stuck_counter = 0
+                    
+        # Movement: Use waypoint if available, otherwise go direct
+        if self._chase_waypoint:
+            target_px = self._center_of_tile(*self._chase_waypoint)
+            self._move_towards(target_px, obstacles, dt_ms)
+            print(f"→ Moving to waypoint {self._chase_waypoint}, movement: {movement:.2f}")
+        else:
+            # Direct line of sight or no path needed
+            self._move_towards(player_center, obstacles, dt_ms)
+                    
+        if now >= self.attack_cooldown_until and self._dist2(*player_center, *enemy_center) <= constants.ATTACK_RANGE * constants.ATTACK_RANGE:
+                        self.state = "attack"
+                        self._spawn_debug_attack_rect_towards(player_center)
+
+    def _search(self, obstacles, room, dt_ms, now):
+        T = constants.TILE_SIZE
+        goal_g = (self.last_seen_pos[0] // T, self.last_seen_pos[1] // T)
+        next_tile_g = self._astar_next_step(room, goal_g, max_expansions=512)
+        if next_tile_g:
+            target_px = self._center_of_tile(*next_tile_g)
+            reached = self._move_towards(target_px, obstacles, dt_ms)
+        else:
+            # fallback: forsøk rett mot pikselpos (kan kile, men holder ting i bevegelse)
+            reached = self._move_towards(self.last_seen_pos, obstacles, dt_ms)
+
+        timedout = self.search_started and (now - self.search_started > constants.LOSE_SIGHT_TIME)
+        if reached or timedout:
+            self.state = "idle"
+            self.last_seen_pos = None
+            self.search_started = None  
+
     def draw(self, screen, camera):
         """
         Tegn fienden og (valgfritt) en semitransparent debug-hitbox for angrep.
