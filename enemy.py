@@ -61,6 +61,14 @@ class Enemy():
         self.WANDER_INTERVAL_MS = constants.ENEMY_WANDER_INTERVAL_MS
         self.WANDER_RADIUS_TILES = constants.ENEMY_WANDER_RADIUS_TILES
 
+        # NEW: Track if we're stuck to trigger pathfinding during chase
+        self._stuck_counter = 0
+        self._last_pos = Vector2(self.pos)
+        self._stuck_threshold = 3  # frames of barely moving = stuck (reduced from 5)
+        
+        # NEW: Pathfinding waypoint commitment
+        self._chase_waypoint = None  # Grid position to commit to during chase
+
     # ------------------------- PUBLIC API -------------------------
 
     def move(self, player, obstacles, room, dt_ms):
@@ -139,11 +147,50 @@ class Enemy():
         elif self.state == "chase":
             self.wander_goal_g = None
             if see_player:
-                self._move_towards(player_center, obstacles, dt_ms)
+                # Detect if we're stuck
+                movement = self.pos.distance_to(self._last_pos)
+                self._last_pos.update(self.pos)
+                
+                if movement < 2.0:
+                    self._stuck_counter += 1
+                else:
+                    self._stuck_counter = max(0, self._stuck_counter - 1)  # Decay when moving
+                
+                current_tile = self._grid_pos()
+                T = constants.TILE_SIZE
+                
+                # Check if we've reached current waypoint
+                if self._chase_waypoint:
+                    waypoint_center_px = self._center_of_tile(*self._chase_waypoint)
+                    dist_to_waypoint = self.pos.distance_to(Vector2(waypoint_center_px))
+                    
+                    # Reached waypoint - clear it and get next one
+                    if dist_to_waypoint <= 20:  # Reached center of tile
+                        self._chase_waypoint = None
+                        self._stuck_counter = 0
+                
+                # If stuck and no active waypoint, calculate a new path
+                if self._stuck_counter >= self._stuck_threshold and not self._chase_waypoint:
+                    goal_g = (player_center[0] // T, player_center[1] // T)
+                    next_tile_g = self._astar_next_step(room, goal_g, max_expansions=256)
+                    
+                    if next_tile_g and next_tile_g != current_tile:
+                        self._chase_waypoint = next_tile_g
+                    else:
+                        # A* failed or already at goal tile
+                        self._stuck_counter = 0
+                
+                # Movement: Use waypoint if available, otherwise go direct
+                if self._chase_waypoint:
+                    target_px = self._center_of_tile(*self._chase_waypoint)
+                    self._move_towards(target_px, obstacles, dt_ms)
+                    print(f"→ Moving to waypoint {self._chase_waypoint}, movement: {movement:.2f}")
+                else:
+                    # Direct line of sight or no path needed
+                    self._move_towards(player_center, obstacles, dt_ms)
                 
                 if now >= self.attack_cooldown_until and self._dist2(*player_center, *enemy_center) <= constants.ATTACK_RANGE * constants.ATTACK_RANGE:
                     self.state = "attack"
-                    self.attack_cooldown_until = now + constants.ENEMY_ATTACK_COOLDOWN
                     self._spawn_debug_attack_rect_towards(player_center)
             else:
                 if self.last_seen_pos:
@@ -276,27 +323,50 @@ class Enemy():
         dt = dt_ms / 1000.0
         dx_total = vx * dt
         dy_total = vy * dt
-
-        steps = max(1, int(max(abs(dx_total), abs(dy_total)) // 4) )  # maks ~4 px per steg
+        steps = max(1, int(max(abs(dx_total), abs(dy_total)) // 4))
         sdx = dx_total / steps
         sdy = dy_total / steps
-
+        
         for _ in range(steps):
+            x_blocked = False
+            y_blocked = False
+            
+            # Try X movement
             if sdx:
                 self.pos.x += sdx
                 self._sync_rect_from_pos()
                 if self.check_collision(obstacles):
                     self.pos.x -= sdx
                     self._sync_rect_from_pos()
-                    # ev. snap + EPS her
-
+                    x_blocked = True
+            
+            # Try Y movement
             if sdy:
                 self.pos.y += sdy
                 self._sync_rect_from_pos()
                 if self.check_collision(obstacles):
                     self.pos.y -= sdy
                     self._sync_rect_from_pos()
-                    # ev. snap + EPS her
+                    y_blocked = True
+            
+            # If one axis blocked, apply full movement to other axis
+            if x_blocked and not y_blocked and sdy:
+                # Transfer X momentum to Y (slide along wall)
+                magnitude = (sdx**2 + sdy**2)**0.5
+                self.pos.y += (magnitude - abs(sdy)) * (1 if sdy > 0 else -1)
+                self._sync_rect_from_pos()
+                if self.check_collision(obstacles):
+                    self.pos.y -= (magnitude - abs(sdy)) * (1 if sdy > 0 else -1)
+                    self._sync_rect_from_pos()
+            
+            elif y_blocked and not x_blocked and sdx:
+                # Transfer Y momentum to X (slide along wall)
+                magnitude = (sdx**2 + sdy**2)**0.5
+                self.pos.x += (magnitude - abs(sdx)) * (1 if sdx > 0 else -1)
+                self._sync_rect_from_pos()
+                if self.check_collision(obstacles):
+                    self.pos.x -= (magnitude - abs(sdx)) * (1 if sdx > 0 else -1)
+                    self._sync_rect_from_pos()
 
     def _move_towards(self, target_px, obstacles, dt_ms):
         """
@@ -407,84 +477,84 @@ class Enemy():
         Returnerer (gx, gy) for neste steg, eller None hvis ingen rute.
         """
         start = self._grid_pos()
+        
+        # Early exit checks
         if start == goal_g:
             return None
-        # tidlig ut: ulovlige mål
         if room.is_blocked(*goal_g) or room.is_blocked(*start):
             return None
-
+        
         def h(a, b):
             return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
+        
         openh = []
         counter = itertools.count()
-        g = {start: 0}
-        came = {start: None}
-        # f = g + h + liten h-vekt for penere tie-break
-        f0 = 0 + h(start, goal_g) + 1e-6 * h(start, goal_g)
-        heappush(openh, (f0, next(counter), start))
-
+        g_score = {start: 0}
+        came_from = {start: None}
+        
+        # f = g + h, med liten h-vekt for tie-breaking
+        f0 = h(start, goal_g)
+        heappush(openh, (f0, 0, next(counter), start))
+        
         closed = set()
         expansions = 0
-        dirs = [(1,0),(-1,0),(0,1),(0,-1)]
-
-        # track best-so-far for fallback
+        directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        
+        # Track beste node for fallback
         best_node = start
-        best_f = f0
-
+        best_h = h(start, goal_g)
+        
         while openh and expansions < max_expansions:
-            fcur, _, cur = heappop(openh)
-            if cur in closed:
+            _, _, _, current = heappop(openh)
+            
+            if current in closed:
                 continue
-            closed.add(cur)
+            
+            closed.add(current)
             expansions += 1
-
-            if fcur < best_f:
-                best_f, best_node = fcur, cur
-
-            # reconstruct hvis vi nådde mål
-            if cur == goal_g:
-                node = cur
-                prev = came[node]
-                while prev and prev != start:
-                    node = prev
-                    prev = came[node]
-                return node
-
-            cx, cy = cur
-            for dx, dy in dirs:
-                nx, ny = cx + dx, cy + dy
-                if room.is_blocked(nx, ny):
+            
+            # Nådde målet - rekonstruer første steg
+            if current == goal_g:
+                return self._get_first_step(came_from, current, start)
+            
+            # Oppdater beste node basert på h-verdi
+            h_current = h(current, goal_g)
+            if h_current < best_h:
+                best_h = h_current
+                best_node = current
+            
+            # Ekspander naboer
+            cx, cy = current
+            for dx, dy in directions:
+                neighbor = (cx + dx, cy + dy)
+                
+                if room.is_blocked(*neighbor):
                     continue
-
-                # short-circuit: nabo er mål → finn første steg og returner
-                if (nx, ny) == goal_g:
-                    # første steg fra start ligger i 'cur' hvis start nabo er cur, ellers gå ett steg tilbake
-                    node = (nx, ny)
-                    prev = cur
-                    while prev and prev != start:
-                        node = prev
-                        prev = came[prev]
-                    return node
-
-                ng = g[cur] + 1
-                if ng < g.get((nx, ny), math.inf):
-                    g[(nx, ny)] = ng
-                    came[(nx, ny)] = cur
-                    fh = ng + h((nx, ny), goal_g)
-                    f = fh + 1e-6 * h((nx, ny), goal_g)
-                    heappush(openh, (f, next(counter), (nx, ny)))
-
-        # Fallback: gå mot best-so-far hvis den ikke er start
+                
+                tentative_g = g_score[current] + 1
+                
+                if tentative_g < g_score.get(neighbor, math.inf):
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g
+                    h_val = h(neighbor, goal_g)
+                    f_score = tentative_g + h_val
+                    
+                    # Tie-breaking: prioriter lavere h (nærmere mål)
+                    heappush(openh, (f_score, h_val, next(counter), neighbor))
+        
+        # Fallback: gå mot beste node (nærmest målet)
         if best_node != start:
-            node = best_node
-            prev = came[node]
-            while prev and prev != start:
-                node = prev
-                prev = came[node]
-            return node
-
+            return self._get_first_step(came_from, best_node, start)
+        
         return None
+
+    def _get_first_step(self, came_from, node, start):
+        """Hjelper for å finne første steg fra start til node."""
+        path = []
+        while node != start:
+            path.append(node)
+            node = came_from[node]
+        return path[-1] if path else None
 
     # ------------------------- ENKLE HJELPERE -------------------------
 
