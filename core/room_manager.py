@@ -1,9 +1,9 @@
 import pygame
 import constants
-from grid_room import GridRoom
-from door import Door
-from power_up import Speed_Powerup, Attack_Powerup, Shield_Powerup
-from enemy import Enemy
+from rooms import GridRoom
+from entities import Door
+from components import Speed_Powerup, Attack_Powerup, Shield_Powerup
+from entities import Enemy
 import random
 import copy
 
@@ -170,34 +170,34 @@ class RoomManager:
             "#################D################",
         ])
         r2 = GridRoom([
-            "########################",
-            "#D...............E....#",
+            "############D###########",
+            "#................E....#",
             "#..######.............#",
-            "#..#....#.....P.......#",
+            "D..#....#.....P.......D",
             "#..#....#.............#",
             "#..######.............#",
-            "########################",
+            "############D###########",
         ])
         r3 = GridRoom([
-            "########################",
-            "#....E...............D#",
+            "###########D############",
+            "#....E................#",
             "#..###......###.......#",
-            "#..#........#.........#",
+            "D..#........#.........D",
             "#..###......###...P...#",
             "#.....................#",
-            "########################",
+            "############D###########",
         ])
         r_start = GridRoom([
-            "#####",
+            "##D##",
             "#...#",
-            "#...#",
+            "D...D",
             "#...#",
             "##D##"
         ])
         r_reward = GridRoom([
-            ".......",
-            ".......",
-            ".......",
+            "...D...",
+            "......D",
+            "D......",
             "...D..."
         ])
         self.rooms = {

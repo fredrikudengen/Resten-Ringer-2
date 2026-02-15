@@ -1,7 +1,7 @@
 import pygame
 import constants
-from enemy import Enemy
-from particle import Particle
+from entities import Enemy
+from components import Particle
 import random
 
 class World:

@@ -1,6 +1,9 @@
 import pygame
 import constants
 
+from components import Projectile
+
+
 def player_input(player, obstacles, world, camera):
     keys = pygame.key.get_pressed()
     now = pygame.time.get_ticks()
@@ -44,7 +47,6 @@ def player_input(player, obstacles, world, camera):
         )
     
         if direction.length_squared() > 0:
-            from projectile import Projectile
             proj = Projectile(player.rect.center, direction)
             world.projectiles.append(proj)
 
