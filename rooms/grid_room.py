@@ -34,10 +34,34 @@ class GridRoom:
                 elif ch == 'E':
                     self.terrain[y][x] = constants.TILE_FLOOR
                     self.spawns[y][x] = 'enemy'
+                elif ch == 'F':
+                    self.terrain[y][x] = constants.TILE_FLOOR
+                    self.spawns[y][x] = 'fast_enemy'
+                elif ch == 'L':
+                    self.terrain[y][x] = constants.TILE_FLOOR
+                    self.spawns[y][x] = 'slow_enemy'
+                elif ch == 'T':
+                    self.terrain[y][x] = constants.TILE_FLOOR
+                    self.spawns[y][x] = 'tank_enemy'
+                elif ch == 'K':  # Scout (K for sKout)
+                    self.terrain[y][x] = constants.TILE_FLOOR
+                    self.spawns[y][x] = 'scout_enemy'
+                elif ch == 'A':
+                    self.terrain[y][x] = constants.TILE_FLOOR
+                    self.spawns[y][x] = 'assassin_enemy'
+                elif ch == 'R':  # Brute (R for bRute)
+                    self.terrain[y][x] = constants.TILE_FLOOR
+                    self.spawns[y][x] = 'brute_enemy'
+                elif ch == 'W':  # Swarm (W for sWarm)
+                    self.terrain[y][x] = constants.TILE_FLOOR
+                    self.spawns[y][x] = 'swarm_enemy'
+                elif ch == 'B':  # Boss
+                    self.terrain[y][x] = constants.TILE_FLOOR
+                    self.spawns[y][x] = 'boss_enemy'
                 elif ch == 'S':
                     self.terrain[y][x] = constants.TILE_FLOOR
                     self.spawns[y][x] = 'speed_powerup'
-                elif ch == 'A':
+                elif ch == 'C':
                     self.terrain[y][x] = constants.TILE_FLOOR
                     self.spawns[y][x] = 'attack_powerup'
                 elif ch == 'H':

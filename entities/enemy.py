@@ -7,48 +7,110 @@ import pygame
 from pygame.math import Vector2
 from collections import deque
 
-
 import constants
+from .entity import Entity
 
-class Enemy():
+
+class Enemy(Entity):
     """
-    Enkel fiende-AI med tilstander, subpiksel-bevegelse, micro-wander og A* (neste-steg).
-
+    Base class for alle fiende-typer.
+    
+    Denne klassen inneholder all AI-logikk (tilstander, pathfinding, LOS, etc.)
+    som er felles for alle fiender. Subklasser trenger bare å sette sine egne stats.
+    
+    Arver basis-funksjonalitet fra Entity og legger til:
+    - AI tilstandsmaskin (idle, chase, search, attack)
+    - Pathfinding (A* og BFS)
+    - Line of sight
+    - Separation behavior
+    
+    For å lage en ny fiende-type:
+    ```python
+    class FastEnemy(Enemy):
+        def __init__(self, x, y):
+            super().__init__(
+                x, y,
+                speed=8,              # Rask!
+                health=30,            # Lav health
+                damage=5,
+                detection_radius=200,
+                attack_range=50,
+                color=(255, 100, 100)
+            )
+    ```
+    
     Public API:
-      - move(player, obstacles, room, dt_ms): oppdaterer fienden ett frame.
-      - apply_separation(others, strength=..., radius=...): myk dytting for å redusere overlapping.
-      - draw(screen, camera): tegn fienden (inkl. valgfri debug-hitbox).
-      - Felter som andre systemer leser: rect, alive, health, state.
-
-    Alt som starter med '_' regnes som internt og kan endres uten varsel.
+      - move(player, obstacles, room, dt_ms): oppdaterer fienden ett frame
+      - draw(screen, camera): tegn fienden (inkl. valgfri debug-hitbox)
+      - Felter som andre systemer leser: rect, alive, health, state
     """
 
-    def __init__(self, x, y):
+    def __init__(
+        self, 
+        x, y,
+        speed=None,
+        health=None,
+        damage=None,
+        detection_radius=None,
+        attack_range=None,
+        attack_cooldown=None,
+        size=None,
+        color=None,
+        wander_radius=None,
+        wander_interval=None
+    ):
         """
-        Opprett fiende.
+        Opprett fiende med konfigurerbare stats.
 
         Args:
-            x, y: startposisjon (piksel, øverste-venstre i rect)
-            width, height: størrelse på collider/tegning
+            x, y: Startposisjon (piksel)
+            speed: Bevegelseshastighet (default: constants.ENEMY_SPEED)
+            health: Startliv (default: constants.ENEMY_HEALTH)
+            damage: Skade per angrep (default: constants.ENEMY_DPS)
+            detection_radius: Hvor langt fienden ser (default: constants.DETECTION_RADIUS)
+            attack_range: Nærhet for angrep (default: constants.ATTACK_RANGE)
+            attack_cooldown: Tid mellom angrep ms (default: constants.ENEMY_ATTACK_COOLDOWN)
+            size: (width, height) tuple (default: constants.ENEMY_SIZE)
+            color: RGB tuple (default: constants.GREEN)
+            wander_radius: Hvor langt fienden vandrer når idle (default: constants.ENEMY_WANDER_RADIUS_TILES)
+            wander_interval: Tid mellom wander ms (default: constants.ENEMY_WANDER_INTERVAL_MS)
         """
-        self.rect = pygame.Rect(x, y, *constants.ENEMY_SIZE)
-        # Sann posisjon i float (senter), brukes til all bevegelse
-        self.pos = Vector2(self.rect.center)
+        # Bruk defaults fra constants hvis ikke spesifisert
+        if size is None:
+            size = constants.ENEMY_SIZE
+        if speed is None:
+            speed = constants.ENEMY_SPEED
+        if health is None:
+            health = constants.ENEMY_HEALTH
+        if color is None:
+            color = constants.GREEN
         
-        # Combat & status
-        self.health = constants.ENEMY_HEALTH
-        self.alive = constants.ALIVE
-        self.speed = constants.ENEMY_SPEED
-        self.dps = constants.ENEMY_DPS
-        self.hit = False                 # settes utenfra når fienden treffes denne framen
+        # Initialize Entity base class
+        super().__init__(
+            x, y,
+            width=size[0],
+            height=size[1],
+            speed=speed,
+            health=health,
+            color=color
+        )
+        
+        # Combat stats - konfigurerbare
+        self.damage = damage if damage is not None else constants.ENEMY_DPS
+        self.detection_radius = detection_radius if detection_radius is not None else constants.DETECTION_RADIUS
+        self.attack_range = attack_range if attack_range is not None else constants.ATTACK_RANGE
+        self.attack_cooldown_ms = attack_cooldown if attack_cooldown is not None else constants.ENEMY_ATTACK_COOLDOWN
+        
+        # Combat state
+        self.dps = self.damage  # Bakoverkompatibilitet
         self.hit_timer = None   # i-frames slutt-tid (ms tick)
+        self.attack_cooldown_until = 0  # ms tick før neste angrep er lov
 
-        # Tilstandsmaske
+        # AI state machine
         # Mulige states: "idle" | "chase" | "search" | "attack" | "hurt" | "dead"
         self.state = "idle"
         self.last_seen_pos = None  # pikselpos hvor spilleren sist ble sett
-        self.search_started = None             # ms tick når search startet
-        self.attack_cooldown_until = 0                   # ms tick før neste angrep er lov
+        self.search_started = None  # ms tick når search startet
 
         # Debug-vis av angrepshitbox
         self.debug_attack_rect = None
@@ -58,29 +120,29 @@ class Enemy():
         self.wander_goal_g = None
         self.wander_end = False
         now = pygame.time.get_ticks()
-        self.next_wander_at: int = now + random.randint(1200, 2500)
-        self.WANDER_INTERVAL_MS = constants.ENEMY_WANDER_INTERVAL_MS
-        self.WANDER_RADIUS_TILES = constants.ENEMY_WANDER_RADIUS_TILES
+        self.next_wander_at = now + random.randint(1200, 2500)
+        
+        # Wander konfigurasjon
+        self.WANDER_INTERVAL_MS = wander_interval if wander_interval is not None else constants.ENEMY_WANDER_INTERVAL_MS
+        self.WANDER_RADIUS_TILES = wander_radius if wander_radius is not None else constants.ENEMY_WANDER_RADIUS_TILES
 
-        # NEW: Track if we're stuck to trigger pathfinding during chase
+        # Pathfinding state
         self._stuck_counter = 0
         self._last_pos = Vector2(self.pos)
-        self._stuck_threshold = 3  # frames of barely moving = stuck (reduced from 5)
-        
-        # NEW: Pathfinding waypoint commitment
+        self._stuck_threshold = 3  # frames of barely moving = stuck
         self._chase_waypoint = None  # Grid position to commit to during chase
 
     # ------------------------- PUBLIC API -------------------------
 
     def move(self, player, obstacles, room, dt_ms):
         """
-        Oppdater fienden én frame: sansing, state-maskin, bevegelse, animasjon.
+        Oppdater fienden én frame: sansing, state-maskin, bevegelse.
 
         Args:
             player: objekt med .rect (pygame.Rect)
             obstacles: iterable av vegg-rektangler for kollisjon
             room: GridRoom med is_blocked(...) og TILE_SIZE
-            dt_ms: millisekunder siden forrige frame (fra clock.tick)
+            dt_ms: millisekunder siden forrige frame
         """
         now = pygame.time.get_ticks()
 
@@ -95,11 +157,8 @@ class Enemy():
         if self.hit:
             self.hit_timer = now
             self.hit = False
-
-            # Å bli truffet = vi vet hvor spilleren er
             self.last_seen_pos = player.rect.center
             self.search_started = now
-
             self.state = "search"
         
         if self.hit_timer and (now - self.hit_timer > 500):
@@ -109,8 +168,11 @@ class Enemy():
         player_center = player.rect.center
         enemy_center = self.rect.center
         see_player = False
-        if self._dist2(*player_center, *enemy_center) <= constants.DETECTION_RADIUS * constants.DETECTION_RADIUS:            
-            if self._has_los(room, *self._grid_pos(), *player._grid_pos()):
+        
+        # Bruk konfigurerbar detection_radius
+        dist2_to_player = self._dist2(*player_center, *enemy_center)
+        if dist2_to_player <= self.detection_radius * self.detection_radius: 
+            if self._has_los(room, *self._grid_pos(), *player._grid_pos()):                
                 see_player = True
                 self.last_seen_pos = player_center
                 self.search_started = None
@@ -120,15 +182,12 @@ class Enemy():
             if see_player:
                 self.state = "chase"
             else:
-                # Micro-wander
                 self._idle(room, obstacles, dt_ms, now)
 
         elif self.state == "chase":
             self.wander_goal_g = None
             if see_player:
-                
-                self._see_player(player_center, enemy_center, obstacles, dt_ms, now)
-
+                self._move_towards(player_center, obstacles, dt_ms)
             else:
                 if self.last_seen_pos:
                     self.state = "search"
@@ -137,18 +196,15 @@ class Enemy():
                     self.state = "idle"
                     
         if self.state == "attack":
-            player.health -= self.dps
+            player.health -= self.damage  # Bruk konfigurerbar damage
             self.state = "chase"
-            self.attack_cooldown_until = now + constants.ENEMY_ATTACK_COOLDOWN
+            self.attack_cooldown_until = now + self.attack_cooldown_ms
 
         elif self.state == "search":
-            # Gå mot siste kjente posisjon via grid (A* neste-steg)
             if see_player:
                 self.state = "chase"
             elif self.last_seen_pos:
-
                 self._search(obstacles, room, dt_ms, now) 
-
             else:
                 self.state = "idle"
 
@@ -156,6 +212,7 @@ class Enemy():
             return
         
     def _idle(self, room, obstacles, dt_ms, now):
+        """Håndter idle state med micro-wander."""
         if self.wander_goal_g is not None:
             next_tile_g = self._micro_wander(room, self.wander_goal_g, self.WANDER_RADIUS_TILES)
             if next_tile_g:
@@ -180,30 +237,30 @@ class Enemy():
                 wait = random.randint(*self.WANDER_INTERVAL_MS)
                 self.next_wander_at = now + wait
     
-    def _see_player(self, player_center, enemy_center, obstacles, dt_ms, now):
-    # Detect if we're stuck
+    def _see_player(self, player_center, enemy_center, obstacles, dt_ms, now, room):
+        """Håndter chase state når spilleren er synlig."""
+        # Detect if stuck
         movement = self.pos.distance_to(self._last_pos)
         self._last_pos.update(self.pos)
                     
         if movement < 2.0:
             self._stuck_counter += 1
         else:
-            self._stuck_counter = max(0, self._stuck_counter - 1)  # Decay when moving
+            self._stuck_counter = max(0, self._stuck_counter - 1)
                     
         current_tile = self._grid_pos()
         T = constants.TILE_SIZE
                     
-        # Check if we've reached current waypoint
+        # Check if reached waypoint
         if self._chase_waypoint:
             waypoint_center_px = self._center_of_tile(*self._chase_waypoint)
             dist_to_waypoint = self.pos.distance_to(Vector2(waypoint_center_px))
                         
-            # Reached waypoint - clear it and get next one
-            if dist_to_waypoint <= 20:  # Reached center of tile
+            if dist_to_waypoint <= 20:
                 self._chase_waypoint = None
                 self._stuck_counter = 0
                     
-        # If stuck and no active waypoint, calculate a new path
+        # If stuck, calculate new path
         if self._stuck_counter >= self._stuck_threshold and not self._chase_waypoint:
             goal_g = (player_center[0] // T, player_center[1] // T)
             next_tile_g = self._astar_next_step(room, goal_g, max_expansions=256)
@@ -211,23 +268,22 @@ class Enemy():
             if next_tile_g and next_tile_g != current_tile:
                 self._chase_waypoint = next_tile_g
             else:
-                # A* failed or already at goal tile
                 self._stuck_counter = 0
                     
         # Movement: Use waypoint if available, otherwise go direct
         if self._chase_waypoint:
             target_px = self._center_of_tile(*self._chase_waypoint)
             self._move_towards(target_px, obstacles, dt_ms)
-            print(f"→ Moving to waypoint {self._chase_waypoint}, movement: {movement:.2f}")
         else:
-            # Direct line of sight or no path needed
             self._move_towards(player_center, obstacles, dt_ms)
-                    
-        if now >= self.attack_cooldown_until and self._dist2(*player_center, *enemy_center) <= constants.ATTACK_RANGE * constants.ATTACK_RANGE:
-                        self.state = "attack"
-                        self._spawn_debug_attack_rect_towards(player_center)
+        
+        # Bruk konfigurerbar attack_range
+        if now >= self.attack_cooldown_until and self._dist2(*player_center, *enemy_center) <= self.attack_range * self.attack_range:
+            self.state = "attack"
+            self._spawn_debug_attack_rect_towards(player_center)
 
     def _search(self, obstacles, room, dt_ms, now):
+        """Håndter search state - gå til siste kjente posisjon."""
         T = constants.TILE_SIZE
         goal_g = (self.last_seen_pos[0] // T, self.last_seen_pos[1] // T)
         next_tile_g = self._astar_next_step(room, goal_g, max_expansions=512)
@@ -235,7 +291,6 @@ class Enemy():
             target_px = self._center_of_tile(*next_tile_g)
             reached = self._move_towards(target_px, obstacles, dt_ms)
         else:
-            # fallback: forsøk rett mot pikselpos (kan kile, men holder ting i bevegelse)
             reached = self._move_towards(self.last_seen_pos, obstacles, dt_ms)
 
         timedout = self.search_started and (now - self.search_started > constants.LOSE_SIGHT_TIME)
@@ -246,25 +301,30 @@ class Enemy():
 
     def draw(self, screen, camera):
         """
-        Tegn fienden og (valgfritt) en semitransparent debug-hitbox for angrep.
-
-        Args:
-            screen: pygame-surface
-            camera: objekt med .apply(rect) -> rect (for world->screen transform)
+        Tegn fienden med fargekoding basert på state.
+        Subklasser kan override for custom tegning.
         """
         draw_rect = camera.apply(self.rect)
 
-        # enkel fargekode per state (nyttig for debugging/lesbarhet)
-        if self.state == "idle":    color = (0, 180, 0)
-        elif self.state == "chase": color = (80, 220, 80)
-        elif self.state == "search":color = (200, 200, 0)
-        elif self.state == "attack":color = (255, 120, 0)
-        elif self.state == "hurt":  color = (255, 0, 0)
-        elif self.state == "dead":  color = (100, 100, 100)
-        else:                       color = constants.GREEN
+        # State-basert fargekoding (kan overrides av subklasser)
+        if self.state == "idle":
+            color = self.color
+        elif self.state == "chase":
+            color = tuple(min(c + 40, 255) for c in self.color)  # Lysere
+        elif self.state == "search":
+            color = (200, 200, 0)
+        elif self.state == "attack":
+            color = (255, 120, 0)
+        elif self.state == "hurt":
+            color = (255, 0, 0)
+        elif self.state == "dead":
+            color = (100, 100, 100)
+        else:
+            color = self.color
 
         pygame.draw.rect(screen, color, draw_rect)
 
+        # Debug attack hitbox
         if constants.DEBUG_SHOW_HITBOXES and self.debug_attack_rect:
             if pygame.time.get_ticks() <= self.debug_attack_until:
                 surf = pygame.Surface(
@@ -280,12 +340,7 @@ class Enemy():
     # ------------------------- INTERN LOGIKK -------------------------
     
     def _has_los(self, room, enemy_x, enemy_y, player_x, player_y):
-        """
-        Line-of-sight på GRID (Bresenham).
-        Alle koordinater er grid (tiles), ikke piksler.
-        Returnerer True hvis linjen fra (enemy_x, enemy_y) til (player_x, player_y)
-        ikke passerer noen blokkerte tiles.
-        """
+        """Line-of-sight på GRID (Bresenham)."""
         dx = abs(player_x - enemy_x)
         dy = -abs(player_y - enemy_y)
         x_steps = 1 if enemy_x < player_x else -1
@@ -305,35 +360,9 @@ class Enemy():
             if e2 <= dx:
                 err += dx
                 y += y_steps
-                
-    def _grid_pos(self):
-        """Returner grid-koordinat (gx, gy) basert på TILE_SIZE."""
-        T = constants.TILE_SIZE
-        return (int(self.pos.x) // T, int(self.pos.y) // T)
-
-    def _sync_rect_from_pos(self) -> None:
-        """Synkroniser heltalls-rect fra float-posisjon (senter)."""
-        self.rect.centerx = int(round(self.pos.x))
-        self.rect.centery = int(round(self.pos.y))
-
-    def _dist2(self, a1: int, a2: int, b1: int, b2: int) -> int:
-        """Euklidisk distanse."""
-        dx, dy = a1 - b1, a2 - b2
-        return dx * dx + dy * dy
-
-    def _center_of_tile(self, gx, gy):
-        """Returner piksel-senteret til grid-ruten (gx, gy)."""
-        T = constants.TILE_SIZE
-        return (gx * T + T // 2, gy * T + T // 2)
-
-    def check_collision(self, obstacles):
-        """Returner True hvis self.rect kolliderer med et av obstacles."""
-        for obstacle in obstacles:
-            if self.rect.colliderect(obstacle):
-                return True
-        return False
 
     def _slide_move(self, vx, vy, dt_ms, obstacles):
+        """Smooth bevegelse med wall sliding."""
         dt = dt_ms / 1000.0
         dx_total = vx * dt
         dy_total = vy * dt
@@ -345,7 +374,6 @@ class Enemy():
             x_blocked = False
             y_blocked = False
             
-            # Try X movement
             if sdx:
                 self.pos.x += sdx
                 self._sync_rect_from_pos()
@@ -354,7 +382,6 @@ class Enemy():
                     self._sync_rect_from_pos()
                     x_blocked = True
             
-            # Try Y movement
             if sdy:
                 self.pos.y += sdy
                 self._sync_rect_from_pos()
@@ -363,9 +390,7 @@ class Enemy():
                     self._sync_rect_from_pos()
                     y_blocked = True
             
-            # If one axis blocked, apply full movement to other axis
             if x_blocked and not y_blocked and sdy:
-                # Transfer X momentum to Y (slide along wall)
                 magnitude = (sdx**2 + sdy**2)**0.5
                 self.pos.y += (magnitude - abs(sdy)) * (1 if sdy > 0 else -1)
                 self._sync_rect_from_pos()
@@ -374,7 +399,6 @@ class Enemy():
                     self._sync_rect_from_pos()
             
             elif y_blocked and not x_blocked and sdx:
-                # Transfer Y momentum to X (slide along wall)
                 magnitude = (sdx**2 + sdy**2)**0.5
                 self.pos.x += (magnitude - abs(sdx)) * (1 if sdx > 0 else -1)
                 self._sync_rect_from_pos()
@@ -383,30 +407,18 @@ class Enemy():
                     self._sync_rect_from_pos()
 
     def _move_towards(self, target_px, obstacles, dt_ms):
-        """
-        Gå mot en piksel-posisjon med normalisert fart.
-
-        Returnerer:
-            True hvis vi er 'nær nok' målet (≤ 24 px), ellers False.
-        """
+        """Gå mot en piksel-posisjon med normalisert fart."""
         direction = Vector2(target_px[0] - self.pos.x, target_px[1] - self.pos.y)
         dist = direction.length()
         if dist > 1e-6:
-            direction /= dist  # normaliser
+            direction /= dist
             self._slide_move(direction.x * self.speed, direction.y * self.speed, dt_ms, obstacles)
         return self._dist2(int(self.pos.x), int(self.pos.y), int(target_px[0]), int(target_px[1])) <= (24 * 24)
     
     def _apply_separation(self, others):
-        """
-        Myk, lokal dytting bort fra andre fiender for å redusere overlapping.
-
-        Args:
-            others: andre Enemy-objekter i nærheten
-            strength: skalering av dytt (0..1 typisk)
-            radius: påvirkningsradius (px)
-        """
-        strength=0.08
-        radius=64
+        """Myk dytting bort fra andre fiender."""
+        strength = 0.08
+        radius = 64
         self_x, self_y = self.pos.x, self.pos.y
         pushx = pushy = 0.0
         r2 = float(radius * radius)
@@ -422,7 +434,6 @@ class Enemy():
                 pushx += distance_x * weight
                 pushy += distance_y * weight
 
-        # liten flytt (float) + sync for smooth effekt
         self.pos.x += pushx * strength
         self.pos.y += pushy * strength
         self._sync_rect_from_pos()
@@ -430,11 +441,7 @@ class Enemy():
     # ---- Grid-hjelpere ----
 
     def _pick_random_free_tile(self, room, center_g, radius):
-        """
-        Velg en tilfeldig ledig grid-rute innenfor radius.
-
-        Returnerer (gx, gy) eller None om vi ikke fant noe på 'tries' forsøk.
-        """
+        """Velg en tilfeldig ledig grid-rute innenfor radius."""
         tries = 7
         cx, cy = center_g
         for _ in range(tries):
@@ -445,11 +452,7 @@ class Enemy():
         return None
 
     def _micro_wander(self, room, goal_g, max_depth):
-        """
-        BFS: finn NESTE grid-steg fra nåværende pos mot goal_g (billig og robust).
-
-        Brukes til micro-wander. For større kart: bruk A*.
-        """
+        """BFS: finn NESTE grid-steg mot goal_g."""
         start = self._grid_pos()
         if start == goal_g:
             return None
@@ -462,7 +465,6 @@ class Enemy():
         while q:
             x, y = q.popleft()
             if (x, y) == goal_g:
-                # rekonstruksjon av første steg
                 cur = (x, y)
                 prev = came_from[cur]
                 while prev and prev != start:
@@ -486,13 +488,9 @@ class Enemy():
         return None
 
     def _astar_next_step(self, room, goal_g, max_expansions):
-        """
-        A*: finn NESTE grid-steg fra nåværende pos mot goal_g (4-retninger).
-        Returnerer (gx, gy) for neste steg, eller None hvis ingen rute.
-        """
+        """A*: finn NESTE grid-steg mot goal_g."""
         start = self._grid_pos()
         
-        # Early exit checks
         if start == goal_g:
             return None
         if room.is_blocked(*goal_g) or room.is_blocked(*start):
@@ -506,7 +504,6 @@ class Enemy():
         g_score = {start: 0}
         came_from = {start: None}
         
-        # f = g + h, med liten h-vekt for tie-breaking
         f0 = h(start, goal_g)
         heappush(openh, (f0, 0, next(counter), start))
         
@@ -514,7 +511,6 @@ class Enemy():
         expansions = 0
         directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
         
-        # Track beste node for fallback
         best_node = start
         best_h = h(start, goal_g)
         
@@ -527,17 +523,14 @@ class Enemy():
             closed.add(current)
             expansions += 1
             
-            # Nådde målet - rekonstruer første steg
             if current == goal_g:
                 return self._get_first_step(came_from, current, start)
             
-            # Oppdater beste node basert på h-verdi
             h_current = h(current, goal_g)
             if h_current < best_h:
                 best_h = h_current
                 best_node = current
             
-            # Ekspander naboer
             cx, cy = current
             for dx, dy in directions:
                 neighbor = (cx + dx, cy + dy)
@@ -553,37 +546,31 @@ class Enemy():
                     h_val = h(neighbor, goal_g)
                     f_score = tentative_g + h_val
                     
-                    # Tie-breaking: prioriter lavere h (nærmere mål)
                     heappush(openh, (f_score, h_val, next(counter), neighbor))
         
-        # Fallback: gå mot beste node (nærmest målet)
         if best_node != start:
             return self._get_first_step(came_from, best_node, start)
         
         return None
 
     def _get_first_step(self, came_from, node, start):
-        """Hjelper for å finne første steg fra start til node."""
+        """Finn første steg fra start til node."""
         path = []
         while node != start:
             path.append(node)
             node = came_from[node]
         return path[-1] if path else None
 
-    # ------------------------- ENKLE HJELPERE -------------------------
-
     def _spawn_debug_attack_rect_towards(self, target_px):
-        """Lag en enkel angreps-rect i retning mål for visuell debugging."""
+        """Lag debug attack hitbox mot mål."""
         ex, ey, ew, eh = self.rect
         ecx, ecy = self.rect.center
         dx = target_px[0] - ecx
         dy = target_px[1] - ecy
 
         if abs(dx) >= abs(dy):
-            # horisontal 'swing'
             atk = pygame.Rect(ex + (ew if dx >= 0 else -ew), ey, ew, eh)
         else:
-            # vertikal 'swing'
             atk = pygame.Rect(ex, ey + (eh if dy >= 0 else -eh), ew, eh)
 
         if constants.DEBUG_SHOW_HITBOXES:

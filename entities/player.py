@@ -1,37 +1,74 @@
 import pygame
 import constants
+from .entity import Entity
 
-class Player:
-    def __init__(self, x, y,):
-        self.rect = pygame.Rect(x, y, *constants.PLAYER_SIZE)
-        self.color = constants.PLAYER_COLOR
-        self.speed = constants.PLAYER_SPEED
-        self.health = constants.PLAYER_HEALTH
+
+class Player(Entity):
+    """
+    Spilleren - styrt av bruker input.
+    
+    Arver basis-funksjonalitet fra Entity og legger til:
+    - Angrep med cooldown
+    - Buff-system
+    - Spesialisert kollisjonshåndtering
+    """
+    
+    def __init__(self, x, y):
+        """
+        Initialiser spiller.
+        
+        Args:
+            x, y: Startposisjon
+        """
+        super().__init__(
+            x, y,
+            width=constants.PLAYER_SIZE[0],
+            height=constants.PLAYER_SIZE[1],
+            speed=constants.PLAYER_SPEED,
+            health=constants.PLAYER_HEALTH,
+            color=constants.PLAYER_COLOR
+        )
+        
         self.dps = constants.PLAYER_DPS
-        self.alive = constants.ALIVE
-
+        
         # Angrep / debug
         self.attack_cooldown = constants.PLAYER_ATTACK_COOLDOWN
         self.playerAttack = False
         self.debug_attack_rect = None
         self.debug_attack_until = 0
 
-        # Buffs
+        # Buffs system
         self.buff_timers = {}
     
     def check_collision_obstacle(self, obstacles):
-        for obstacle in obstacles:
-            if self.rect.colliderect(obstacle):
-                return True
-        return False
+        """
+        Legacy metode for bakoverkompatibilitet.
+        Wrapper rundt Entity.check_collision()
+        """
+        return self.check_collision(obstacles)
     
     def check_collision_enemy(self, enemies):
+        """
+        Sjekk kollisjon med fiender.
+        
+        Args:
+            enemies: Liste av Enemy objekter
+            
+        Returns:
+            bool: True hvis kollisjon med noen fiende
+        """
         for enemy in enemies:
-            if self.rect.colliderect(enemy.rect):
+            if self.check_collision_entity(enemy):
                 return True
         return False
     
     def apply_buff(self, powerup):
+        """
+        Aktiver en power-up buff.
+        
+        Args:
+            powerup: String identifier for buff-type
+        """
         now = pygame.time.get_ticks()
         if powerup == 'speed_boost':
             self.speed += 3
@@ -44,14 +81,19 @@ class Player:
             self.buff_timers[powerup] = now
             
     def update_buffs(self):
+        """
+        Oppdater og fjern utgåtte buffs.
+        Kjøres hver frame.
+        """
         now = pygame.time.get_ticks()
         expired = []
+        
         for name, start in list(self.buff_timers.items()):
             duration = constants.BUFF_DURATIONS.get(name, 0)
             if now - start >= duration:
                 expired.append(name)
 
-        # Fjern effekt
+        # Fjern effekt av utgåtte buffs
         for name in expired:
             if name == 'speed_boost':
                 self.speed -= 3
@@ -60,13 +102,15 @@ class Player:
             elif name == 'shield_boost':
                 self.health -= 2
             self.buff_timers.pop(name)
-            
-    def _grid_pos(self):
-        """Returner grid-koordinat (gx, gy) basert på TILE_SIZE."""
-        T = constants.TILE_SIZE
-        return (int(self.rect.centerx) // T, int(self.rect.centery) // T)
 
     def draw(self, screen, camera):
+        """
+        Tegn spilleren med spesiell farge når den angriper.
+        
+        Args:
+            screen: pygame Surface
+            camera: Camera objekt
+        """
         draw_rect = camera.apply(self.rect)
         color = constants.RED if self.playerAttack else self.color
         pygame.draw.rect(screen, color, draw_rect)

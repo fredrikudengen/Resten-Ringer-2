@@ -55,6 +55,8 @@ def player_input(player, obstacles, world, camera):
     # død?
     if player.health <= 0:
         player.alive = False
+    
+    player.sync_pos_from_rect()
 
 def _collides(player, obstacles):
     for obs in obstacles:

@@ -1,0 +1,146 @@
+import pygame
+from pygame.math import Vector2
+import constants
+
+
+class Entity:
+    """
+    Base-klasse for alle spillobjekter med fysikk og kollisjon.
+    
+    Alle entities har:
+    - Posisjon (subpixel via Vector2)
+    - Rektangel for kollisjon
+    - Helse og status
+    - Hastighet
+    - Grunnleggende bevegelse og kollisjon
+    
+    Duck typing: Hvis det beveger seg som en entity, er det en entity!
+    """
+    
+    def __init__(self, x, y, width, height, speed=0, health=100, color=(255, 255, 255)):
+        """
+        Initialiser entity.
+        
+        Args:
+            x, y: Startposisjon (top-left)
+            width, height: Størrelse
+            speed: Bevegelseshastighet (piksler per sekund)
+            health: Startliv
+            color: Farge for tegning
+        """
+        self.rect = pygame.Rect(x, y, width, height)
+        # Subpixel posisjon (senter) for smooth bevegelse
+        self.pos = Vector2(self.rect.center)
+        
+        # Status
+        self.health = health
+        self.alive = True
+        self.speed = speed
+        self.color = color
+        
+        # Combat
+        self.dps = 0  # Damage per second/hit
+        self.hit = False  # Flag for når entity blir truffet
+        
+    def update(self, dt_ms, *args, **kwargs):
+        """
+        Oppdater entity logikk. Override i subklasser.
+        
+        Args:
+            dt_ms: Delta time i millisekunder
+        """
+        if self.health <= 0:
+            self.alive = False
+    
+    def draw(self, screen, camera):
+        """
+        Tegn entity. Override for custom tegning.
+        
+        Args:
+            screen: pygame Surface
+            camera: Camera objekt med .apply(rect) metode
+        """
+        draw_rect = camera.apply(self.rect)
+        color = constants.RED if self.hit else self.color
+        pygame.draw.rect(screen, color, draw_rect)
+    
+    def check_collision(self, obstacles):
+        """
+        Sjekk kollisjon med obstacles.
+        
+        Args:
+            obstacles: Liste av pygame.Rect objekter
+            
+        Returns:
+            bool: True hvis kollisjon, False ellers
+        """
+        for obstacle in obstacles:
+            if self.rect.colliderect(obstacle):
+                return True
+        return False
+    
+    def check_collision_entity(self, other):
+        """
+        Sjekk kollisjon med en annen entity.
+        
+        Args:
+            other: En annen Entity instans
+            
+        Returns:
+            bool: True hvis kollisjon
+        """
+        return self.rect.colliderect(other.rect)
+    
+    def _grid_pos(self):
+        """
+        Returner grid-koordinat (gx, gy) basert på TILE_SIZE.
+        
+        Returns:
+            tuple: (grid_x, grid_y)
+        """
+        T = constants.TILE_SIZE
+        return (int(self.pos.x) // T, int(self.pos.y) // T)
+    
+    def _sync_rect_from_pos(self):
+        """
+        Synkroniser heltalls-rect fra float-posisjon (senter).
+        Viktig for smooth subpixel bevegelse!
+        """
+        self.rect.centerx = int(round(self.pos.x))
+        self.rect.centery = int(round(self.pos.y))
+    
+    def sync_pos_from_rect(self):
+        """Synkroniser pos fra rect etter bevegelse."""
+        self.pos.x = self.rect.centerx
+        self.pos.y = self.rect.centery
+    
+    def _center_of_tile(self, gx, gy):
+        """
+        Returner piksel-senteret til grid-ruten (gx, gy).
+        
+        Args:
+            gx, gy: Grid koordinater
+            
+        Returns:
+            tuple: (pixel_x, pixel_y)
+        """
+        T = constants.TILE_SIZE
+        return (gx * T + T // 2, gy * T + T // 2)
+    
+    def _dist2(self, a1, a2, b1, b2):
+        """
+        Kvadrert euklidisk distanse (unngår sqrt for performance).
+        
+        Args:
+            a1, a2: Første punkt (x, y)
+            b1, b2: Andre punkt (x, y)
+            
+        Returns:
+            int: Kvadrert distanse
+        """
+        dx, dy = a1 - b1, a2 - b2
+        return dx * dx + dy * dy
+    
+    def __repr__(self):
+        """Debug-vennlig string representasjon."""
+        return f"{self.__class__.__name__}(pos={self.pos}, health={self.health}, alive={self.alive})"
