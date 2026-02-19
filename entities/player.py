@@ -39,6 +39,12 @@ class Player(Entity):
 
         # Buffs system
         self.buff_timers = {}
+
+        # Dash
+        self.is_dashing = False
+        self.dash_direction = pygame.math.Vector2(0, 0)
+        self.dash_end_time = 0
+        self.dash_cooldown_end = 0
     
     def check_collision_obstacle(self, obstacles):
         """
@@ -103,6 +109,57 @@ class Player(Entity):
                 self.health -= 2
             self.buff_timers.pop(name)
 
+    def start_dash(self, direction: pygame.math.Vector2):
+        """
+        Start en dash i gitt retning.
+        
+        Args:
+            direction: Normalisert retningsvektor for dashen
+        """
+        now = pygame.time.get_ticks()
+        if self.is_dashing or now < self.dash_cooldown_end:
+            return 
+
+        if direction.length_squared() == 0:
+            return  
+
+        self.is_dashing = True
+        self.dash_direction = direction.normalize()
+        self.dash_end_time = now + constants.DASH_DURATION
+        self.dash_cooldown_end = now + constants.DASH_COOLDOWN
+    
+    def update_dash(self, obstacles):
+        """
+        Oppdater dash-bevegelse. Kalles hver frame.
+        
+        Args:
+            obstacles: Liste av hindringer for kollisjonsjekk
+        """
+        now = pygame.time.get_ticks()
+        if not self.is_dashing:
+            return
+
+        if now >= self.dash_end_time:
+            self.is_dashing = False
+            return
+
+        dx = int(self.dash_direction.x * constants.DASH_SPEED)
+        dy = int(self.dash_direction.y * constants.DASH_SPEED)
+
+        old_x = self.rect.x
+        self.rect.x += dx
+        if any(self.rect.colliderect(obs) for obs in obstacles):
+            self.rect.x = old_x
+            self.is_dashing = False
+
+        old_y = self.rect.y
+        self.rect.y += dy
+        if any(self.rect.colliderect(obs) for obs in obstacles):
+            self.rect.y = old_y
+            self.is_dashing = False
+
+        self.sync_pos_from_rect()
+
     def draw(self, screen, camera):
         """
         Tegn spilleren med spesiell farge når den angriper.
@@ -112,5 +169,14 @@ class Player(Entity):
             camera: Camera objekt
         """
         draw_rect = camera.apply(self.rect)
-        color = constants.RED if self.playerAttack else self.color
+        if self.is_dashing:
+            color = constants.WHITE
+        elif self.playerAttack:
+            color = constants.RED
+        else:
+            color = self.color
         pygame.draw.rect(screen, color, draw_rect)
+    
+    @property
+    def is_invincible(self):
+        return self.is_dashing

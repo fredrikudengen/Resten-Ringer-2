@@ -87,13 +87,13 @@ class RoomManager:
         self.world.clear()
         room.reset_spawns()
 
-        # 1) Obstacles (walls)
+        # --- Obstacles ---
         for gy in range(room.rows):
             for gx in range(room.cols):
                 if room.terrain[gy][gx] == constants.TILE_WALL:
                     self.world.add_obstacle(room.tile_rect(gx, gy))
 
-        # 2) Spawns
+        # --- Spawns ---
         self.doors = []
         for gy in range(room.rows):
             for gx in range(room.cols):
@@ -109,15 +109,15 @@ class RoomManager:
                     self.world.add_enemy(x, y, enemy_type=SlowEnemy)
                 elif tag == 'tank_enemy':
                     self.world.add_enemy(x, y, enemy_type=TankEnemy)
-                elif tag == 'scout_enemy':  # Scout (K for sKout)
+                elif tag == 'scout_enemy':  
                     self.world.add_enemy(x, y, enemy_type=ScoutEnemy)
                 elif tag == 'assassin_enemy':
                     self.world.add_enemy(x, y, enemy_type=AssassinEnemy)
-                elif tag == 'brute_enemy':  # Brute (R for bRute)
+                elif tag == 'brute_enemy':  
                     self.world.add_enemy(x, y, enemy_type=BruteEnemy)
-                elif tag == 'swarm_enemy':  # Swarm (W for sWarm)
+                elif tag == 'swarm_enemy':  
                     self.world.add_enemy(x, y, enemy_type=SwarmEnemy)
-                elif tag == 'boss_enemy':  # Boss
+                elif tag == 'boss_enemy':  
                     self.world.add_enemy(x, y, enemy_type=BossEnemy)
 
                 elif tag == 'enemy':
@@ -139,14 +139,14 @@ class RoomManager:
                 
                 room.spawns[gy][gx] = None  # clear marker
 
-        # 3) Player spawn
+        # --- Player spawn ---
         spawn_side = constants.OPPOSITE.get(entry_side) if entry_side else None
         if spawn_side:
             self.player.rect.topleft = self._pick_spawn_near_door(room, spawn_side)
         else:
             self.player.rect.topleft = (constants.TILE_SIZE * 2, constants.TILE_SIZE * 2)
 
-        # 4) Close doors initially
+        # Close doors at start
         for d in self.doors:
             d["door"].set_open(False)
         self._sync_door_blockers()
@@ -347,36 +347,43 @@ class RoomManager:
         # Combat room 1 - generic enemies
         r1 = GridRoom([
             "###########D############",
-            "#.....................#",
-            "#.....................#",
-            "D..........F..........D",
-            "#.....................#",
-            "#.....................#",
+            "#......................#",
+            "#......................#",
+            "#..........-...........#",
+            "#......................#",
+            "#......................D",
+            "D..........F...........#",
+            "#......................#",
+            "#......................#",
+            "#......................#",
+            "#......................#",
             "############D###########",
         ])
-        
-        # Combat room 2 - generic enemies
+
         r2 = GridRoom([
-            "############D###########",
-            "#................E....#",
-            "#..######.............#",
-            "D..#....#.....P.......D",
-            "#..#....#.............#",
-            "#..######.............#",
-            "############D###########",
-        ])
-        
-        # Combat room 3 - generic enemies
-        r3 = GridRoom([
             "###########D############",
-            "#....E................#",
-            "#..###......###.......#",
-            "D..#........#.........D",
-            "#..###......###...P...#",
-            "#.....................#",
+            "#......................#",
+            "#......................#",
+            "#..........-...........#",
+            "#......................#",
+            "#......................D",
+            "D..........F...........#",
+            "#......................#",
+            "#......................#",
+            "#......................#",
+            "#......................#",
             "############D###########",
         ])
-        
+
+        r3 = GridRoom([
+            "####D#####......####D###",
+            "#........#......#......#",
+            "D........########......D",
+            "#.........E............#",
+            "#......................#",
+            "############D###########",
+        ])
+                
         # Boss room - specific boss placement
         r_boss = GridRoom([
             "###########D############",
@@ -417,7 +424,7 @@ class RoomManager:
         ])
         
         self.rooms = {
-            "combat": [r1],
+            "combat": [r1, r2, r3],
             "elite": [r_elite],
             "boss": [r_boss],
             "start": [r_start],

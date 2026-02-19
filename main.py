@@ -4,7 +4,7 @@ from entities import Player
 from components import Camera
 from core import player_input
 from core import World
-from core import RoomManager
+from rooms import RoomManager
 
 pygame.init()
 clock = pygame.time.Clock()
@@ -35,7 +35,6 @@ while run:
     if player.health <= 0:
         run = False
 
-    # etter verden – dørlogikk og rombytte
     room_manager.update()
 
     # draw

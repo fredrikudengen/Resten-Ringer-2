@@ -6,6 +6,7 @@ BLUE   = (0, 0, 255)
 YELLOW = (255, 255, 0)
 PURPLE = (255, 0, 255)
 ORANGE = (255, 128, 0)
+WHITE = (255, 255, 255)
 
 PLAYER_COLOR = (255, 255, 255)
 
@@ -16,6 +17,9 @@ PLAYER_HEALTH  = 5
 PLAYER_SIZE    = (50, 50)
 ALIVE          = True
 PLAYER_ATTACK_COOLDOWN = 500
+DASH_SPEED = 12          # Hvor fort man dasher (piksler per frame)
+DASH_DURATION = 150      # Hvor lenge dashen varer (ms)
+DASH_COOLDOWN = 1000     # Tid mellom hver dash (ms)
 
 # gameplay - projectile
 PROJECTILE_DAMAGE = 1
