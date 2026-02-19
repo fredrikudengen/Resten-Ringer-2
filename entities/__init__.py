@@ -10,8 +10,6 @@ from .enemy_types import (
     BruteEnemy,
     SwarmEnemy,
     BossEnemy,
-    spawn_mixed_wave,
-    spawn_boss_wave
 )
 
 __all__ = [

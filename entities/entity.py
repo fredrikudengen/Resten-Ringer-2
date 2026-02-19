@@ -42,7 +42,7 @@ class Entity:
         self.dps = 0  # Damage per second/hit
         self.hit = False  # Flag for når entity blir truffet
         
-    def update(self, dt_ms, *args, **kwargs):
+    def update(self, *args, **kwargs):
         """
         Oppdater entity logikk. Override i subklasser.
         

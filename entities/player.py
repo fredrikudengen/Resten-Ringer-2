@@ -45,6 +45,81 @@ class Player(Entity):
         self.dash_direction = pygame.math.Vector2(0, 0)
         self.dash_end_time = 0
         self.dash_cooldown_end = 0
+
+        # Skade / knockback
+        self.knockback_velocity = pygame.math.Vector2(0, 0)
+        self.hurt_invincible_until = 0  # Post-hit iframes
+
+    @property
+    def is_invincible(self):
+        """
+        True når spilleren ikke kan ta skade.
+        Dekker både dash-iframes og post-hit iframes.
+        """
+        now = pygame.time.get_ticks()
+        return self.is_dashing or now < self.hurt_invincible_until
+
+    def take_damage(self, amount, source_pos):
+        """
+        Ta skade fra en kilde med knockback.
+        Gjør ingenting hvis spilleren er invincible.
+
+        Args:
+            amount:     Mengde skade
+            source_pos: (x, y) posisjon til angriperen – brukes for knockback-retning
+        """
+        if self.is_invincible:
+            return
+
+        self.health -= amount
+
+        # Beregn knockback-retning bort fra kilden
+        direction = pygame.math.Vector2(
+            self.rect.centerx - source_pos[0],
+            self.rect.centery - source_pos[1]
+        )
+        if direction.length_squared() > 0:
+            direction = direction.normalize()
+        else:
+            direction = pygame.math.Vector2(1, 0)
+
+        self.knockback_velocity = direction * constants.PLAYER_KNOCKBACK_STRENGTH
+
+        # Start post-hit iframes
+        self.hurt_invincible_until = pygame.time.get_ticks() + constants.PLAYER_HIT_INVINCIBLE_MS
+
+        if self.health <= 0:
+            self.alive = False
+
+    def update_knockback(self, obstacles):
+        """
+        Bruk knockback-bevegelse med friksjon. Kalles hver frame.
+
+        Args:
+            obstacles: Liste av hindringer for kollisjonsjekk
+        """
+        if self.knockback_velocity.length_squared() < 0.5:
+            self.knockback_velocity.update(0, 0)
+            return
+
+        # Flytt x
+        old_x = self.rect.x
+        self.rect.x += int(self.knockback_velocity.x)
+        if any(self.rect.colliderect(obs) for obs in obstacles):
+            self.rect.x = old_x
+            self.knockback_velocity.x = 0
+
+        # Flytt y
+        old_y = self.rect.y
+        self.rect.y += int(self.knockback_velocity.y)
+        if any(self.rect.colliderect(obs) for obs in obstacles):
+            self.rect.y = old_y
+            self.knockback_velocity.y = 0
+
+        self.sync_pos_from_rect()
+
+        # Friksjon – demper knockback eksponentielt
+        self.knockback_velocity *= constants.PLAYER_KNOCKBACK_FRICTION
     
     def check_collision_obstacle(self, obstacles):
         """
@@ -176,7 +251,3 @@ class Player(Entity):
         else:
             color = self.color
         pygame.draw.rect(screen, color, draw_rect)
-    
-    @property
-    def is_invincible(self):
-        return self.is_dashing

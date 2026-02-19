@@ -12,38 +12,6 @@ from .entity import Entity
 
 
 class Enemy(Entity):
-    """
-    Base class for alle fiende-typer.
-    
-    Denne klassen inneholder all AI-logikk (tilstander, pathfinding, LOS, etc.)
-    som er felles for alle fiender. Subklasser trenger bare å sette sine egne stats.
-    
-    Arver basis-funksjonalitet fra Entity og legger til:
-    - AI tilstandsmaskin (idle, chase, search, attack)
-    - Pathfinding (A* og BFS)
-    - Line of sight
-    - Separation behavior
-    
-    For å lage en ny fiende-type:
-    ```python
-    class FastEnemy(Enemy):
-        def __init__(self, x, y):
-            super().__init__(
-                x, y,
-                speed=8,              # Rask!
-                health=30,            # Lav health
-                damage=5,
-                detection_radius=200,
-                attack_range=50,
-                color=(255, 100, 100)
-            )
-    ```
-    
-    Public API:
-      - move(player, obstacles, room, dt_ms): oppdaterer fienden ett frame
-      - draw(screen, camera): tegn fienden (inkl. valgfri debug-hitbox)
-      - Felter som andre systemer leser: rect, alive, health, state
-    """
 
     def __init__(
         self, 
@@ -54,27 +22,14 @@ class Enemy(Entity):
         detection_radius=None,
         attack_range=None,
         attack_cooldown=None,
+        attack_windup_ms=None,      
+        knockback_strength=None,
         size=None,
         color=None,
         wander_radius=None,
         wander_interval=None
     ):
-        """
-        Opprett fiende med konfigurerbare stats.
-
-        Args:
-            x, y: Startposisjon (piksel)
-            speed: Bevegelseshastighet (default: constants.ENEMY_SPEED)
-            health: Startliv (default: constants.ENEMY_HEALTH)
-            damage: Skade per angrep (default: constants.ENEMY_DPS)
-            detection_radius: Hvor langt fienden ser (default: constants.DETECTION_RADIUS)
-            attack_range: Nærhet for angrep (default: constants.ATTACK_RANGE)
-            attack_cooldown: Tid mellom angrep ms (default: constants.ENEMY_ATTACK_COOLDOWN)
-            size: (width, height) tuple (default: constants.ENEMY_SIZE)
-            color: RGB tuple (default: constants.GREEN)
-            wander_radius: Hvor langt fienden vandrer når idle (default: constants.ENEMY_WANDER_RADIUS_TILES)
-            wander_interval: Tid mellom wander ms (default: constants.ENEMY_WANDER_INTERVAL_MS)
-        """
+     
         # Bruk defaults fra constants hvis ikke spesifisert
         if size is None:
             size = constants.ENEMY_SIZE
@@ -85,7 +40,6 @@ class Enemy(Entity):
         if color is None:
             color = constants.GREEN
         
-        # Initialize Entity base class
         super().__init__(
             x, y,
             width=size[0],
@@ -95,16 +49,18 @@ class Enemy(Entity):
             color=color
         )
         
-        # Combat stats - konfigurerbare
         self.damage = damage if damage is not None else constants.ENEMY_DPS
         self.detection_radius = detection_radius if detection_radius is not None else constants.DETECTION_RADIUS
         self.attack_range = attack_range if attack_range is not None else constants.ATTACK_RANGE
         self.attack_cooldown_ms = attack_cooldown if attack_cooldown is not None else constants.ENEMY_ATTACK_COOLDOWN
+        self.attack_windup_ms = attack_windup_ms if attack_windup_ms is not None else constants.ENEMY_ATTACK_WINDUP_MS
+        self.knockback_strength = knockback_strength if knockback_strength is not None else constants.ENEMY_KNOCKBACK_STRENGTH
         
         # Combat state
         self.dps = self.damage  # Bakoverkompatibilitet
-        self.hit_timer = None   # i-frames slutt-tid (ms tick)
-        self.attack_cooldown_until = 0  # ms tick før neste angrep er lov
+        self.hit_timer = None
+        self.attack_cooldown_until = 0
+        self.attack_windup_until = 0  # ms-tick når windup er ferdig og slag lander
 
         # AI state machine
         # Mulige states: "idle" | "chase" | "search" | "attack" | "hurt" | "dead"
@@ -122,7 +78,6 @@ class Enemy(Entity):
         now = pygame.time.get_ticks()
         self.next_wander_at = now + random.randint(1200, 2500)
         
-        # Wander konfigurasjon
         self.WANDER_INTERVAL_MS = wander_interval if wander_interval is not None else constants.ENEMY_WANDER_INTERVAL_MS
         self.WANDER_RADIUS_TILES = wander_radius if wander_radius is not None else constants.ENEMY_WANDER_RADIUS_TILES
 
@@ -164,12 +119,11 @@ class Enemy(Entity):
         if self.hit_timer and (now - self.hit_timer > 500):
             self.hit_timer = None
 
-        # Sansing: avstand + line of sight (LOS)
+        # Sansing
         player_center = player.rect.center
         enemy_center = self.rect.center
         see_player = False
         
-        # Bruk konfigurerbar detection_radius
         dist2_to_player = self._dist2(*player_center, *enemy_center)
         if dist2_to_player <= self.detection_radius * self.detection_radius: 
             if self._has_los(room, *self._grid_pos(), *player._grid_pos()):                
@@ -187,7 +141,12 @@ class Enemy(Entity):
         elif self.state == "chase":
             self.wander_goal_g = None
             if see_player:
-                self._move_towards(player_center, obstacles, dt_ms)
+                if now >= self.attack_cooldown_until and self._dist2(*player_center, *enemy_center) <= (self.attack_range):
+                    print("Attacking!")
+                    self.state = "attack"
+                    self.attack_windup_until = now + self.attack_windup_ms
+                else:
+                    self._move_towards(player_center, obstacles, dt_ms)
             else:
                 if self.last_seen_pos:
                     self.state = "search"
@@ -195,10 +154,15 @@ class Enemy(Entity):
                 else:
                     self.state = "idle"
                     
-        if self.state == "attack":
-            player.health -= self.damage  # Bruk konfigurerbar damage
-            self.state = "chase"
-            self.attack_cooldown_until = now + self.attack_cooldown_ms
+        elif self.state == "attack":
+            print("In attack state")
+            if now >= self.attack_windup_until:
+                print("Attack windup done")
+                if dist2_to_player <= self.attack_range:
+                    print("Hit player")
+                    player.take_damage(self.damage, enemy_center)
+                self.state = "chase"
+                self.attack_cooldown_until = now + self.attack_cooldown_ms
 
         elif self.state == "search":
             if see_player:
@@ -237,50 +201,46 @@ class Enemy(Entity):
                 wait = random.randint(*self.WANDER_INTERVAL_MS)
                 self.next_wander_at = now + wait
     
-    def _see_player(self, player_center, enemy_center, obstacles, dt_ms, now, room):
+    def _see_player(self, player_center, enemy_center, obstacles, now):
         """Håndter chase state når spilleren er synlig."""
         # Detect if stuck
-        movement = self.pos.distance_to(self._last_pos)
-        self._last_pos.update(self.pos)
+        # movement = self.pos.distance_to(self._last_pos)
+        # self._last_pos.update(self.pos)
                     
-        if movement < 2.0:
-            self._stuck_counter += 1
-        else:
-            self._stuck_counter = max(0, self._stuck_counter - 1)
+        # if movement < 2.0:
+        #     self._stuck_counter += 1
+        # else:
+        #     self._stuck_counter = max(0, self._stuck_counter - 1)
                     
-        current_tile = self._grid_pos()
-        T = constants.TILE_SIZE
+        # current_tile = self._grid_pos()
+        # T = constants.TILE_SIZE
                     
-        # Check if reached waypoint
-        if self._chase_waypoint:
-            waypoint_center_px = self._center_of_tile(*self._chase_waypoint)
-            dist_to_waypoint = self.pos.distance_to(Vector2(waypoint_center_px))
+        # # Check if reached waypoint
+        # if self._chase_waypoint:
+        #     waypoint_center_px = self._center_of_tile(*self._chase_waypoint)
+        #     dist_to_waypoint = self.pos.distance_to(Vector2(waypoint_center_px))
                         
-            if dist_to_waypoint <= 20:
-                self._chase_waypoint = None
-                self._stuck_counter = 0
+        #     if dist_to_waypoint <= 20:
+        #         self._chase_waypoint = None
+        #         self._stuck_counter = 0
                     
-        # If stuck, calculate new path
-        if self._stuck_counter >= self._stuck_threshold and not self._chase_waypoint:
-            goal_g = (player_center[0] // T, player_center[1] // T)
-            next_tile_g = self._astar_next_step(room, goal_g, max_expansions=256)
+        # # If stuck, calculate new path
+        # if self._stuck_counter >= self._stuck_threshold and not self._chase_waypoint:
+        #     goal_g = (player_center[0] // T, player_center[1] // T)
+        #     next_tile_g = self._astar_next_step(room, goal_g, max_expansions=256)
                         
-            if next_tile_g and next_tile_g != current_tile:
-                self._chase_waypoint = next_tile_g
-            else:
-                self._stuck_counter = 0
+        #     if next_tile_g and next_tile_g != current_tile:
+        #         self._chase_waypoint = next_tile_g
+        #     else:
+        #         self._stuck_counter = 0
                     
-        # Movement: Use waypoint if available, otherwise go direct
-        if self._chase_waypoint:
-            target_px = self._center_of_tile(*self._chase_waypoint)
-            self._move_towards(target_px, obstacles, dt_ms)
-        else:
-            self._move_towards(player_center, obstacles, dt_ms)
+        # if self._chase_waypoint:
+        #     target_px = self._center_of_tile(*self._chase_waypoint)
+        #     self._move_towards(target_px, obstacles, now)
+        # else:        
+        print(self._dist2(*player_center, *enemy_center))
         
-        # Bruk konfigurerbar attack_range
-        if now >= self.attack_cooldown_until and self._dist2(*player_center, *enemy_center) <= self.attack_range * self.attack_range:
-            self.state = "attack"
-            self._spawn_debug_attack_rect_towards(player_center)
+
 
     def _search(self, obstacles, room, dt_ms, now):
         """Håndter search state - gå til siste kjente posisjon."""
@@ -312,30 +272,17 @@ class Enemy(Entity):
         elif self.state == "chase":
             color = tuple(min(c + 40, 255) for c in self.color)  # Lysere
         elif self.state == "search":
-            color = (200, 200, 0)
+            color = tuple(min(c - 40, 255) for c in self.color)
         elif self.state == "attack":
-            color = (255, 120, 0)
+            color = (255, 255, 255)
         elif self.state == "hurt":
-            color = (255, 0, 0)
+            color = constants.RED
         elif self.state == "dead":
             color = (100, 100, 100)
         else:
             color = self.color
 
         pygame.draw.rect(screen, color, draw_rect)
-
-        # Debug attack hitbox
-        if constants.DEBUG_SHOW_HITBOXES and self.debug_attack_rect:
-            if pygame.time.get_ticks() <= self.debug_attack_until:
-                surf = pygame.Surface(
-                    (self.debug_attack_rect.width, self.debug_attack_rect.height),
-                    pygame.SRCALPHA
-                )
-                surf.fill(constants.HITBOX_COLOR_RGBA)
-                ar = camera.apply(self.debug_attack_rect)
-                screen.blit(surf, (ar.x, ar.y))
-            else:
-                self.debug_attack_rect = None
 
     # ------------------------- INTERN LOGIKK -------------------------
     
@@ -560,19 +507,3 @@ class Enemy(Entity):
             path.append(node)
             node = came_from[node]
         return path[-1] if path else None
-
-    def _spawn_debug_attack_rect_towards(self, target_px):
-        """Lag debug attack hitbox mot mål."""
-        ex, ey, ew, eh = self.rect
-        ecx, ecy = self.rect.center
-        dx = target_px[0] - ecx
-        dy = target_px[1] - ecy
-
-        if abs(dx) >= abs(dy):
-            atk = pygame.Rect(ex + (ew if dx >= 0 else -ew), ey, ew, eh)
-        else:
-            atk = pygame.Rect(ex, ey + (eh if dy >= 0 else -eh), ew, eh)
-
-        if constants.DEBUG_SHOW_HITBOXES:
-            self.debug_attack_rect = atk
-            self.debug_attack_until = pygame.time.get_ticks() + constants.DEBUG_HITBOX_MS

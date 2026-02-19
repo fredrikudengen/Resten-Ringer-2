@@ -1,6 +1,6 @@
 import pygame
 import constants
-from entities import Enemy, spawn_boss_wave, spawn_mixed_wave
+from entities import Enemy
 from components import Particle
 import random
 
