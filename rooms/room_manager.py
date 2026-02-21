@@ -12,41 +12,23 @@ import copy
 
 
 class RoomManager:
-    """
-    Room manager med progression-basert enemy spawning.
-    
-    Spawn system:
-    - 'E' = Enemy basert på progression level
-    - 'F' = FastEnemy (forced)
-    - 'S' = SlowEnemy (forced)
-    - 'T' = TankEnemy (forced)
-    - 'B' = BossEnemy (forced)
-    - Osv. for full kontroll når nødvendig
-    
-    Progression basert på antall kills.
-    """
-    
+      
     def __init__(self, world, player, camera):
         self.world = world
         self.player = player
         self.camera = camera
 
-        self.rooms = []
-        self.doors = []
-        
-        # Progression tracking
-        self.total_kills = 0
-        self.rooms_cleared = 0
-        self.progression_level = 1  # 1-10
+        self.rooms             = []
+        self.doors             = []
+        self.total_kills       = 0
+        self.rooms_cleared     = 0
+        self.progression_level = 1 
 
         self._build_demo_grid_rooms()
         self.current_room_type = "start"
         self._load_room(self.rooms[self.current_room_type][0], entry_side="N")
 
     def update(self):
-        # Track kills for progression
-        previous_enemy_count = len(self.world.enemies)
-        
         cleared = (len(self.world.enemies) == 0)
         for d in self.doors:
             d["door"].set_open(cleared)
@@ -66,7 +48,6 @@ class RoomManager:
             d["door"].draw(screen, self.camera)
 
     def _go_to_next_room(self, entry_side):
-        # Update progression on room clear
         self.rooms_cleared += 1
         self._update_progression_level()
         
@@ -213,7 +194,7 @@ class RoomManager:
             return random.choice([FastEnemy, SlowEnemy, ScoutEnemy])
         
         elif level == 5:
-            # Mid-game - introduce AssassinEnemy
+            # Introduce AssassinEnemy
             return random.choice([
                 FastEnemy, SlowEnemy, ScoutEnemy, AssassinEnemy
             ])
@@ -231,14 +212,12 @@ class RoomManager:
             ])
         
         elif level == 8:
-            # Late game - mostly hard enemies
             return random.choice([
                 AssassinEnemy, AssassinEnemy, 
                 TankEnemy, BruteEnemy
             ])
         
         elif level == 9:
-            # Pre-boss - elite enemies
             return random.choice([
                 TankEnemy, TankEnemy,
                 BruteEnemy, BruteEnemy,
@@ -246,20 +225,11 @@ class RoomManager:
             ])
         
         else:  # level >= 10
-            # End game - hardest enemies
             return random.choice([
                 TankEnemy, BruteEnemy, BruteEnemy, AssassinEnemy
             ])
     
     def get_enemy_pool_for_level(self, level):
-        """
-        Get the pool of available enemy types for a given level.
-        
-        Useful for debugging or UI display.
-        
-        Returns:
-            list of enemy class names
-        """
         pools = {
             1: ["SwarmEnemy", "FastEnemy"],
             2: ["SwarmEnemy", "FastEnemy"],
@@ -280,13 +250,11 @@ class RoomManager:
         return (r.x, r.y, r.w, r.h)
 
     def _sync_door_blockers(self):
-        # Remove all door blockers
         door_keys = {self._rect_key(d["door"].rect) for d in self.doors}
         self.world.obstacles = [
             r for r in self.world.obstacles
             if self._rect_key(r) not in door_keys
         ]
-        # Add blockers for closed doors
         existing = {self._rect_key(r) for r in self.world.obstacles}
         for d in self.doors:
             if not d["door"].is_open:
@@ -306,14 +274,12 @@ class RoomManager:
         if not room.doors:
             return (constants.TILE_SIZE * 2, constants.TILE_SIZE * 2)
 
-        # Find candidates on desired side
         candidates = []
         for (gx, gy) in room.doors:
             s = self.door_side(room, gx, gy)
             if s == want_side:
                 candidates.append((gx, gy))
 
-        # Fallback: use first door if none match
         gx, gy = (candidates[0] if candidates else room.doors[0])
 
         # Spawn one tile into room
@@ -326,7 +292,6 @@ class RoomManager:
         elif want_side == "N": py += T
         elif want_side == "S": py -= T
 
-        # Center player roughly on tile
         return (px + (T - self.player.rect.width)//2, py + (T - self.player.rect.height)//2)
 
     # ========== ROOM DEFINITIONS ==========
@@ -348,8 +313,8 @@ class RoomManager:
         r1 = GridRoom([
             "###########D############",
             "#......................#",
+            "#.......P..............#",
             "#......................#",
-            "#..........-...........#",
             "#......................#",
             "#......................D",
             "D..........F...........#",
@@ -364,12 +329,12 @@ class RoomManager:
             "###########D############",
             "#......................#",
             "#......................#",
-            "#..........-...........#",
+            "#......................#",
             "#......................#",
             "#......................D",
             "D..........F...........#",
             "#......................#",
-            "#......................#",
+            "#.................P....#",
             "#......................#",
             "#......................#",
             "############D###########",
@@ -378,7 +343,7 @@ class RoomManager:
         r3 = GridRoom([
             "####D#####......####D###",
             "#........#......#......#",
-            "D........########......D",
+            "D...P....########......D",
             "#.........E............#",
             "#......................#",
             "############D###########",

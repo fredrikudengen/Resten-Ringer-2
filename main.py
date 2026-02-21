@@ -5,6 +5,7 @@ from components import Camera
 from core import player_input
 from core import World
 from rooms import RoomManager
+from ui import HUD
 
 pygame.init()
 clock = pygame.time.Clock()
@@ -25,7 +26,7 @@ while run:
             run = False
 
     # update
-    player.update_buffs()
+    player.update_powerups()
     player_input(player, world.obstacles, world, camera)
     camera.update(player.rect)
 
@@ -37,11 +38,15 @@ while run:
 
     room_manager.update()
 
+    hud = HUD()
+    player._hud = hud
+
     # draw
     screen.fill(constants.BLACK)
     world.draw(screen, camera)
     room_manager.draw(screen)  
     player.draw(screen, camera)
+    hud.draw(screen, player)
 
     pygame.display.flip()
     clock.tick(60)

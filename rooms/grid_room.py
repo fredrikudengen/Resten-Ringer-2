@@ -8,6 +8,7 @@ CHAR_TO_TILE = {
 }
 
 class GridRoom:
+    
     def __init__(self, lines):
         """
         lines: list[str], like:
@@ -43,19 +44,19 @@ class GridRoom:
                 elif ch == 'T':
                     self.terrain[y][x] = constants.TILE_FLOOR
                     self.spawns[y][x] = 'tank_enemy'
-                elif ch == 'K':  # Scout (K for sKout)
+                elif ch == 'K':  
                     self.terrain[y][x] = constants.TILE_FLOOR
                     self.spawns[y][x] = 'scout_enemy'
                 elif ch == 'A':
                     self.terrain[y][x] = constants.TILE_FLOOR
                     self.spawns[y][x] = 'assassin_enemy'
-                elif ch == 'R':  # Brute (R for bRute)
+                elif ch == 'R':  
                     self.terrain[y][x] = constants.TILE_FLOOR
                     self.spawns[y][x] = 'brute_enemy'
-                elif ch == 'W':  # Swarm (W for sWarm)
+                elif ch == 'W':  
                     self.terrain[y][x] = constants.TILE_FLOOR
                     self.spawns[y][x] = 'swarm_enemy'
-                elif ch == 'B':  # Boss
+                elif ch == 'B':  
                     self.terrain[y][x] = constants.TILE_FLOOR
                     self.spawns[y][x] = 'boss_enemy'
                 elif ch == 'S':

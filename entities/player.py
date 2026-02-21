@@ -2,16 +2,7 @@ import pygame
 import constants
 from .entity import Entity
 
-
 class Player(Entity):
-    """
-    Spilleren - styrt av bruker input.
-    
-    Arver basis-funksjonalitet fra Entity og legger til:
-    - Angrep med cooldown
-    - Buff-system
-    - Spesialisert kollisjonshåndtering
-    """
     
     def __init__(self, x, y):
         """
@@ -32,23 +23,28 @@ class Player(Entity):
         self.dps = constants.PLAYER_DPS
         
         # Angrep / debug
-        self.attack_cooldown = constants.PLAYER_ATTACK_COOLDOWN
-        self.playerAttack = False
-        self.debug_attack_rect = None
+        self.attack_cooldown    = constants.PLAYER_ATTACK_COOLDOWN
+        self.playerAttack       = False
+        self.debug_attack_rect  = None
         self.debug_attack_until = 0
 
         # Buffs system
         self.buff_timers = {}
 
         # Dash
-        self.is_dashing = False
-        self.dash_direction = pygame.math.Vector2(0, 0)
-        self.dash_end_time = 0
+        self.is_dashing        = False
+        self.dash_direction    = pygame.math.Vector2(0, 0)
+        self.dash_end_time     = 0
         self.dash_cooldown_end = 0
 
         # Skade / knockback
-        self.knockback_velocity = pygame.math.Vector2(0, 0)
-        self.hurt_invincible_until = 0  # Post-hit iframes
+        self.knockback_velocity    = pygame.math.Vector2(0, 0)
+        self.hurt_invincible_until = 0  
+
+        # XP og level
+        self.xp    = 0
+        self.level = 1
+        self._hud  = None   # Settes av main.py: player._hud = hud
 
     @property
     def is_invincible(self):
@@ -58,38 +54,42 @@ class Player(Entity):
         """
         now = pygame.time.get_ticks()
         return self.is_dashing or now < self.hurt_invincible_until
-
-    def take_damage(self, amount, source_pos):
+    
+    @property
+    def xp_to_next(self) -> int:
         """
-        Ta skade fra en kilde med knockback.
-        Gjør ingenting hvis spilleren er invincible.
+        XP som trengs for neste level.
+        Formelen skalerer progressivt: 100, 150, 225, …
+        """
+        return int(constants.XP_BASE * (constants.XP_SCALE ** (self.level - 1)))
+
+    # ── XP / Level ────────────────────────────────────────
+
+    def gain_xp(self, amount: int):
+        """
+        Gi spilleren XP. Håndterer level-up automatisk og varsler HUD.
 
         Args:
-            amount:     Mengde skade
-            source_pos: (x, y) posisjon til angriperen – brukes for knockback-retning
+            amount: Mengde XP å legge til
         """
-        if self.is_invincible:
+        if amount <= 0:
             return
 
-        self.health -= amount
+        self.xp += amount
 
-        # Beregn knockback-retning bort fra kilden
-        direction = pygame.math.Vector2(
-            self.rect.centerx - source_pos[0],
-            self.rect.centery - source_pos[1]
-        )
-        if direction.length_squared() > 0:
-            direction = direction.normalize()
-        else:
-            direction = pygame.math.Vector2(1, 0)
+        while self.xp >= self.xp_to_next:
+            self.xp -= self.xp_to_next
+            self._level_up()
 
-        self.knockback_velocity = direction * constants.PLAYER_KNOCKBACK_STRENGTH
+    def _level_up(self):
+        """Håndter ett level-opp: oppdater stats og varsle HUD."""
+        self.level += 1
 
-        # Start post-hit iframes
-        self.hurt_invincible_until = pygame.time.get_ticks() + constants.PLAYER_HIT_INVINCIBLE_MS
+        bonus_hp = constants.XP_HP_BONUS_PER_LEVEL
+        self.health = min(self.health + bonus_hp, constants.PLAYER_HEALTH + bonus_hp * self.level)
 
-        if self.health <= 0:
-            self.alive = False
+        if self._hud is not None:
+            self._hud.notify_levelup(self.level)
 
     def update_knockback(self, obstacles):
         """
@@ -118,7 +118,7 @@ class Player(Entity):
 
         self.sync_pos_from_rect()
 
-        # Friksjon – demper knockback eksponentielt
+        # Demping
         self.knockback_velocity *= constants.PLAYER_KNOCKBACK_FRICTION
     
     def check_collision_obstacle(self, obstacles):
@@ -143,7 +143,7 @@ class Player(Entity):
                 return True
         return False
     
-    def apply_buff(self, powerup):
+    def apply_powerup(self, powerup):
         """
         Aktiver en power-up buff.
         
@@ -161,7 +161,7 @@ class Player(Entity):
             self.dps += 1
             self.buff_timers[powerup] = now
             
-    def update_buffs(self):
+    def update_powerups(self):
         """
         Oppdater og fjern utgåtte buffs.
         Kjøres hver frame.
@@ -174,7 +174,6 @@ class Player(Entity):
             if now - start >= duration:
                 expired.append(name)
 
-        # Fjern effekt av utgåtte buffs
         for name in expired:
             if name == 'speed_boost':
                 self.speed -= 3
@@ -198,9 +197,9 @@ class Player(Entity):
         if direction.length_squared() == 0:
             return  
 
-        self.is_dashing = True
-        self.dash_direction = direction.normalize()
-        self.dash_end_time = now + constants.DASH_DURATION
+        self.is_dashing        = True
+        self.dash_direction    = direction.normalize()
+        self.dash_end_time     = now + constants.DASH_DURATION
         self.dash_cooldown_end = now + constants.DASH_COOLDOWN
     
     def update_dash(self, obstacles):
@@ -221,12 +220,14 @@ class Player(Entity):
         dx = int(self.dash_direction.x * constants.DASH_SPEED)
         dy = int(self.dash_direction.y * constants.DASH_SPEED)
 
+        # collision check x
         old_x = self.rect.x
         self.rect.x += dx
         if any(self.rect.colliderect(obs) for obs in obstacles):
             self.rect.x = old_x
             self.is_dashing = False
 
+        # collision check y
         old_y = self.rect.y
         self.rect.y += dy
         if any(self.rect.colliderect(obs) for obs in obstacles):

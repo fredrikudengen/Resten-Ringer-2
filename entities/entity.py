@@ -2,20 +2,7 @@ import pygame
 from pygame.math import Vector2
 import constants
 
-
 class Entity:
-    """
-    Base-klasse for alle spillobjekter med fysikk og kollisjon.
-    
-    Alle entities har:
-    - Posisjon (subpixel via Vector2)
-    - Rektangel for kollisjon
-    - Helse og status
-    - Hastighet
-    - Grunnleggende bevegelse og kollisjon
-    
-    Duck typing: Hvis det beveger seg som en entity, er det en entity!
-    """
     
     def __init__(self, x, y, width, height, speed=0, health=100, color=(255, 255, 255)):
         """
@@ -28,19 +15,14 @@ class Entity:
             health: Startliv
             color: Farge for tegning
         """
-        self.rect = pygame.Rect(x, y, width, height)
-        # Subpixel posisjon (senter) for smooth bevegelse
-        self.pos = Vector2(self.rect.center)
-        
-        # Status
+        self.rect   = pygame.Rect(x, y, width, height)
+        self.pos    = Vector2(self.rect.center)
         self.health = health
-        self.alive = True
-        self.speed = speed
-        self.color = color
-        
-        # Combat
-        self.dps = 0  # Damage per second/hit
-        self.hit = False  # Flag for når entity blir truffet
+        self.alive  = True
+        self.speed  = speed
+        self.color  = color
+        self.dps    = 0  
+        self.hit    = False  
         
     def update(self, *args, **kwargs):
         """
@@ -140,7 +122,3 @@ class Entity:
         """
         dx, dy = a1 - b1, a2 - b2
         return dx * dx + dy * dy
-    
-    def __repr__(self):
-        """Debug-vennlig string representasjon."""
-        return f"{self.__class__.__name__}(pos={self.pos}, health={self.health}, alive={self.alive})"

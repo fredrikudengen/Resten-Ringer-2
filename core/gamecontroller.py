@@ -57,8 +57,10 @@ def player_input(player, obstacles, world, camera):
                 mouse_pos_world[1] - player.rect.centery
             )
         player.start_dash(dash_dir)
-
+    
+    player.update_knockback(obstacles)
     player.update_dash(obstacles)
+    player.update_powerups()
     
     if player.health <= 0:
         player.alive = False
