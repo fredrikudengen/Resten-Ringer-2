@@ -150,6 +150,9 @@ class Player(Entity):
         Args:
             powerup: String identifier for buff-type
         """
+        if powerup in self.buff_timers:
+            return
+            
         now = pygame.time.get_ticks()
         if powerup == 'speed_boost':
             self.speed += 3

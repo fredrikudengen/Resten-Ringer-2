@@ -45,7 +45,7 @@ class World:
 
             for enemy in self.enemies:
                 if projectile.rect.colliderect(enemy.rect):
-                    enemy.health -= projectile.damage
+                    enemy.health -= player.dps
                     enemy.hit = True
                     projectile.alive = False
                     break

@@ -7,7 +7,6 @@ class Projectile:
             self.pos = Vector2(pos)
             self.direction = direction.normalize()
             self.speed = constants.PROJECTILE_SPEED
-            self.damage = constants.PROJECTILE_DAMAGE
             self.radius = 4
             self.alive = True
 
