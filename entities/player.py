@@ -88,6 +88,13 @@ class Player(Entity):
         bonus_hp = constants.XP_HP_BONUS_PER_LEVEL
         self.health = min(self.health + bonus_hp, constants.PLAYER_HEALTH + bonus_hp * self.level)
 
+        bonus_dps = constants.XP_DPS_BONUS_PER_LEVEL
+        self.dps = min(self.dps + bonus_dps, constants.PLAYER_DPS + bonus_dps * self.level)
+
+        bonus_speed = constants.XP_SPEED_BONUS_PER_LEVEL
+        self.speed = min(self.speed + bonus_speed, constants.PLAYER_SPEED + bonus_speed * self.level)
+
+
         if self._hud is not None:
             self._hud.notify_levelup(self.level)
 
@@ -152,7 +159,7 @@ class Player(Entity):
         """
         if powerup in self.buff_timers:
             return
-            
+
         now = pygame.time.get_ticks()
         if powerup == 'speed_boost':
             self.speed += 3

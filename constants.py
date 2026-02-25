@@ -35,6 +35,8 @@ ENEMY_WANDER_INTERVAL_MS = (1200, 2500)   # (min, max) pause
 XP_BASE               = 100     # XP til level 2
 XP_SCALE              = 1.5     # Skalering per level (100 → 150 → 225 …)
 XP_HP_BONUS_PER_LEVEL = 5       # Ekstra max-HP per level
+XP_DPS_BONUS_PER_LEVEL = 2
+XP_SPEED_BONUS_PER_LEVEL = 1
 
 # gameplay - door
 OPPOSITE = {"N":"S","S":"N","E":"W","W":"E"} 
