@@ -4,35 +4,16 @@ import constants
 
 class Entity:
     
-    def __init__(self, x, y, width, height, speed=0, health=100, color=(255, 255, 255)):
+    def __init__(self, x, y):
         """
         Initialiser entity.
         
         Args:
             x, y: Startposisjon (top-left)
             width, height: Størrelse
-            speed: Bevegelseshastighet (piksler per sekund)
-            health: Startliv
-            color: Farge for tegning
-        """
-        self.rect   = pygame.Rect(x, y, width, height)
-        self.pos    = Vector2(self.rect.center)
-        self.health = health
-        self.alive  = True
-        self.speed  = speed
-        self.color  = color
-        self.dps    = 0  
-        self.hit    = False  
-        
-    def update(self, *args, **kwargs):
-        """
-        Oppdater entity logikk. Override i subklasser.
-        
-        Args:
-            dt_ms: Delta time i millisekunder
-        """
-        if self.health <= 0:
-            self.alive = False
+            """
+        self.rect = pygame.Rect(x, y, self.width, self.height)
+        self.pos  = Vector2(self.rect.center) 
     
     def draw(self, screen, camera):
         """

@@ -11,15 +11,14 @@ class Player(Entity):
         Args:
             x, y: Startposisjon
         """
-        super().__init__(
-            x, y,
-            width=constants.PLAYER_SIZE[0],
-            height=constants.PLAYER_SIZE[1],
-            speed=constants.PLAYER_SPEED,
-            health=constants.PLAYER_HEALTH,
-            color=constants.PLAYER_COLOR
-        )
-        
+        self.width=constants.PLAYER_SIZE[0]
+        self.height=constants.PLAYER_SIZE[1]
+
+        super().__init__(x, y)
+
+        self.speed=constants.PLAYER_SPEED
+        self.health=constants.PLAYER_HEALTH
+        self.color=constants.PLAYER_COLOR
         self.dps = constants.PLAYER_DPS
         
         # Angrep / debug
@@ -135,63 +134,26 @@ class Player(Entity):
         """
         return self.check_collision(obstacles)
     
-    def check_collision_enemy(self, enemies):
-        """
-        Sjekk kollisjon med fiender.
-        
-        Args:
-            enemies: Liste av Enemy objekter
-            
-        Returns:
-            bool: True hvis kollisjon med noen fiende
-        """
-        for enemy in enemies:
-            if self.check_collision_entity(enemy):
-                return True
-        return False
-    
+    BUFF_VALUES = {
+    'speed_boost':  ('speed',  3),
+    'attack_boost': ('dps',    1),
+    'shield_boost': ('health', 2),
+}
+
     def apply_powerup(self, powerup):
-        """
-        Aktiver en power-up buff.
-        
-        Args:
-            powerup: String identifier for buff-type
-        """
         if powerup in self.buff_timers:
             return
+        attr, value = self.BUFF_VALUES[powerup]
+        setattr(self, attr, getattr(self, attr) + value)
+        self.buff_timers[powerup] = pygame.time.get_ticks()
 
-        now = pygame.time.get_ticks()
-        if powerup == 'speed_boost':
-            self.speed += 3
-            self.buff_timers[powerup] = now
-        elif powerup == 'shield_boost':
-            self.health += 2
-            self.buff_timers[powerup] = now
-        elif powerup == 'attack_boost':
-            self.dps += 1
-            self.buff_timers[powerup] = now
-            
     def update_powerups(self):
-        """
-        Oppdater og fjern utgåtte buffs.
-        Kjøres hver frame.
-        """
         now = pygame.time.get_ticks()
-        expired = []
-        
         for name, start in list(self.buff_timers.items()):
-            duration = constants.BUFF_DURATIONS.get(name, 0)
-            if now - start >= duration:
-                expired.append(name)
-
-        for name in expired:
-            if name == 'speed_boost':
-                self.speed -= 3
-            elif name == 'attack_boost':
-                self.dps -= 1
-            elif name == 'shield_boost':
-                self.health -= 2
-            self.buff_timers.pop(name)
+            if now - start >= constants.BUFF_DURATIONS.get(name, 0):
+                attr, value = self.BUFF_VALUES[name]
+                setattr(self, attr, getattr(self, attr) - value)
+                del self.buff_timers[name]
 
     def start_dash(self, direction: pygame.math.Vector2):
         """

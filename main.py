@@ -31,7 +31,7 @@ while run:
     camera.update(player.rect)
 
     dt_ms = clock.get_time()
-    world.update(dt_ms, player, camera)
+    world.update(dt_ms, player)
     
     if player.health <= 0:
         run = False
