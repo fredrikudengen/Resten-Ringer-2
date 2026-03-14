@@ -43,7 +43,7 @@ class RoomManager:
 
         if self._room_cleared:
             for d in self.doors:
-                if self.player.rect.colliderect(d.door.rect):
+                if self.player.rect.colliderect(d.door.trigger):
                     entry_side = self._door_side(self.world.current_room, *d.grid_pos)
                     self._go_to_next_room(entry_side)
                     break
@@ -63,7 +63,7 @@ class RoomManager:
         else:
             candidates = (
                 self.rooms["reward"]
-                if random.random() < 0.25
+                if random.random() < 0.10
                 else self.rooms["combat"]
             )
 
@@ -76,7 +76,7 @@ class RoomManager:
         room.reset_spawns()
 
         self._place_obstacles(room)
-        self._place_spawns(room)
+        self._place_spawns(room)            
         self._place_player(room, entry_side)
 
         for d in self.doors:
@@ -115,6 +115,12 @@ class RoomManager:
             self.doors.append(DoorEntry(door=Door(x, y), grid_pos=(gx, gy)))
 
     def _place_player(self, room, entry_side):
+        if room.room_type == "start":
+            cx = (room.cols * constants.TILE_SIZE) // 2 - self.player.rect.width  // 2
+            cy = (room.rows * constants.TILE_SIZE) // 2 - self.player.rect.height // 2
+            self.player.rect.topleft = (cx, cy)
+            return
+
         spawn_side = constants.OPPOSITE.get(entry_side) if entry_side else None
         if spawn_side:
             self.player.rect.topleft = self._pick_spawn_near_door(room, spawn_side)
