@@ -1,10 +1,12 @@
 import pygame
 from core import constants
 from .entity import Entity
+from gamestates import char_select
 
 class Player(Entity):
     
-    def __init__(self, x, y):
+    def __init__(self, selected_character: int = 0):
+        char = char_select.CHARACTERS[selected_character]
         """
         Initialiser spiller.
         
@@ -12,13 +14,16 @@ class Player(Entity):
             x, y: Startposisjon
         """
         
+        self.health = char.get('health', constants.PLAYER_HEALTH)
+        self.speed  = char.get('speed',  constants.PLAYER_SPEED)
         self.width=constants.PLAYER_SIZE[0]
         self.height=constants.PLAYER_SIZE[1]
 
-        super().__init__(x, y)
+        super().__init__(x=0, y=0)
 
-        self.speed=constants.PLAYER_SPEED
-        self.health=constants.PLAYER_HEALTH
+        self.selected_character = selected_character
+        self.char_name = char['name']
+
         self.color=constants.PLAYER_COLOR
         self.dps = constants.PLAYER_DPS
         
@@ -139,7 +144,7 @@ class Player(Entity):
             if now - start >= constants.BUFF_DURATIONS.get(name, 0):
                 attr, value = constants.BUFF_VALUES[name]
                 setattr(self, attr, getattr(self, attr) - value)
-                del constants.buff_timers[name]
+                del self.buff_timers[name]
 
     def start_dash(self, direction: pygame.math.Vector2):
         """

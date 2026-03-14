@@ -1,0 +1,107 @@
+from __future__ import annotations
+
+import pygame
+
+from .basestate import BaseState, State
+from .main_menu import MainMenuState
+from .char_select import CharacterSelectState
+from .playing import PlayingState
+from .paused import PausedState
+from .game_over import GameOverState
+
+
+class StateMachine:
+    """
+    Central state manager. Owns the current state and all shared game objects.
+
+    Shared game objects (populated by start_game()):
+        self.world        — World instance
+        self.player       — Player instance
+        self.room_manager — RoomManager instance
+        self.hud          — HUD instance
+        self.camera       — Camera instance
+
+    Usage in main.py:
+        sm = StateMachine(screen)
+        while sm.running:
+            dt = clock.tick(60)
+            for event in pygame.event.get():
+                sm.handle_event(event)
+            sm.update(dt)
+            sm.draw()
+            pygame.display.flip()
+    """
+
+    def __init__(self, screen: pygame.Surface):
+        self.screen             = screen
+        self.running            = True
+        self.selected_character = 0   # index into character_select.CHARACTERS
+
+        # Game objects — set by start_game()
+        self.world        = None
+        self.player       = None
+        self.room_manager = None
+        self.hud          = None
+        self.camera       = None
+
+        self._states: dict[State, BaseState] = {}
+        self._current: State = State.MAIN_MENU
+
+        # Menu states are safe to build immediately
+        self._states[State.MAIN_MENU]        = MainMenuState(self)
+        self._states[State.CHARACTER_SELECT] = CharacterSelectState(self)
+
+    # ------------------------------------------------------------------
+    # Public interface
+    # ------------------------------------------------------------------
+
+    def handle_event(self, event: pygame.event.Event):
+        if event.type == pygame.QUIT:
+            self.running = False
+            return
+        state = self._states.get(self._current)
+        if state:
+            state.handle_event(event)
+
+    def update(self, dt: int):
+        state = self._states.get(self._current)
+        if state:
+            state.update(dt)
+
+    def draw(self):
+        state = self._states.get(self._current)
+        if state:
+            state.draw(self.screen)
+
+    def transition(self, new_state: State):
+        self._current = new_state
+        state = self._states.get(new_state)
+        if state:
+            state.on_enter()
+
+    def start_game(self):
+        """
+        Initialise all game objects and switch to Playing.
+        Called both on a fresh start and on restart.
+        """
+        from core.world          import World
+        from entities.player     import Player
+        from core.camera         import Camera
+        from rooms.room_manager  import RoomManager
+        from core                  import HUD
+
+        self.world        = World()
+        self.player       = Player(selected_character=self.selected_character)
+        self.camera       = Camera(self.screen.get_width(), self.screen.get_height())
+        self.hud          = HUD()
+        self.room_manager = RoomManager(self.world, self.player, self.camera)
+
+        playing   = PlayingState(self)
+        game_over = GameOverState(self)
+        paused    = PausedState(self, playing)
+
+        self._states[State.PLAYING]   = playing
+        self._states[State.GAME_OVER] = game_over
+        self._states[State.PAUSED]    = paused
+
+        self.transition(State.PLAYING)

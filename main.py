@@ -1,54 +1,22 @@
 import pygame
-from core import constants
-from entities import Player
-from core import Camera
-from controller import player_input
-from core import World
-from rooms import RoomManager
-from core import HUD
+from gamestates import StateMachine
 
 pygame.init()
-clock = pygame.time.Clock()
 
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-screen_width, screen_height = screen.get_size()
+pygame.display.set_caption("Dungeon Crawler")
+clock = pygame.time.Clock()
 
-player = Player(screen_width // 2, screen_height // 2)
-camera = Camera(screen_width, screen_height)
+sm = StateMachine(screen)
 
-world = World()
-room_manager = RoomManager(world, player, camera)
+while sm.running:
+    dt = clock.tick(60)
 
-run = True
-while run:
     for event in pygame.event.get():
-        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
-            run = False
+        sm.handle_event(event)
 
-    # update
-    player.update_powerups()
-    player_input(player, world.obstacles, world, camera)
-    camera.update(player.rect)
-
-    dt_ms = clock.get_time()
-    world.update(dt_ms, player)
-    
-    if player.health <= 0:
-        run = False
-
-    room_manager.update()
-
-    hud = HUD()
-    player._hud = hud
-
-    # draw
-    screen.fill(constants.BLACK)
-    world.draw(screen, camera)
-    room_manager.draw(screen)  
-    player.draw(screen, camera)
-    hud.draw(screen, player)
-
+    sm.update(dt)
+    sm.draw()
     pygame.display.flip()
-    clock.tick(60)
 
 pygame.quit()
