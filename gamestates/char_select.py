@@ -6,23 +6,27 @@ from .basestate import BaseState, State
 from .ui_helpers import Button, draw_panel, C
 
 
-# Placeholder character definitions — expand when real characters exist.
 CHARACTERS: list[dict] = [
     {
-        'name':        'GUNNER',
+        'name':        'Fredrik',
         'description': 'Balanced stats. Good starting weapon.',
         'color':       (100, 180, 255),
     },
     {
-        'name':        'ROGUE',
+        'name':        'Johanne',
         'description': 'Fast dash. Lower health.',
         'color':       (180, 100, 255),
     },
     {
-        'name':        'TANK',
+        'name':        'Jonathan',
         'description': 'High HP. Slower movement.',
         'color':       (255, 160, 60),
     },
+    {
+        'name':        'Leila',
+        'description': 'IDK yet.',
+        'color':       (100, 180, 255),
+    }
 ]
 
 _CARD_W = 160
