@@ -124,7 +124,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
     def _idle(self, room, obstacles, dt_ms, now):
         """Håndter idle state med micro-wander."""
         if self.wander_goal_g is not None:
-            next_tile_g = self._micro_wander(room, self.wander_goal_g, self.WANDER_RADIUS_TILES)
+            next_tile_g = self._micro_wander(room, self.wander_goal_g, self.wander_radius)
             if next_tile_g:
                 target_px = self._center_of_tile(*next_tile_g)
                 wander_end = self._move_towards(target_px, obstacles, dt_ms)

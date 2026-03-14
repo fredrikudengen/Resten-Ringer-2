@@ -5,34 +5,12 @@ import pygame
 from core import constants
 
 
-CHAR_TO_TILE: dict[str, int] = {
-    '.': constants.TILE_FLOOR,
-    '#': constants.TILE_WALL,
-}
-
-CHAR_TO_SPAWN: dict[str, str] = {
-    'E': 'enemy',
-    'F': 'fast_enemy',
-    'L': 'slow_enemy',
-    'T': 'tank_enemy',
-    'K': 'scout_enemy',
-    'A': 'assassin_enemy',
-    'R': 'brute_enemy',
-    'W': 'swarm_enemy',
-    'B': 'boss_enemy',
-    'S': 'speed_powerup',
-    'C': 'attack_powerup',
-    'H': 'shield_powerup',
-    'D': 'door',
-}
-
-
 class GridRoom:
     """
     A room defined by a list of strings where each character represents a tile.
     """
 
-    def __init__(self, lines: list[str], room_type: str = "combat"):
+    def __init__(self, lines: list[str], room_type):
         self.room_type = room_type
         self.rows = len(lines)
         self.cols = max(len(row) for row in lines)
@@ -49,9 +27,9 @@ class GridRoom:
 
         for y, row in enumerate(lines):
             for x, ch in enumerate(row):
-                self.terrain[y][x] = CHAR_TO_TILE.get(ch, constants.TILE_FLOOR)
-                if ch in CHAR_TO_SPAWN:
-                    self.spawns[y][x] = CHAR_TO_SPAWN[ch]
+                self.terrain[y][x] = constants.CHAR_TO_TILE.get(ch, constants.TILE_FLOOR)
+                if ch in constants.CHAR_TO_SPAWN:
+                    self.spawns[y][x] = constants.CHAR_TO_SPAWN[ch]
                     if ch == 'D':
                         self.doors.append((x, y))
 

@@ -1,3 +1,10 @@
+from entities import (
+    Enemy, FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy,
+    AssassinEnemy, BruteEnemy, SwarmEnemy, BossEnemy,
+)
+from components import Speed_Powerup, Attack_Powerup, Shield_Powerup
+
+
 # colors
 BLACK  = (0, 0, 0)
 RED    = (255, 0, 0)
@@ -62,4 +69,44 @@ DOOR_HEIGHT = TILE_SIZE
 COLOR_DOOR_CLOSED  = (150, 50,  50)
 COLOR_DOOR_OPEN    = (50,  150, 50)
 COLOR_DOOR_OUTLINE = (0,   0,   0)
+
+# grid room
+CHAR_TO_TILE: dict[str, int] = {
+    '.': TILE_FLOOR,
+    '#': TILE_WALL,
+}
+
+CHAR_TO_SPAWN: dict[str, str] = {
+    'E': 'enemy',
+    'F': 'fast_enemy',
+    'L': 'slow_enemy',
+    'T': 'tank_enemy',
+    'K': 'scout_enemy',
+    'A': 'assassin_enemy',
+    'R': 'brute_enemy',
+    'W': 'swarm_enemy',
+    'B': 'boss_enemy',
+    'S': 'speed_powerup',
+    'C': 'attack_powerup',
+    'H': 'shield_powerup',
+    'D': 'door',
+}
+
+# room manager
+_TAG_TO_ENEMY: dict[str, type[Enemy]] = {
+    'fast_enemy':     FastEnemy,
+    'slow_enemy':     SlowEnemy,
+    'tank_enemy':     TankEnemy,
+    'scout_enemy':    ScoutEnemy,
+    'assassin_enemy': AssassinEnemy,
+    'brute_enemy':    BruteEnemy,
+    'swarm_enemy':    SwarmEnemy,
+    'boss_enemy':     BossEnemy,
+}
+
+_TAG_TO_POWERUP: dict[str, tuple[type, int]] = {
+    'speed_powerup':  (Speed_Powerup,  20),
+    'attack_powerup': (Attack_Powerup, 20),
+    'shield_powerup': (Shield_Powerup, 20),
+}
 

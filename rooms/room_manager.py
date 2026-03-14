@@ -5,33 +5,8 @@ import pygame
 
 from core import constants
 from components import Door
-from components import Speed_Powerup, Attack_Powerup, Shield_Powerup
-from entities import (
-    Enemy, FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy,
-    AssassinEnemy, BruteEnemy, SwarmEnemy, BossEnemy,
-)
 from rooms.room_registry import build_rooms
 from rooms.progression import level_from_rooms_cleared, choose_enemy
-
-
-# --- Dispatch tables ---
-
-_TAG_TO_ENEMY: dict[str, type[Enemy]] = {
-    'fast_enemy':     FastEnemy,
-    'slow_enemy':     SlowEnemy,
-    'tank_enemy':     TankEnemy,
-    'scout_enemy':    ScoutEnemy,
-    'assassin_enemy': AssassinEnemy,
-    'brute_enemy':    BruteEnemy,
-    'swarm_enemy':    SwarmEnemy,
-    'boss_enemy':     BossEnemy,
-}
-
-_TAG_TO_POWERUP: dict[str, tuple[type, int]] = {
-    'speed_powerup':  (Speed_Powerup,  20),
-    'attack_powerup': (Attack_Powerup, 20),
-    'shield_powerup': (Shield_Powerup, 20),
-}
 
 
 @dataclass
@@ -129,12 +104,12 @@ class RoomManager:
                 room.spawns[gy][gx] = None
 
     def _handle_tag(self, tag, x, y, gx, gy):
-        if tag in _TAG_TO_ENEMY:
-            self.world.add_enemy(x, y, enemy_type=_TAG_TO_ENEMY[tag])
+        if tag in constants._TAG_TO_ENEMY:
+            self.world.add_enemy(x, y, enemy_type=constants._TAG_TO_ENEMY[tag])
         elif tag == 'enemy':
             self.world.add_enemy(x, y, enemy_type=choose_enemy(self.progression_level))
-        elif tag in _TAG_TO_POWERUP:
-            cls, amount = _TAG_TO_POWERUP[tag]
+        elif tag in constants._TAG_TO_POWERUP:
+            cls, amount = constants._TAG_TO_POWERUP[tag]
             self.world.add_powerup(cls(x, y, amount))
         elif tag == 'door':
             self.doors.append(DoorEntry(door=Door(x, y), grid_pos=(gx, gy)))
