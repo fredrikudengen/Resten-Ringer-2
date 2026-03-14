@@ -1,5 +1,5 @@
 import pygame
-import constants
+from core import constants
 from entities import enemies
 from entities import Enemy
 from components import Particle

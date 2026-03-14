@@ -1,5 +1,5 @@
 import pygame
-import constants
+from core import constants
 import copy
 
 CHAR_TO_TILE = {

@@ -1,5 +1,4 @@
 from .player import Player
-from .door import Door
 from .entity import Entity
 from .enemies import Enemy, FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy, AssassinEnemy, BruteEnemy, SwarmEnemy, BossEnemy
 

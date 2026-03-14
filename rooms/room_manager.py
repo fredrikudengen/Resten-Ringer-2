@@ -1,6 +1,6 @@
 import pygame
-import constants
-from entities import Door
+from core import constants
+from components import Door
 from components import Speed_Powerup, Attack_Powerup, Shield_Powerup
 from entities import (
     Enemy, FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy,
@@ -129,8 +129,8 @@ class RoomManager:
 
         # Dør
         elif tag == 'door':
-            drect = pygame.Rect(x, y, constants.TILE_SIZE, constants.TILE_SIZE)
-            self.doors.append({"door": Door(drect), "g": (gx, gy)})
+            
+            self.doors.append({"door": Door(x, y), "g": (gx, gy)})
 
     def _place_player(self, room, entry_side):
         spawn_side = constants.OPPOSITE.get(entry_side) if entry_side else None

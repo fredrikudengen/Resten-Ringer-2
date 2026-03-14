@@ -1,11 +1,11 @@
 import pygame
-import constants
+from core import constants
 from entities import Player
-from components import Camera
-from core import player_input
+from core import Camera
+from controller import player_input
 from core import World
 from rooms import RoomManager
-from ui import HUD
+from core import HUD
 
 pygame.init()
 clock = pygame.time.Clock()

@@ -1,47 +1,35 @@
 import pygame
-import constants
+from core import constants
 
-
-# ──────────────────────────────────────────────────────────
-#  Fargepalett  (kan flyttes til constants.py om ønskelig)
-# ──────────────────────────────────────────────────────────
 _C = {
-    # Bakgrunner
-    "panel":       (15,  15,  20,  200),   # Mørk, semi-transparent panel
-    "bar_bg":      (40,  40,  50,  220),   # Tom bar-bakgrunn
+    "panel":       (15,  15,  20,  200),   
+    "bar_bg":      (40,  40,  50,  220),   
 
-    # HP
-    "hp_full":     (220, 55,  55),          # Rød (full helse)
-    "hp_low":      (220, 100, 30),          # Oransje (< 30 %)
-    "hp_crit":     (255, 40,  40),          # Lys rød blink (< 15 %)
+    "hp_full":     (220, 55,  55),         
+    "hp_low":      (220, 100, 30),         
+    "hp_crit":     (255, 40,  40),         
     "hp_border":   (180, 40,  40),
 
-    # XP
     "xp_fill":     (80,  200, 120),
     "xp_border":   (50,  140, 80),
 
-    # Dash cooldown
     "dash_ready":  (100, 180, 255),
     "dash_charge": (50,  80,  130),
     "dash_border": (60,  120, 200),
 
-    # Buff ikoner
     "buff_speed":  (255, 220, 60),
     "buff_shield": (80,  160, 255),
     "buff_attack": (255, 80,  80),
     "buff_border": (200, 200, 200, 180),
     "buff_timer":  (220, 220, 220),
 
-    # Tekst
     "text_main":   (240, 240, 240),
     "text_dim":    (140, 140, 160),
     "text_level":  (255, 210, 60),
 
-    # Level-up flash
     "levelup":     (255, 230, 80,  180),
 }
 
-# Buff-ikon-farge per navn
 _BUFF_COLORS = {
     "speed_boost":  _C["buff_speed"],
     "shield_boost": _C["buff_shield"],
@@ -85,10 +73,8 @@ def _draw_bar(
     ratio = max(0.0, min(1.0, value / max_value)) if max_value > 0 else 0.0
     fill_w = int(rect.width * ratio)
 
-    # Bakgrunn
     _draw_rounded_rect(surface, bg_color, rect, radius)
 
-    # Fylt del
     if fill_w > 0:
         fill_rect = pygame.Rect(rect.x, rect.y, fill_w, rect.height)
         now = pygame.time.get_ticks()
@@ -97,7 +83,6 @@ def _draw_bar(
             color = _C["hp_crit"]
         _draw_rounded_rect(surface, color, fill_rect, radius)
 
-    # Kant
     if border_color:
         pygame.draw.rect(surface, border_color, rect, border, border_radius=radius)
 
@@ -119,7 +104,6 @@ class HUD:
         hud.draw(screen, player)
     """
 
-    # Layout-konstanter (justér etter skjermstørrelse)
     PANEL_X      = 16
     PANEL_Y      = 12
     PANEL_W      = 220
@@ -129,16 +113,16 @@ class HUD:
     LABEL_SIZE   = 13
     LEVEL_SIZE   = 15
 
-    DASH_X_OFFSET = 16   # Fra høyre kant av skjermen
+    DASH_X_OFFSET = 16   
     DASH_Y        = 16
     DASH_RADIUS   = 22
 
     BUFF_START_X  = 16
-    BUFF_Y_OFFSET = 16   # Fra bunn av skjermen
+    BUFF_Y_OFFSET = 16   
     BUFF_SIZE     = 40
     BUFF_GAP      = 8
 
-    LEVELUP_DURATION_MS = 1800  # Hvor lenge level-up teksten vises
+    LEVELUP_DURATION_MS = 1800  
 
     def __init__(self):
         pygame.font.init()
@@ -146,12 +130,8 @@ class HUD:
         self._font_level  = pygame.font.SysFont("consolas", self.LEVEL_SIZE, bold=True)
         self._font_big    = pygame.font.SysFont("consolas", 26, bold=True)
 
-        self._levelup_at  = None   # Tidspunkt for siste level-up
-        self._levelup_lvl = 1      # Nytt level som skal vises
-
-    # ─────────────────────────────────────────────────────
-    #  Offentlig API
-    # ─────────────────────────────────────────────────────
+        self._levelup_at  = None   
+        self._levelup_lvl = 1      
 
     def notify_levelup(self, new_level: int):
         """
@@ -179,17 +159,12 @@ class HUD:
         self._draw_buffs(screen, player, now, sh)
         self._draw_levelup_flash(screen, now, sw, sh)
 
-    # ─────────────────────────────────────────────────────
-    #  Interne tegnemetoder
-    # ─────────────────────────────────────────────────────
-
     def _draw_hp_xp_panel(self, screen, player, now):
         """HP-bar, XP-bar og level-badge øverst til venstre."""
         x = self.PANEL_X
         y = self.PANEL_Y
         w = self.PANEL_W
 
-        # ── Panel-bakgrunn ──
         panel_h = (
             self.LABEL_SIZE + 4 +
             self.HP_BAR_H + self.BAR_GAP +
@@ -199,9 +174,8 @@ class HUD:
         panel_surf.fill(_C["panel"])
         screen.blit(panel_surf, (x - 8, y - 6))
 
-        cy = y  # Løpende y-posisjon
+        cy = y
 
-        # ── "HP" label + tallverdi ──
         hp_pct = player.health / max(1, constants.PLAYER_HEALTH)
         hp_label = self._font_label.render(
             f"HP  {player.health}/{constants.PLAYER_HEALTH}",
@@ -210,7 +184,6 @@ class HUD:
         screen.blit(hp_label, (x, cy))
         cy += self.LABEL_SIZE + 4
 
-        # Velg farge basert på helseprosent
         if hp_pct <= 0.15:
             hp_color = _C["hp_low"]
             flicker  = True
@@ -231,7 +204,6 @@ class HUD:
         )
         cy += self.HP_BAR_H + self.BAR_GAP
 
-        # ── XP-bar ──
         xp_to_next = player.xp_to_next
         xp_label = self._font_label.render(
             f"XP  {player.xp}/{xp_to_next}",
@@ -249,7 +221,6 @@ class HUD:
             radius=4,
         )
 
-        # ── Level badge ──
         lv_text = self._font_level.render(f"LV {player.level}", True, _C["text_level"])
         lv_x = x + w - lv_text.get_width()
         screen.blit(lv_text, (lv_x, self.PANEL_Y))
@@ -267,10 +238,8 @@ class HUD:
         elapsed  = now - (player.dash_cooldown_end - total_cd)
         ratio    = max(0.0, min(1.0, elapsed / total_cd)) if total_cd > 0 else 1.0
 
-        # Ytre bakgrunnssirkel
         pygame.draw.circle(screen, _C["dash_charge"], (cx, cy), r)
 
-        # Fremdriftsbue (tegn som sektor med polygon)
         if ratio > 0:
             import math
             segments = max(2, int(ratio * 36))
@@ -286,14 +255,11 @@ class HUD:
             if len(points) >= 3:
                 pygame.draw.polygon(screen, _C["dash_ready"], points)
 
-        # Indre "hull" for ring-effekt
         inner_r = r - 7
         pygame.draw.circle(screen, (20, 20, 28), (cx, cy), inner_r)
 
-        # Kant
         pygame.draw.circle(screen, _C["dash_border"], (cx, cy), r, 2)
 
-        # "DASH" label under ringen
         label = self._font_label.render("DASH", True,
             _C["dash_ready"] if ratio >= 1.0 else _C["text_dim"])
         screen.blit(label, (cx - label.get_width() // 2, cy + r + 4))
@@ -317,20 +283,17 @@ class HUD:
 
             color = _BUFF_COLORS.get(name, (180, 180, 180))
 
-            # Boks-bakgrunn
             box_surf = pygame.Surface((self.BUFF_SIZE, self.BUFF_SIZE), pygame.SRCALPHA)
             box_surf.fill(_C["panel"])
             screen.blit(box_surf, (bx, by))
             pygame.draw.rect(screen, color, (bx, by, self.BUFF_SIZE, self.BUFF_SIZE), 2, border_radius=5)
 
-            # Fyll-indikator (nedenfra og opp)
             fill_h = int(self.BUFF_SIZE * ratio)
             if fill_h > 0:
                 fill_surf = pygame.Surface((self.BUFF_SIZE - 4, fill_h), pygame.SRCALPHA)
                 fill_surf.fill((*color, 60))
                 screen.blit(fill_surf, (bx + 2, by + self.BUFF_SIZE - fill_h - 2))
 
-            # Label
             label = self._font_label.render(
                 _BUFF_LABELS.get(name, name[:3].upper()),
                 True, color
@@ -339,7 +302,6 @@ class HUD:
             ly = by + (self.BUFF_SIZE - label.get_height()) // 2
             screen.blit(label, (lx, ly))
 
-            # Sekunder igjen under boksen
             secs_left = max(0, (duration - elapsed) / 1000)
             secs_txt = self._font_label.render(f"{secs_left:.1f}s", True, _C["text_dim"])
             screen.blit(secs_txt, (bx, by + self.BUFF_SIZE + 2))
@@ -356,7 +318,6 @@ class HUD:
             self._levelup_at = None
             return
 
-        # Fade ut mot slutten
         alpha = int(255 * max(0.0, 1.0 - elapsed / duration))
 
         flash_surf = pygame.Surface((sw, 80), pygame.SRCALPHA)

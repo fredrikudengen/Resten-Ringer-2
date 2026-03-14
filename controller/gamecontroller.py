@@ -1,5 +1,5 @@
 import pygame
-import constants
+from core import constants
 
 from components import Projectile
 

@@ -4,7 +4,7 @@ import math
 
 import pygame
 from pygame.math import Vector2
-import constants
+from core import constants
 
 from ..entity import Entity
 from .pathfinding import PathfindingMixin
