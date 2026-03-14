@@ -28,13 +28,13 @@ PROJECTILE_DAMAGE = 1
 PROJECTILE_SPEED  = 600
 
 # gameplay – enemy
-LOSE_SIGHT_TIME          = 2400                 # ms i search før idle
+LOSE_SIGHT_TIME          = 2400                
 ENEMY_WANDER_INTERVAL_MS = (1200, 2500)   # (min, max) pause 
 
 # XP og level
 XP_BASE               = 100     # XP til level 2
 XP_SCALE              = 1.5     # Skalering per level (100 → 150 → 225 …)
-XP_HP_BONUS_PER_LEVEL = 5       # Ekstra max-HP per level
+XP_HP_BONUS_PER_LEVEL = 5       
 XP_DPS_BONUS_PER_LEVEL = 2
 XP_SPEED_BONUS_PER_LEVEL = 1
 
@@ -54,4 +54,12 @@ TILE_SIZE = 64
 # terrain tiles
 TILE_FLOOR = 0
 TILE_WALL  = 1
+
+# door
+DOOR_WIDTH  = TILE_SIZE  
+DOOR_HEIGHT = TILE_SIZE
+
+COLOR_DOOR_CLOSED  = (150, 50,  50)
+COLOR_DOOR_OPEN    = (50,  150, 50)
+COLOR_DOOR_OUTLINE = (0,   0,   0)
 

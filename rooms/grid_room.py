@@ -1,90 +1,74 @@
-import pygame
-from core import constants
 import copy
 
-CHAR_TO_TILE = {
+import pygame
+
+from core import constants
+
+
+CHAR_TO_TILE: dict[str, int] = {
     '.': constants.TILE_FLOOR,
     '#': constants.TILE_WALL,
 }
 
+CHAR_TO_SPAWN: dict[str, str] = {
+    'E': 'enemy',
+    'F': 'fast_enemy',
+    'L': 'slow_enemy',
+    'T': 'tank_enemy',
+    'K': 'scout_enemy',
+    'A': 'assassin_enemy',
+    'R': 'brute_enemy',
+    'W': 'swarm_enemy',
+    'B': 'boss_enemy',
+    'S': 'speed_powerup',
+    'C': 'attack_powerup',
+    'H': 'shield_powerup',
+    'D': 'door',
+}
+
+
 class GridRoom:
-    
-    def __init__(self, lines):
-        """
-        lines: list[str], like:
-        "####################",
-        "#......E.......P...#",
-        "#..###......###....#",
-        "#..#..D.....#......#",
-        "#..###......###..E.#",
-        "#..................#",
-        "####################",
-        """
+    """
+    A room defined by a list of strings where each character represents a tile.
+    """
+
+    def __init__(self, lines: list[str], room_type: str = "combat"):
+        self.room_type = room_type
         self.rows = len(lines)
         self.cols = max(len(row) for row in lines)
 
-        self.terrain = [[constants.TILE_FLOOR for _ in range(self.cols)] for _ in range(self.rows)]
-        self.spawns  = [[None for _ in range(self.cols)] for _ in range(self.rows)]
-
-        self.doors   = []  # liste av dict/tuple
+        self.terrain: list[list[int]] = [
+            [constants.TILE_FLOOR for _ in range(self.cols)]
+            for _ in range(self.rows)
+        ]
+        self.spawns: list[list[str | None]] = [
+            [None for _ in range(self.cols)]
+            for _ in range(self.rows)
+        ]
+        self.doors: list[tuple[int, int]] = []
 
         for y, row in enumerate(lines):
             for x, ch in enumerate(row):
-                if ch in ('.', '#'):
-                    self.terrain[y][x] = CHAR_TO_TILE[ch]
-                elif ch == 'E':
-                    self.terrain[y][x] = constants.TILE_FLOOR
-                    self.spawns[y][x] = 'enemy'
-                elif ch == 'F':
-                    self.terrain[y][x] = constants.TILE_FLOOR
-                    self.spawns[y][x] = 'fast_enemy'
-                elif ch == 'L':
-                    self.terrain[y][x] = constants.TILE_FLOOR
-                    self.spawns[y][x] = 'slow_enemy'
-                elif ch == 'T':
-                    self.terrain[y][x] = constants.TILE_FLOOR
-                    self.spawns[y][x] = 'tank_enemy'
-                elif ch == 'K':  
-                    self.terrain[y][x] = constants.TILE_FLOOR
-                    self.spawns[y][x] = 'scout_enemy'
-                elif ch == 'A':
-                    self.terrain[y][x] = constants.TILE_FLOOR
-                    self.spawns[y][x] = 'assassin_enemy'
-                elif ch == 'R':  
-                    self.terrain[y][x] = constants.TILE_FLOOR
-                    self.spawns[y][x] = 'brute_enemy'
-                elif ch == 'W':  
-                    self.terrain[y][x] = constants.TILE_FLOOR
-                    self.spawns[y][x] = 'swarm_enemy'
-                elif ch == 'B':  
-                    self.terrain[y][x] = constants.TILE_FLOOR
-                    self.spawns[y][x] = 'boss_enemy'
-                elif ch == 'S':
-                    self.terrain[y][x] = constants.TILE_FLOOR
-                    self.spawns[y][x] = 'speed_powerup'
-                elif ch == 'C':
-                    self.terrain[y][x] = constants.TILE_FLOOR
-                    self.spawns[y][x] = 'attack_powerup'
-                elif ch == 'H':
-                    self.terrain[y][x] = constants.TILE_FLOOR
-                    self.spawns[y][x] = 'shield_powerup'
-                elif ch == 'D':
-                    self.terrain[y][x] = constants.TILE_FLOOR
-                    self.spawns[y][x] = 'door'
-                    self.doors.append((x,y))
+                self.terrain[y][x] = CHAR_TO_TILE.get(ch, constants.TILE_FLOOR)
+                if ch in CHAR_TO_SPAWN:
+                    self.spawns[y][x] = CHAR_TO_SPAWN[ch]
+                    if ch == 'D':
+                        self.doors.append((x, y))
 
         self._original_spawns = copy.deepcopy(self.spawns)
-    
-    def is_blocked(self, gx, gy):
-        if gx < 0 or gy < 0 or gx >= self.cols or gy >= self.rows:
+
+    def is_blocked(self, gx: int, gy: int) -> bool:
+        if not (0 <= gx < self.cols and 0 <= gy < self.rows):
             return True
         return self.terrain[gy][gx] == constants.TILE_WALL
 
-    def tile_rect(self, gx, gy):
-        x, y = gx * constants.TILE_SIZE, gy * constants.TILE_SIZE
-        return pygame.Rect(x, y, constants.TILE_SIZE, constants.TILE_SIZE)
-    
+    def tile_rect(self, gx: int, gy: int) -> pygame.Rect:
+        return pygame.Rect(
+            gx * constants.TILE_SIZE,
+            gy * constants.TILE_SIZE,
+            constants.TILE_SIZE,
+            constants.TILE_SIZE,
+        )
+
     def reset_spawns(self):
         self.spawns = copy.deepcopy(self._original_spawns)
-
-
