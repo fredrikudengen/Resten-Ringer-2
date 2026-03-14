@@ -11,6 +11,7 @@ class Player(Entity):
         Args:
             x, y: Startposisjon
         """
+        
         self.width=constants.PLAYER_SIZE[0]
         self.height=constants.PLAYER_SIZE[1]
 
@@ -62,7 +63,24 @@ class Player(Entity):
         """
         return int(constants.XP_BASE * (constants.XP_SCALE ** (self.level - 1)))
 
-    # ── XP / Level ────────────────────────────────────────
+    # ========== PUBLIC API ==========
+
+    def draw(self, screen, camera):
+        """
+        Tegn spilleren med spesiell farge når den angriper.
+        
+        Args:
+            screen: pygame Surface
+            camera: Camera objekt
+        """
+        draw_rect = camera.apply(self.rect)
+        if self.is_dashing:
+            color = constants.WHITE
+        elif self.playerAttack:
+            color = constants.RED
+        else:
+            color = self.color
+        pygame.draw.rect(screen, color, draw_rect)
 
     def gain_xp(self, amount: int):
         """
@@ -80,23 +98,6 @@ class Player(Entity):
             self.xp -= self.xp_to_next
             self._level_up()
 
-    def _level_up(self):
-        """Håndter ett level-opp: oppdater stats og varsle HUD."""
-        self.level += 1
-
-        bonus_hp = constants.XP_HP_BONUS_PER_LEVEL
-        self.health = min(self.health + bonus_hp, constants.PLAYER_HEALTH + bonus_hp * self.level)
-
-        bonus_dps = constants.XP_DPS_BONUS_PER_LEVEL
-        self.dps = min(self.dps + bonus_dps, constants.PLAYER_DPS + bonus_dps * self.level)
-
-        bonus_speed = constants.XP_SPEED_BONUS_PER_LEVEL
-        self.speed = min(self.speed + bonus_speed, constants.PLAYER_SPEED + bonus_speed * self.level)
-
-
-        if self._hud is not None:
-            self._hud.notify_levelup(self.level)
-
     def update_knockback(self, obstacles):
         """
         Bruk knockback-bevegelse med friksjon. Kalles hver frame.
@@ -108,14 +109,12 @@ class Player(Entity):
             self.knockback_velocity.update(0, 0)
             return
 
-        # Flytt x
         old_x = self.rect.x
         self.rect.x += int(self.knockback_velocity.x)
         if any(self.rect.colliderect(obs) for obs in obstacles):
             self.rect.x = old_x
             self.knockback_velocity.x = 0
 
-        # Flytt y
         old_y = self.rect.y
         self.rect.y += int(self.knockback_velocity.y)
         if any(self.rect.colliderect(obs) for obs in obstacles):
@@ -126,24 +125,11 @@ class Player(Entity):
 
         # Demping
         self.knockback_velocity *= constants.PLAYER_KNOCKBACK_FRICTION
-    
-    def check_collision_obstacle(self, obstacles):
-        """
-        Legacy metode for bakoverkompatibilitet.
-        Wrapper rundt Entity.check_collision()
-        """
-        return self.check_collision(obstacles)
-    
-    BUFF_VALUES = {
-    'speed_boost':  ('speed',  3),
-    'attack_boost': ('dps',    1),
-    'shield_boost': ('health', 2),
-}
 
     def apply_powerup(self, powerup):
         if powerup in self.buff_timers:
             return
-        attr, value = self.BUFF_VALUES[powerup]
+        attr, value = constants.BUFF_VALUES[powerup]
         setattr(self, attr, getattr(self, attr) + value)
         self.buff_timers[powerup] = pygame.time.get_ticks()
 
@@ -151,9 +137,9 @@ class Player(Entity):
         now = pygame.time.get_ticks()
         for name, start in list(self.buff_timers.items()):
             if now - start >= constants.BUFF_DURATIONS.get(name, 0):
-                attr, value = self.BUFF_VALUES[name]
+                attr, value = constants.BUFF_VALUES[name]
                 setattr(self, attr, getattr(self, attr) - value)
-                del self.buff_timers[name]
+                del constants.buff_timers[name]
 
     def start_dash(self, direction: pygame.math.Vector2):
         """
@@ -192,14 +178,12 @@ class Player(Entity):
         dx = int(self.dash_direction.x * constants.DASH_SPEED)
         dy = int(self.dash_direction.y * constants.DASH_SPEED)
 
-        # collision check x
         old_x = self.rect.x
         self.rect.x += dx
         if any(self.rect.colliderect(obs) for obs in obstacles):
             self.rect.x = old_x
             self.is_dashing = False
 
-        # collision check y
         old_y = self.rect.y
         self.rect.y += dy
         if any(self.rect.colliderect(obs) for obs in obstacles):
@@ -207,20 +191,22 @@ class Player(Entity):
             self.is_dashing = False
 
         self.sync_pos_from_rect()
+    
+    # ========== HELPERS ==========
 
-    def draw(self, screen, camera):
-        """
-        Tegn spilleren med spesiell farge når den angriper.
-        
-        Args:
-            screen: pygame Surface
-            camera: Camera objekt
-        """
-        draw_rect = camera.apply(self.rect)
-        if self.is_dashing:
-            color = constants.WHITE
-        elif self.playerAttack:
-            color = constants.RED
-        else:
-            color = self.color
-        pygame.draw.rect(screen, color, draw_rect)
+    def _level_up(self):
+        """Håndter ett level-opp: oppdater stats og varsle HUD."""
+        self.level += 1
+
+        bonus_hp = constants.XP_HP_BONUS_PER_LEVEL
+        self.health = min(self.health + bonus_hp, constants.PLAYER_HEALTH + bonus_hp * self.level)
+
+        bonus_dps = constants.XP_DPS_BONUS_PER_LEVEL
+        self.dps = min(self.dps + bonus_dps, constants.PLAYER_DPS + bonus_dps * self.level)
+
+        bonus_speed = constants.XP_SPEED_BONUS_PER_LEVEL
+        self.speed = min(self.speed + bonus_speed, constants.PLAYER_SPEED + bonus_speed * self.level)
+
+
+        if self._hud is not None:
+            self._hud.notify_levelup(self.level)

@@ -29,6 +29,11 @@ DASH_DURATION             = 230
 DASH_COOLDOWN             = 1300  
 PLAYER_KNOCKBACK_FRICTION = 0.9  
 PLAYER_HIT_INVINCIBLE_MS  = 600  
+BUFF_VALUES = {
+    'speed_boost':  ('speed',  3),
+    'attack_boost': ('dps',    1),
+    'shield_boost': ('health', 2),
+}
 
 # gameplay - projectile
 PROJECTILE_DAMAGE = 1
@@ -59,8 +64,11 @@ BUFF_DURATIONS = {
 TILE_SIZE = 64
 
 # terrain tiles
-TILE_FLOOR = 0
-TILE_WALL  = 1
+TILE_FLOOR       = 0
+TILE_FLOOR_COLOR = (25, 25, 25)
+
+TILE_WALL       = 1
+TILE_WALL_COLOR = (80, 80, 80)
 
 # door
 DOOR_WIDTH  = TILE_SIZE  

@@ -44,7 +44,7 @@ class RoomManager:
         if self._room_cleared:
             for d in self.doors:
                 if self.player.rect.colliderect(d.door.rect):
-                    entry_side = self.door_side(self.world.current_room, *d.grid_pos)
+                    entry_side = self._door_side(self.world.current_room, *d.grid_pos)
                     self._go_to_next_room(entry_side)
                     break
 
@@ -52,7 +52,7 @@ class RoomManager:
         for d in self.doors:
             d.door.draw(screen, self.camera)
 
-    # ========== ROOM NAVIGATION ==========
+    # ========== HELPERS ==========
 
     def _go_to_next_room(self, entry_side):
         self.rooms_cleared     += 1
@@ -121,9 +121,7 @@ class RoomManager:
         else:
             self.player.rect.topleft = (constants.TILE_SIZE * 2, constants.TILE_SIZE * 2)
 
-    # ========== DOOR HELPERS ==========
-
-    def door_side(self, room, gx, gy) -> str | None:
+    def _door_side(self, room, gx, gy) -> str | None:
         if gx == 0:             return "W"
         if gx == room.cols - 1: return "E"
         if gy == 0:             return "N"
@@ -136,7 +134,7 @@ class RoomManager:
 
         candidates = [
             (gx, gy) for gx, gy in room.doors
-            if self.door_side(room, gx, gy) == want_side
+            if self._door_side(room, gx, gy) == want_side
         ]
         gx, gy = candidates[0] if candidates else room.doors[0]
 

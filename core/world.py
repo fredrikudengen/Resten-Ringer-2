@@ -17,13 +17,12 @@ class World:
         self.projectiles = []
         self.current_room = None
 
+    # =========== PUBLIC API ===========
+
     def update(self, dt_ms: int, player):
         """
         Oppdater alle entities og components.
-        
-        Dette er hvor polymorfisme skinner! Alle enemies oppdateres
-        på samme måte uavhengig av spesifikk type.
-        
+                
         Args:
             dt_ms: Delta time i millisekunder
             player: Player entity
@@ -34,11 +33,11 @@ class World:
             enemy._apply_separation(self.enemies)
             
             if enemy.hit:
-                self.spawn_hit_particles(enemy.rect.centerx, enemy.rect.centery, n=5)
+                self._spawn_hit_particles(enemy.rect.centerx, enemy.rect.centery, n=5)
                 enemy.hit = False
             
             if not enemy.alive:
-                self.spawn_hit_particles(enemy.rect.centerx, enemy.rect.centery, n=10)
+                self._spawn_hit_particles(enemy.rect.centerx, enemy.rect.centery, n=10)
                 player.gain_xp(enemy.xp_reward)
                 self.enemies.remove(enemy)
 
@@ -55,13 +54,11 @@ class World:
             if not projectile.alive:
                 self.projectiles.remove(projectile)
 
-        # Oppdater powerups (kollisjon med player)
         for pu in self.powerups[:]:
             if player.rect.colliderect(pu.rect):
                 pu.apply(player)
                 self.powerups.remove(pu)
 
-        # Oppdater particles
         for p in self.particles[:]:
             p.update(dt_ms)
             if p.timer <= 0:
@@ -70,9 +67,7 @@ class World:
     def draw(self, screen, camera):
         """
         Tegn alle entities og komponenter.
-        
-        Polymorfisme igjen: alle entities har .draw() metode!
-        
+                
         Args:
             screen: pygame Surface
             camera: Camera objekt
@@ -80,7 +75,6 @@ class World:
         if not hasattr(self, "current_room") or self.current_room is None:
             return
 
-        # Tegn terrain grid
         room = self.current_room
         for gy in range(room.rows):
             for gx in range(room.cols):
@@ -92,33 +86,26 @@ class World:
                 )
                 dr = camera.apply(rect)
                 if room.terrain[gy][gx] == constants.TILE_WALL:
-                    pygame.draw.rect(screen, (80, 80, 80), dr)  # vegg
+                    pygame.draw.rect(screen, constants.TILE_WALL_COLOR, dr)  
                 else:
-                    pygame.draw.rect(screen, (25, 25, 25), dr)  # gulv
+                    pygame.draw.rect(screen, constants.TILE_FLOOR_COLOR, dr)  
         
-        # Tegn obstacles
         for obstacle in self.obstacles:
             sr = camera.apply(obstacle)
             pygame.draw.rect(screen, (128, 128, 128), sr)
 
-        # Tegn powerups
         for pu in self.powerups:
             pu.draw(screen, camera)
 
-        # Tegn enemies (polymorfisk!)
         for e in self.enemies:
             e.draw(screen, camera)
         
-        # Tegn projectiles
         for projectile in self.projectiles:
             projectile.draw(screen, camera)
 
-        # Tegn particles
         for p in self.particles:
             p.draw(screen, camera)
 
-    # ---------- World content management ----------
-    
     def clear(self):
         """Fjern alt innhold fra world."""
         self.obstacles.clear()
@@ -126,8 +113,6 @@ class World:
         self.powerups.clear()
         self.particles.clear()
         self.projectiles.clear()
-
-    # ---------- Public API ----------
     
     def add_obstacle(self, rect: pygame.Rect):
         """Legg til en obstacle i world."""
@@ -149,21 +134,20 @@ class World:
             world.add_enemy(100, 100, enemy_type=SlowEnemy)  # SlowEnemy
         """
         if enemy_type is None:
-            # Default Enemy
             self.enemies.append(Enemy(x, y))
         elif isinstance(enemy_type, str):
-            # String name - resolve dynamisk
             enemy_class = self._resolve_enemy_type(enemy_type)
             self.enemies.append(enemy_class(x, y))
         else:
-            # Antatt at det er en class
             self.enemies.append(enemy_type(x, y))
 
     def add_powerup(self, powerup):
         """Legg til en power-up i world."""
         self.powerups.append(powerup)
 
-    def spawn_hit_particles(self, x, y, n=5, color=constants.YELLOW):
+    # =========== HELPERS ===========
+
+    def _spawn_hit_particles(self, x, y, n=5, color=constants.YELLOW):
         """
         Spawn partikler ved en posisjon (f.eks. ved treff).
         
