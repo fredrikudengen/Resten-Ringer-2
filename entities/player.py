@@ -1,40 +1,41 @@
 import pygame
 from core import constants
 from .entity import Entity
-from gamestates import char_select
+from components import Shotgun
+from gamestates.char_select import CHARACTERS
 
 class Player(Entity):
-    
-    def __init__(self, selected_character: int = 0):
-        char = char_select.CHARACTERS[selected_character]
-        """
-        Initialiser spiller.
-        
-        Args:
-            x, y: Startposisjon
-        """
-        
+    """
+    The player entity. Stats are seeded from the selected character,
+    with fallback defaults from constants.
+    """
+
+    def __init__(self, selected_character: int = 0, hud=None):
+        char = CHARACTERS[selected_character]
+
         self.health = char.get('health', constants.PLAYER_HEALTH)
         self.speed  = char.get('speed',  constants.PLAYER_SPEED)
-        self.width=constants.PLAYER_SIZE[0]
-        self.height=constants.PLAYER_SIZE[1]
+        self.width  = constants.PLAYER_SIZE[0]
+        self.height = constants.PLAYER_SIZE[1]
 
         super().__init__(x=0, y=0)
 
         self.selected_character = selected_character
-        self.char_name = char['name']
+        self.char_name          = char['name']
+        self.color              = constants.PLAYER_COLOR
+        self.dps                = constants.PLAYER_DPS
 
-        self.color=constants.PLAYER_COLOR
-        self.dps = constants.PLAYER_DPS
-        
-        # Angrep / debug
+        # Gun
+        self.gun = char.get('gun', Shotgun)()
+
+        # Attack / debug
         self.attack_cooldown    = constants.PLAYER_ATTACK_COOLDOWN
         self.playerAttack       = False
         self.debug_attack_rect  = None
         self.debug_attack_until = 0
 
-        # Buffs system
-        self.buff_timers = {}
+        # Buffs
+        self.buff_timers: dict[str, int] = {}
 
         # Dash
         self.is_dashing        = False
@@ -42,42 +43,32 @@ class Player(Entity):
         self.dash_end_time     = 0
         self.dash_cooldown_end = 0
 
-        # Skade / knockback
+        # Damage / knockback
         self.knockback_velocity    = pygame.math.Vector2(0, 0)
-        self.hurt_invincible_until = 0  
+        self.hurt_invincible_until = 0
 
-        # XP og level
+        # XP and level
         self.xp    = 0
         self.level = 1
-        self._hud  = None   # Settes av main.py: player._hud = hud
+
+        # HUD reference — passed in by StateMachine, not set externally
+        self._hud = hud
 
     @property
     def is_invincible(self):
-        """
-        True når spilleren ikke kan ta skade.
-        Dekker både dash-iframes og post-hit iframes.
-        """
+        """True when the player cannot take damage — covers dash iframes and post-hit iframes."""
         now = pygame.time.get_ticks()
         return self.is_dashing or now < self.hurt_invincible_until
-    
+
     @property
     def xp_to_next(self) -> int:
-        """
-        XP som trengs for neste level.
-        Formelen skalerer progressivt: 100, 150, 225, …
-        """
+        """XP required for the next level. Scales progressively: 100, 150, 225, ..."""
         return int(constants.XP_BASE * (constants.XP_SCALE ** (self.level - 1)))
 
     # ========== PUBLIC API ==========
 
     def draw(self, screen, camera):
-        """
-        Tegn spilleren med spesiell farge når den angriper.
-        
-        Args:
-            screen: pygame Surface
-            camera: Camera objekt
-        """
+        """Draw the player, tinting based on current state."""
         draw_rect = camera.apply(self.rect)
         if self.is_dashing:
             color = constants.WHITE
@@ -87,29 +78,30 @@ class Player(Entity):
             color = self.color
         pygame.draw.rect(screen, color, draw_rect)
 
-    def gain_xp(self, amount: int):
+    def shoot(self, target_pos: tuple[float, float]) -> list:
         """
-        Gi spilleren XP. Håndterer level-up automatisk og varsler HUD.
+        Fire the equipped gun toward target_pos.
+        Returns a list of Bullet objects to be added to the world.
+        """
+        direction = pygame.math.Vector2(
+            target_pos[0] - self.rect.centerx,
+            target_pos[1] - self.rect.centery,
+        )
+        if direction.length_squared() == 0:
+            return []
+        return self.gun.shoot(self.rect.center, direction)
 
-        Args:
-            amount: Mengde XP å legge til
-        """
+    def gain_xp(self, amount: int):
+        """Award XP to the player, handling level-ups automatically."""
         if amount <= 0:
             return
-
         self.xp += amount
-
         while self.xp >= self.xp_to_next:
             self.xp -= self.xp_to_next
             self._level_up()
 
     def update_knockback(self, obstacles):
-        """
-        Bruk knockback-bevegelse med friksjon. Kalles hver frame.
-
-        Args:
-            obstacles: Liste av hindringer for kollisjonsjekk
-        """
+        """Apply knockback velocity with friction. Call every frame."""
         if self.knockback_velocity.length_squared() < 0.5:
             self.knockback_velocity.update(0, 0)
             return
@@ -127,8 +119,6 @@ class Player(Entity):
             self.knockback_velocity.y = 0
 
         self.sync_pos_from_rect()
-
-        # Demping
         self.knockback_velocity *= constants.PLAYER_KNOCKBACK_FRICTION
 
     def apply_powerup(self, powerup):
@@ -147,35 +137,23 @@ class Player(Entity):
                 del self.buff_timers[name]
 
     def start_dash(self, direction: pygame.math.Vector2):
-        """
-        Start en dash i gitt retning.
-        
-        Args:
-            direction: Normalisert retningsvektor for dashen
-        """
+        """Start a dash in the given direction."""
         now = pygame.time.get_ticks()
         if self.is_dashing or now < self.dash_cooldown_end:
-            return 
-
+            return
         if direction.length_squared() == 0:
-            return  
+            return
 
         self.is_dashing        = True
         self.dash_direction    = direction.normalize()
         self.dash_end_time     = now + constants.DASH_DURATION
         self.dash_cooldown_end = now + constants.DASH_COOLDOWN
-    
+
     def update_dash(self, obstacles):
-        """
-        Oppdater dash-bevegelse. Kalles hver frame.
-        
-        Args:
-            obstacles: Liste av hindringer for kollisjonsjekk
-        """
+        """Update dash movement. Call every frame."""
         now = pygame.time.get_ticks()
         if not self.is_dashing:
             return
-
         if now >= self.dash_end_time:
             self.is_dashing = False
             return
@@ -196,22 +174,20 @@ class Player(Entity):
             self.is_dashing = False
 
         self.sync_pos_from_rect()
-    
+
     # ========== HELPERS ==========
 
     def _level_up(self):
-        """Håndter ett level-opp: oppdater stats og varsle HUD."""
+        """Handle one level-up: update stats and notify the HUD."""
         self.level += 1
 
-        bonus_hp = constants.XP_HP_BONUS_PER_LEVEL
-        self.health = min(self.health + bonus_hp, constants.PLAYER_HEALTH + bonus_hp * self.level)
-
-        bonus_dps = constants.XP_DPS_BONUS_PER_LEVEL
-        self.dps = min(self.dps + bonus_dps, constants.PLAYER_DPS + bonus_dps * self.level)
-
+        bonus_hp    = constants.XP_HP_BONUS_PER_LEVEL
+        bonus_dps   = constants.XP_DPS_BONUS_PER_LEVEL
         bonus_speed = constants.XP_SPEED_BONUS_PER_LEVEL
-        self.speed = min(self.speed + bonus_speed, constants.PLAYER_SPEED + bonus_speed * self.level)
 
+        self.health = min(self.health + bonus_hp,    constants.PLAYER_HEALTH + bonus_hp    * self.level)
+        self.dps    = min(self.dps    + bonus_dps,   constants.PLAYER_DPS    + bonus_dps   * self.level)
+        self.speed  = min(self.speed  + bonus_speed, constants.PLAYER_SPEED  + bonus_speed * self.level)
 
         if self._hud is not None:
             self._hud.notify_levelup(self.level)

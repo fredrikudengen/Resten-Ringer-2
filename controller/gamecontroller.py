@@ -1,14 +1,14 @@
 import pygame
-from core import constants
 
-from components import Projectile
+from core import constants
+from components import Bullet
 
 
 def player_input(player, obstacles, world, camera):
     keys = pygame.key.get_pressed()
     now = pygame.time.get_ticks()
     mouse_pos_screen = pygame.mouse.get_pos()
-    mouse_pos_world = camera.screen_to_world(mouse_pos_screen)
+    mouse_pos_world = camera.screen_to_world(*mouse_pos_screen)
 
     # --- bevegelse ---
     old_x, old_y = player.rect.x, player.rect.y
@@ -25,23 +25,13 @@ def player_input(player, obstacles, world, camera):
         player.rect.x += player.speed
         if _collides(player, obstacles): player.rect.x = old_x
 
-    # --- skyting ---
-    if now > player.attack_cooldown:
-        player.playerAttack = False
     mouse_buttons = pygame.mouse.get_pressed()
-
-    if mouse_buttons[0] and now >= player.attack_cooldown:
-        direction = pygame.math.Vector2(
-            mouse_pos_world[0] - player.rect.centerx,
-            mouse_pos_world[1] - player.rect.centery
-        )
-    
-        if direction.length_squared() > 0:
-            proj = Projectile(player.rect.center, direction)
-            world.projectiles.append(proj)
-
-            player.attack_cooldown = now + constants.PLAYER_ATTACK_COOLDOWN
-
+    if mouse_buttons[0]:  
+        mx, my      = pygame.mouse.get_pos()
+        world_mouse = camera.screen_to_world(mx, my)
+        bullets     = player.shoot(world_mouse)
+        world.add_bullets(bullets)
+        
     # --- dash ---
     if keys[pygame.K_SPACE]:
         dash_dir = pygame.math.Vector2(0, 0)
