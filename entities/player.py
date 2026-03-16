@@ -24,7 +24,7 @@ class Player(Entity):
         self.char_name          = char['name']
         self.color              = constants.PLAYER_COLOR
         self.dps                = constants.PLAYER_DPS
-        self.is_moving           = False
+        self.is_moving          = False
 
         # Gun
         self.gun = char.get('gun', Shotgun)()
@@ -182,13 +182,9 @@ class Player(Entity):
         """Handle one level-up: update stats and notify the HUD."""
         self.level += 1
 
-        bonus_hp    = constants.XP_HP_BONUS_PER_LEVEL
-        bonus_dps   = constants.XP_DPS_BONUS_PER_LEVEL
-        bonus_speed = constants.XP_SPEED_BONUS_PER_LEVEL
-
-        self.health = min(self.health + bonus_hp,    constants.PLAYER_HEALTH + bonus_hp    * self.level)
-        self.dps    = min(self.dps    + bonus_dps,   constants.PLAYER_DPS    + bonus_dps   * self.level)
-        self.speed  = min(self.speed  + bonus_speed, constants.PLAYER_SPEED  + bonus_speed * self.level)
+        self.health += constants.XP_HP_BONUS_PER_LEVEL
+        self.dps    += constants.XP_DPS_BONUS_PER_LEVEL
+        self.speed  += constants.XP_SPEED_BONUS_PER_LEVEL
 
         if self._hud is not None:
             self._hud.notify_levelup(self.level)

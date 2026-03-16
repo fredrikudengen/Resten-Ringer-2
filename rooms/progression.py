@@ -34,3 +34,26 @@ def choose_enemy(progression_level: int):
     """Velg en tilfeldig enemy class basert på progression level."""
     pool = ENEMY_POOL.get(min(progression_level, 10), ENEMY_POOL[10])
     return random.choice(pool)
+
+
+def scale_enemy(enemy, progression_level: int):
+    """
+    Apply a stat multiplier to a freshly spawned enemy based on progression level.
+
+    HP scales faster than damage so rooms feel meatier without suddenly
+    one-shotting the player. Both curves are tuned so that player level-up
+    bonuses comfortably outpace enemy growth.
+
+    Level 1:  1.00x HP, 1.00x dmg  (baseline)
+    Level 5:  1.60x HP, 1.32x dmg
+    Level 10: 2.35x HP, 1.72x dmg
+    """
+    if progression_level <= 1:
+        return enemy
+
+    hp_mult  = 1.0 + (progression_level - 1) * 0.15
+    dmg_mult = 1.0 + (progression_level - 1) * 0.08
+
+    enemy.health = int(enemy.health * hp_mult)
+    enemy.damage = round(enemy.damage * dmg_mult, 1)
+    return enemy

@@ -117,11 +117,13 @@ class World:
 
     def add_enemy(self, x, y, enemy_type=None):
         if enemy_type is None:
-            self.enemies.append(Enemy(x, y))
+            enemy = Enemy(x, y)
         elif isinstance(enemy_type, str):
-            self.enemies.append(self._resolve_enemy_type(enemy_type)(x, y))
+            enemy = self._resolve_enemy_type(enemy_type)(x, y)
         else:
-            self.enemies.append(enemy_type(x, y))
+            enemy = enemy_type(x, y)
+        self.enemies.append(enemy)
+        return enemy
 
     def add_powerup(self, powerup):
         self.powerups.append(powerup)

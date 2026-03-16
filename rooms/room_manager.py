@@ -6,7 +6,7 @@ import pygame
 from core import constants
 from components import Door
 from rooms.room_registry import build_rooms
-from rooms.progression import level_from_rooms_cleared, choose_enemy
+from rooms.progression import level_from_rooms_cleared, choose_enemy, scale_enemy
 
 
 @dataclass
@@ -63,7 +63,7 @@ class RoomManager:
                 self.progression_level = level_from_rooms_cleared(self.rooms_cleared)
             candidates = (
                 self.rooms["reward"]
-                if random.random() < 0.10
+                if random.random() < 0.15
                 else self.rooms["combat"]
             )
 
@@ -105,9 +105,11 @@ class RoomManager:
 
     def _handle_tag(self, tag, x, y, gx, gy):
         if tag in constants._TAG_TO_ENEMY:
-            self.world.add_enemy(x, y, enemy_type=constants._TAG_TO_ENEMY[tag])
+            enemy = self.world.add_enemy(x, y, enemy_type=constants._TAG_TO_ENEMY[tag])
+            scale_enemy(enemy, self.progression_level)
         elif tag == 'enemy':
-            self.world.add_enemy(x, y, enemy_type=choose_enemy(self.progression_level))
+            enemy = self.world.add_enemy(x, y, enemy_type=choose_enemy(self.progression_level))
+            scale_enemy(enemy, self.progression_level)
         elif tag in constants._TAG_TO_POWERUP:
             cls, amount = constants._TAG_TO_POWERUP[tag]
             self.world.add_powerup(cls(x, y, amount))
