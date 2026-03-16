@@ -20,7 +20,7 @@ PLAYER_COLOR = (255, 255, 255)
 # gameplay – player
 PLAYER_SPEED              = 5
 PLAYER_DPS                = 1
-PLAYER_HEALTH             = 5
+PLAYER_HEALTH             = 100
 PLAYER_SIZE               = (50, 50)
 ALIVE                     = True
 PLAYER_ATTACK_COOLDOWN    = 500
@@ -32,7 +32,7 @@ PLAYER_HIT_INVINCIBLE_MS  = 600
 BUFF_VALUES = {
     'speed_boost':  ('speed',  3),
     'attack_boost': ('dps',    1),
-    'shield_boost': ('health', 2),
+    'shield_boost': ('health', 20),
 }
 BUFF_DURATIONS = {
     'speed_boost':  5000,  
@@ -42,10 +42,6 @@ BUFF_DURATIONS = {
 BUFF_SPEED_MULTIPLIER  = 1.5
 BUFF_ATTACK_MULTIPLIER = 1.75
 
-# gameplay - projectile
-PROJECTILE_DAMAGE = 1
-PROJECTILE_SPEED  = 600
-
 # gameplay – enemy
 LOSE_SIGHT_TIME          = 2400                
 ENEMY_WANDER_INTERVAL_MS = (1200, 2500)   # (min, max) pause 
@@ -53,7 +49,7 @@ ENEMY_WANDER_INTERVAL_MS = (1200, 2500)   # (min, max) pause
 # XP og level
 XP_BASE               = 100     # XP til level 2
 XP_SCALE              = 1.5     # Skalering per level (100 → 150 → 225 …)
-XP_HP_BONUS_PER_LEVEL = 5       
+XP_HP_BONUS_PER_LEVEL = 15      
 XP_DPS_BONUS_PER_LEVEL = 2
 XP_SPEED_BONUS_PER_LEVEL = 1
 
@@ -146,4 +142,3 @@ HUD_COLORS: dict[str, tuple] = {
  
     'levelup':     (255, 230, 80,  180),
 }
-
