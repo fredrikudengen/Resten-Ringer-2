@@ -4,7 +4,7 @@ from gamestates import StateMachine
 pygame.init()
 
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-pygame.display.set_caption("Dungeon Crawler")
+pygame.display.set_caption("Resten Ringer 2")
 clock = pygame.time.Clock()
 
 sm = StateMachine(screen)

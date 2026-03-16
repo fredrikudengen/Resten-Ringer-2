@@ -18,8 +18,8 @@ class MainMenuState(BaseState):
         font_btn   = pygame.font.SysFont('consolas', 22, bold=True)
         font_sub   = pygame.font.SysFont('consolas', 16)
 
-        self._title    = font_title.render('DUNGEON CRAWLER', True, C['title'])
-        self._subtitle = font_sub.render('a gungeon-like', True, C['text_dim'])
+        self._title    = font_title.render('Resten Ringer 2', True, C['title'])
+        self._subtitle = font_sub.render('bigger and better', True, C['text_dim'])
 
         btn_w, btn_h = 240, 52
         cx = sw // 2 - btn_w // 2

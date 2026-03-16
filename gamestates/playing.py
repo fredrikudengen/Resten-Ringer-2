@@ -28,7 +28,7 @@ class PlayingState(BaseState):
         player_input(sm.player, sm.world.obstacles, sm.world, sm.camera)
         sm.camera.update(sm.player.rect)
         sm.world.update(dt, sm.player)
-        sm.room_manager.update()
+        sm.room_manager.update(sm.player)
 
         if sm.player.health <= 0:
             self._sm.transition(State.GAME_OVER)

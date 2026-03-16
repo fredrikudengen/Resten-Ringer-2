@@ -9,20 +9,24 @@ def player_input(player, obstacles, world, camera):
     now = pygame.time.get_ticks()
     mouse_pos_screen = pygame.mouse.get_pos()
     mouse_pos_world = camera.screen_to_world(*mouse_pos_screen)
-
+    player.is_moving = False
     # --- bevegelse ---
     old_x, old_y = player.rect.x, player.rect.y
     if keys[pygame.K_w]:
         player.rect.y -= player.speed
+        player.is_moving = True
         if _collides(player, obstacles): player.rect.y = old_y
     if keys[pygame.K_s]:
         player.rect.y += player.speed
+        player.is_moving = True
         if _collides(player, obstacles): player.rect.y = old_y
     if keys[pygame.K_a]:
         player.rect.x -= player.speed
+        player.is_moving = True
         if _collides(player, obstacles): player.rect.x = old_x
     if keys[pygame.K_d]:
         player.rect.x += player.speed
+        player.is_moving = True
         if _collides(player, obstacles): player.rect.x = old_x
 
     mouse_buttons = pygame.mouse.get_pressed()

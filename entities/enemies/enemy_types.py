@@ -178,5 +178,5 @@ class BossEnemy(Enemy):
         """Custom tegning for boss – gul border."""
         super().draw(screen, camera)
         import pygame
-        draw_rect = camera.apply(rect)
+        draw_rect = camera.apply(self.rect)
         pygame.draw.rect(screen, (255, 255, 0), draw_rect, 3)

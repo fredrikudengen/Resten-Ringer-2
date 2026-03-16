@@ -51,14 +51,12 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         """
         now = pygame.time.get_ticks()
 
-        # Død short-circuit
         if self.health <= 0:
             self.alive         = False
             self.state         = "dead"
             self.wander_goal_g = None
             return
 
-        # Treff / i-frames
         if self.hit:
             self.hit_timer      = now
             self.hit            = False
@@ -69,7 +67,6 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         if self.hit_timer and (now - self.hit_timer > 500):
             self.hit_timer = None
 
-        # Sansing
         player_center = player.rect.center
         enemy_center  = self.rect.center
         see_player    = False
@@ -81,7 +78,6 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
                 self.last_seen_pos  = player_center
                 self.search_started = None
 
-        # ---------------- State-maskin ----------------
         if self.state in ("idle", "walk", "hurt"):
             if see_player:
                 self.state = "chase"
@@ -120,49 +116,6 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
         elif self.state == "dead":
             return
-        
-    def _idle(self, room, obstacles, dt_ms, now):
-        """Håndter idle state med micro-wander."""
-        if self.wander_goal_g is not None:
-            next_tile_g = self._micro_wander(room, self.wander_goal_g, self.wander_radius)
-            if next_tile_g:
-                target_px = self._center_of_tile(*next_tile_g)
-                wander_end = self._move_towards(target_px, obstacles, dt_ms)
-            else:
-                wander_end = True  
-
-            gx, gy = self._grid_pos()
-                    
-            if wander_end or (gx, gy) == self.wander_goal_g:
-                self.wander_goal_g = None
-                wait = random.randint(*self.WANDER_INTERVAL_MS)
-                self.next_wander_at = now + wait
-                        
-        elif now >= self.next_wander_at:
-            start_g = self._grid_pos()
-            goal = self._pick_random_free_tile(room, start_g, self.WANDER_RADIUS_TILES)
-            if goal and goal != start_g:
-                self.wander_goal_g = goal
-            else:
-                wait = random.randint(*self.WANDER_INTERVAL_MS)
-                self.next_wander_at = now + wait
-    
-    def _search(self, obstacles, room, dt_ms, now):
-        """Håndter search state - gå til siste kjente posisjon."""
-        T = constants.TILE_SIZE
-        goal_g = (self.last_seen_pos[0] // T, self.last_seen_pos[1] // T)
-        next_tile_g = self._astar_next_step(room, goal_g, max_expansions=512)
-        if next_tile_g:
-            target_px = self._center_of_tile(*next_tile_g)
-            reached = self._move_towards(target_px, obstacles, dt_ms)
-        else:
-            reached = self._move_towards(self.last_seen_pos, obstacles, dt_ms)
-
-        timedout = self.search_started and (now - self.search_started > constants.LOSE_SIGHT_TIME)
-        if reached or timedout:
-            self.state = "idle"
-            self.last_seen_pos = None
-            self.search_started = None  
 
     def draw(self, screen, camera):
         """
@@ -188,7 +141,50 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
         pygame.draw.rect(screen, color, draw_rect)
 
-    # ------------------------- INTERN LOGIKK -------------------------
+    # ========== HELPERS ==========
+        
+    def _idle(self, room, obstacles, dt_ms, now):
+        """Håndter idle state med micro-wander."""
+        if self.wander_goal_g is not None:
+            next_tile_g = self._micro_wander(room, self.wander_goal_g, self.wander_radius)
+            if next_tile_g:
+                target_px = self._center_of_tile(*next_tile_g)
+                wander_end = self._move_towards(target_px, obstacles, dt_ms)
+            else:
+                wander_end = True  
+
+            gx, gy = self._grid_pos()
+                    
+            if wander_end or (gx, gy) == self.wander_goal_g:
+                self.wander_goal_g = None
+                wait = random.randint(*self.WANDER_INTERVAL_MS)
+                self.next_wander_at = now + wait
+                        
+        elif now >= self.next_wander_at:
+            start_g = self._grid_pos()
+            goal = self._pick_random_free_tile(room, start_g, self.wander_radius)
+            if goal and goal != start_g:
+                self.wander_goal_g = goal
+            else:
+                wait = random.randint(*self.WANDER_INTERVAL_MS)
+                self.next_wander_at = now + wait
+    
+    def _search(self, obstacles, room, dt_ms, now):
+        """Håndter search state - gå til siste kjente posisjon."""
+        T = constants.TILE_SIZE
+        goal_g = (self.last_seen_pos[0] // T, self.last_seen_pos[1] // T)
+        next_tile_g = self._astar_next_step(room, goal_g, max_expansions=512)
+        if next_tile_g:
+            target_px = self._center_of_tile(*next_tile_g)
+            reached = self._move_towards(target_px, obstacles, dt_ms)
+        else:
+            reached = self._move_towards(self.last_seen_pos, obstacles, dt_ms)
+
+        timedout = self.search_started and (now - self.search_started > constants.LOSE_SIGHT_TIME)
+        if reached or timedout:
+            self.state = "idle"
+            self.last_seen_pos = None
+            self.search_started = None  
 
     def _damage_player(self, player, amount):
         """

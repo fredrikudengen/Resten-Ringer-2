@@ -24,6 +24,7 @@ class Player(Entity):
         self.char_name          = char['name']
         self.color              = constants.PLAYER_COLOR
         self.dps                = constants.PLAYER_DPS
+        self.is_moving           = False
 
         # Gun
         self.gun = char.get('gun', Shotgun)()

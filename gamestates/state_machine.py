@@ -91,9 +91,9 @@ class StateMachine:
         from core                  import HUD
 
         self.world        = World()
-        self.player       = Player(selected_character=self.selected_character)
         self.camera       = Camera(self.screen.get_width(), self.screen.get_height())
         self.hud          = HUD()
+        self.player       = Player(selected_character=self.selected_character, hud=self.hud)
         self.room_manager = RoomManager(self.world, self.player, self.camera)
 
         playing   = PlayingState(self)

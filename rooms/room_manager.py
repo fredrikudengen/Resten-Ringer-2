@@ -34,7 +34,7 @@ class RoomManager:
 
     # ========== PUBLIC API ==========
 
-    def update(self):
+    def update(self, player):
         if not self._room_cleared:
             self._room_cleared = len(self.world.enemies) == 0
             for d in self.doors:
@@ -43,7 +43,7 @@ class RoomManager:
 
         if self._room_cleared:
             for d in self.doors:
-                if self.player.rect.colliderect(d.door.trigger):
+                if self.player.rect.colliderect(d.door.trigger) and player.is_moving:
                     entry_side = self._door_side(self.world.current_room, *d.grid_pos)
                     self._go_to_next_room(entry_side)
                     break
@@ -55,12 +55,12 @@ class RoomManager:
     # ========== HELPERS ==========
 
     def _go_to_next_room(self, entry_side):
-        self.rooms_cleared     += 1
-        self.progression_level  = level_from_rooms_cleared(self.rooms_cleared)
-
         if self.current_room_type == "reward":
             candidates = self.rooms["combat"]
         else:
+            if self.current_room_type != "start":
+                self.rooms_cleared += 1
+                self.progression_level = level_from_rooms_cleared(self.rooms_cleared)
             candidates = (
                 self.rooms["reward"]
                 if random.random() < 0.10

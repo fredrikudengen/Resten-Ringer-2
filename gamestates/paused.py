@@ -33,7 +33,6 @@ class PausedState(BaseState):
             self._sm.transition(State.MAIN_MENU)
 
     def draw(self, surface: pygame.Surface):
-        # Render the frozen game world underneath
         self._playing.draw(surface)
         draw_overlay(surface)
 
