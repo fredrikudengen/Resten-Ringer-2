@@ -176,9 +176,9 @@ class HUD:
 
         cy = y
 
-        hp_pct = player.health / max(1, constants.PLAYER_HEALTH)
+        hp_pct = player.health / max(1, player.max_health)
         hp_label = self._font_label.render(
-            f"HP  {player.health}/{constants.PLAYER_HEALTH}",
+            f"HP  {player.health}/{player.max_health}",
             True, _C["text_main"]
         )
         screen.blit(hp_label, (x, cy))

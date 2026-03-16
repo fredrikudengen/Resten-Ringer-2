@@ -1,8 +1,15 @@
 import pygame
 from core import constants
 from .entity import Entity
-from components import Shotgun
+from components import Pistol, Shotgun, MachineGun, SniperRifle
 from gamestates.char_select import CHARACTERS
+
+_GUN_MAP = {
+    'Pistol':      Pistol,
+    'Shotgun':     Shotgun,
+    'MachineGun':  MachineGun,
+    'SniperRifle': SniperRifle,
+}
 
 class Player(Entity):
     """
@@ -13,21 +20,28 @@ class Player(Entity):
     def __init__(self, selected_character: int = 0, hud=None):
         char = CHARACTERS[selected_character]
 
-        self.health = char.get('health', constants.PLAYER_HEALTH)
-        self.speed  = char.get('speed',  constants.PLAYER_SPEED)
-        self.width  = constants.PLAYER_SIZE[0]
-        self.height = constants.PLAYER_SIZE[1]
+        self.health     = char.get('health', constants.PLAYER_HEALTH)
+        self.max_health = self.health
+        self.speed      = char.get('speed',  constants.PLAYER_SPEED)
+        self.width      = constants.PLAYER_SIZE[0]
+        self.height     = constants.PLAYER_SIZE[1]
 
         super().__init__(x=0, y=0)
 
         self.selected_character = selected_character
         self.char_name          = char['name']
-        self.color              = constants.PLAYER_COLOR
+        self.color              = char.get('color', constants.PLAYER_COLOR)
         self.dps                = constants.PLAYER_DPS
         self.is_moving          = False
 
-        # Gun
-        self.gun = char.get('gun', Shotgun)()
+        # Gun — resolved from string name via _GUN_MAP
+        gun_key    = char.get('gun', 'Shotgun')
+        gun_class  = _GUN_MAP.get(gun_key, Shotgun)
+        self.gun   = gun_class()
+
+        # Per-character dash timings
+        self._dash_duration = constants.DASH_DURATION
+        self._dash_cooldown = char.get('dash_cooldown', constants.DASH_COOLDOWN)
 
         # Attack / debug
         self.attack_cooldown    = constants.PLAYER_ATTACK_COOLDOWN
@@ -147,8 +161,8 @@ class Player(Entity):
 
         self.is_dashing        = True
         self.dash_direction    = direction.normalize()
-        self.dash_end_time     = now + constants.DASH_DURATION
-        self.dash_cooldown_end = now + constants.DASH_COOLDOWN
+        self.dash_end_time     = now + self._dash_duration
+        self.dash_cooldown_end = now + self._dash_cooldown
 
     def update_dash(self, obstacles):
         """Update dash movement. Call every frame."""
@@ -182,9 +196,10 @@ class Player(Entity):
         """Handle one level-up: update stats and notify the HUD."""
         self.level += 1
 
-        self.health += constants.XP_HP_BONUS_PER_LEVEL
-        self.dps    += constants.XP_DPS_BONUS_PER_LEVEL
-        self.speed  += constants.XP_SPEED_BONUS_PER_LEVEL
+        self.health     += constants.XP_HP_BONUS_PER_LEVEL
+        self.max_health += constants.XP_HP_BONUS_PER_LEVEL
+        self.dps        += constants.XP_DPS_BONUS_PER_LEVEL
+        self.speed      += constants.XP_SPEED_BONUS_PER_LEVEL
 
         if self._hud is not None:
             self._hud.notify_levelup(self.level)

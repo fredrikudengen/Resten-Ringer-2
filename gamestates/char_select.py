@@ -8,29 +8,45 @@ from .ui_helpers import Button, draw_panel, C
 
 CHARACTERS: list[dict] = [
     {
-        'name':        'Fredrik',
-        'description': 'Balanced stats. Good starting weapon.',
-        'color':       (100, 180, 255),
+        'name':          'Fredrik',
+        'description':   'Balanced stats and reliable pistol. Solid choice for any situation.',
+        'color':         (100, 180, 255),
+        'health':        100,
+        'speed':         5,
+        'gun':           'Pistol',
+        'dash_cooldown': 1300,
     },
     {
-        'name':        'Johanne',
-        'description': 'Fast dash. Lower health.',
-        'color':       (180, 100, 255),
+        'name':          'Johanne',
+        'description':   'Lightning fast with a quick dash cooldown. Fragile but relentless.',
+        'color':         (180, 100, 255),
+        'health':        75,
+        'speed':         7,
+        'gun':           'MachineGun',
+        'dash_cooldown': 800,
     },
     {
-        'name':        'Jonathan',
-        'description': 'High HP. Slower movement.',
-        'color':       (255, 160, 60),
+        'name':          'Jonathan',
+        'description':   'Slow and heavy. Enormous HP and a shotgun that punishes close range.',
+        'color':         (255, 160, 60),
+        'health':        150,
+        'speed':         3,
+        'gun':           'Shotgun',
+        'dash_cooldown': 1600,
     },
     {
-        'name':        'Leila',
-        'description': 'IDK yet.',
-        'color':       (100, 180, 255),
-    }
+        'name':          'Leila',
+        'description':   'Precise and deadly. Piercing sniper shots reward careful positioning.',
+        'color':         (80, 220, 160),
+        'health':        80,
+        'speed':         5,
+        'gun':           'SniperRifle',
+        'dash_cooldown': 1000,
+    },
 ]
 
 _CARD_W = 160
-_CARD_H = 220
+_CARD_H = 280
 _CARD_GAP = 24
 
 
@@ -98,6 +114,19 @@ class CharacterSelectState(BaseState):
             for j, line in enumerate(self._wrap(char['description'], 18)):
                 ln_surf = self._font_desc.render(line, True, C['text_dim'])
                 surface.blit(ln_surf, (card.centerx - ln_surf.get_width() // 2, card.y + 126 + j * 18))
+
+            # Stat lines
+            stats = [
+                (f"HP    {char['health']}"),
+                (f"SPD   {char['speed']}"),
+                (f"GUN   {char['gun']}"),
+                (f"DASH  {char['dash_cooldown']}ms"),
+            ]
+            stat_y = card.y + _CARD_H - 4 - len(stats) * 16
+            for k, stat in enumerate(stats):
+                col = char['color'] if selected else C['stat_label']
+                s = self._font_desc.render(stat, True, col)
+                surface.blit(s, (card.x + 10, stat_y + k * 16))
 
         self._btn_confirm.draw(surface, selected=True)
         self._btn_back.draw(surface)
