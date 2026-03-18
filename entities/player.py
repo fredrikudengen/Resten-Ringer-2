@@ -22,6 +22,7 @@ class Player(Entity):
 
         self.health     = char.get('health', constants.PLAYER_HEALTH)
         self.max_health = self.health
+        self.alive      = True
         self.speed      = char.get('speed',  constants.PLAYER_SPEED)
         self.width      = constants.PLAYER_SIZE[0]
         self.height     = constants.PLAYER_SIZE[1]
@@ -33,6 +34,7 @@ class Player(Entity):
         self.color              = char.get('color', constants.PLAYER_COLOR)
         self.dps                = constants.PLAYER_DPS
         self.is_moving          = False
+        self.total_kills       = 0
 
         # Gun — resolved from string name via _GUN_MAP
         gun_key    = char.get('gun', 'Shotgun')

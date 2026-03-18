@@ -37,7 +37,7 @@ class GameOverState(BaseState):
         sm = self._sm
         self._stats = [
             ('Rooms cleared',  str(sm.room_manager.rooms_cleared)),
-            ('Enemies killed', str(sm.room_manager.total_kills)),
+            ('Enemies killed', str(sm.player.total_kills)),
             ('Level reached',  str(sm.player.level)),
         ]
 

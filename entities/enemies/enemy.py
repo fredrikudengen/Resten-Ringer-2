@@ -62,10 +62,12 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             self.hit            = False
             self.last_seen_pos  = player.rect.center
             self.search_started = now
-            self.state          = "search"
+            # TODO: implement true hurt state
+            self.state          = "hurt"
         
         if self.hit_timer and (now - self.hit_timer > 500):
             self.hit_timer = None
+            self.state = "search"
 
         player_center = player.rect.center
         enemy_center  = self.rect.center

@@ -34,6 +34,7 @@ class World:
             if not enemy.alive:
                 self._spawn_hit_particles(enemy.rect.centerx, enemy.rect.centery, n=10)
                 player.gain_xp(enemy.xp_reward)
+                player.total_kills += 1
                 self.enemies.remove(enemy)
 
         # -- Bullets --

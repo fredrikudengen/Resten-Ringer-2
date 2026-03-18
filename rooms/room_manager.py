@@ -24,7 +24,6 @@ class RoomManager:
 
         self.rooms             = build_rooms()
         self.doors: list[DoorEntry] = []
-        self.total_kills       = 0
         self.rooms_cleared     = 0
         self.progression_level = 1
         self.current_room_type = "start"

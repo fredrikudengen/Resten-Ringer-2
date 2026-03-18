@@ -55,9 +55,6 @@ def player_input(player, obstacles, world, camera):
     player.update_knockback(obstacles)
     player.update_dash(obstacles)
     player.update_powerups()
-    
-    if player.health <= 0:
-        player.alive = False
 
     player.sync_pos_from_rect()
 
