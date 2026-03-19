@@ -20,6 +20,7 @@ class Bullet:
         radius,
         color,
         max_range,
+        team
     ):
         self.pos       = Vector2(pos)
         self.direction = direction.normalize()
@@ -29,6 +30,7 @@ class Bullet:
         self.color     = color
         self.max_range = max_range
         self.alive     = True
+        self.team = team
 
         self._distance_travelled = 0.0
 

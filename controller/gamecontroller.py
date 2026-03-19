@@ -10,6 +10,7 @@ def player_input(player, obstacles, world, camera):
     mouse_pos_screen = pygame.mouse.get_pos()
     mouse_pos_world = camera.screen_to_world(*mouse_pos_screen)
     player.is_moving = False
+
     # --- bevegelse ---
     old_x, old_y = player.rect.x, player.rect.y
     if keys[pygame.K_w]:
@@ -29,13 +30,21 @@ def player_input(player, obstacles, world, camera):
         player.is_moving = True
         if _collides(player, obstacles): player.rect.x = old_x
 
+    # --- skyting ---
     mouse_buttons = pygame.mouse.get_pressed()
-    if mouse_buttons[0]:  
+    if mouse_buttons[0]:
         mx, my      = pygame.mouse.get_pos()
         world_mouse = camera.screen_to_world(mx, my)
         bullets     = player.shoot(world_mouse)
         world.add_bullets(bullets)
-        
+
+    # --- reload (R) ---
+    if keys[pygame.K_r]:
+        player.gun.start_reload()
+
+    # --- oppdater reload-timer kvar frame ---
+    player.gun.update_reload()
+
     # --- dash ---
     if keys[pygame.K_SPACE]:
         dash_dir = pygame.math.Vector2(0, 0)
@@ -44,19 +53,20 @@ def player_input(player, obstacles, world, camera):
         if keys[pygame.K_a]: dash_dir.x -= 1
         if keys[pygame.K_d]: dash_dir.x += 1
 
-        # Hvis ingen retning dash mot musen
+        # Hvis ingen retning, dash mot musen
         if dash_dir.length_squared() == 0:
             dash_dir = pygame.math.Vector2(
                 mouse_pos_world[0] - player.rect.centerx,
                 mouse_pos_world[1] - player.rect.centery
             )
         player.start_dash(dash_dir)
-    
+
     player.update_knockback(obstacles)
     player.update_dash(obstacles)
     player.update_powerups()
 
     player.sync_pos_from_rect()
+
 
 def _collides(player, obstacles):
     for obs in obstacles:

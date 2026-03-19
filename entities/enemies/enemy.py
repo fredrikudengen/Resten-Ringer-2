@@ -64,7 +64,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             self.search_started = now
             # TODO: implement true hurt state
             self.state          = "hurt"
-        
+
         if self.hit_timer and (now - self.hit_timer > 500):
             self.hit_timer = None
             self.state = "search"

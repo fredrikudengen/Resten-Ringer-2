@@ -16,13 +16,15 @@ class Gun:
     special firing behaviour (e.g. spread shots, burst fire).
 
     Attributes:
-        damage:       Damage per bullet
-        fire_rate_ms: Minimum milliseconds between shots
-        bullet_speed: Pixels per second
+        damage:        Damage per bullet
+        fire_rate_ms:  Minimum milliseconds between shots
+        bullet_speed:  Pixels per second
         bullet_radius: Visual radius of each bullet
         bullet_color:  RGB colour of each bullet
-        max_range:    Max pixels a bullet travels before dying
-        name:         Display name shown in HUD
+        max_range:     Max pixels a bullet travels before dying
+        name:          Display name shown in HUD
+        max_ammo:      Magazine size. -1 = infinite (no ammo tracking)
+        reload_time_ms: How long a full reload takes in milliseconds
     """
 
     damage:        float = 20.0
@@ -32,11 +34,59 @@ class Gun:
     bullet_color:  tuple = (220, 220, 50)
     max_range:     float = 800.0
     name:          str   = "Gun"
+    team:          str   = "player"
+
+    # Ammo — set max_ammo > 0 in subclass to enable tracking
+    max_ammo:      int   = -1        # -1 = infinite
+    reload_time_ms: int  = 2000
 
     def __init__(self):
-        self._last_shot_at: int = 0
+        self._last_shot_at: int        = 0
+        self._reload_start: int | None = None
+        # Initialise current_ammo from class-level max_ammo
+        self.current_ammo: int = self.max_ammo
+
+    # ========== Ammo / reload ==========
+
+    @property
+    def is_reloading(self) -> bool:
+        return self._reload_start is not None
+
+    @property
+    def ammo_infinite(self) -> bool:
+        return self.max_ammo < 0
+
+    def start_reload(self):
+        """Begin reload if magazine is not already full and not already reloading."""
+        if self.ammo_infinite:
+            return
+        if self._reload_start is None and self.current_ammo < self.max_ammo:
+            self._reload_start = pygame.time.get_ticks()
+
+    def update_reload(self):
+        """
+        Advance the reload timer. Must be called every frame
+        (from player update or enemy move).
+        """
+        if self._reload_start is not None:
+            if pygame.time.get_ticks() - self._reload_start >= self.reload_time_ms:
+                self.current_ammo  = self.max_ammo
+                self._reload_start = None
+
+    def reload_progress(self) -> float:
+        """0.0 → 1.0 fraction of reload complete. 1.0 when not reloading."""
+        if self._reload_start is None:
+            return 1.0
+        elapsed = pygame.time.get_ticks() - self._reload_start
+        return min(elapsed / self.reload_time_ms, 1.0)
+
+    # ========== Shooting ==========
 
     def can_shoot(self) -> bool:
+        if self.is_reloading:
+            return False
+        if not self.ammo_infinite and self.current_ammo <= 0:
+            return False
         return pygame.time.get_ticks() - self._last_shot_at >= self.fire_rate_ms
 
     def shoot(self, origin: tuple[float, float], direction: Vector2) -> list[Bullet]:
@@ -48,10 +98,18 @@ class Gun:
             return []
 
         self._last_shot_at = pygame.time.get_ticks()
+        self._consume_ammo(1)
         return [self._make_bullet(origin, direction)]
 
-
     # ========== Helpers ==========
+
+    def _consume_ammo(self, n: int = 1):
+        """Decrement ammo and auto-start reload when empty."""
+        if self.ammo_infinite:
+            return
+        self.current_ammo = max(0, self.current_ammo - n)
+        if self.current_ammo == 0:
+            self.start_reload()
 
     def _make_bullet(
         self,
@@ -77,6 +135,7 @@ class Gun:
             radius    = self.bullet_radius,
             color     = self.bullet_color,
             max_range = self.max_range,
+            team      = self.team
         )
 
 
@@ -84,13 +143,16 @@ class Gun:
 
 class Pistol(Gun):
     """Balanced starting weapon. Reliable single shot."""
-    name          = "Pistol"
-    damage        = 20.0
-    fire_rate_ms  = 350
-    bullet_speed  = 650.0
-    bullet_radius = 5
-    bullet_color  = (220, 220, 50)
-    max_range     = 800.0
+    name           = "Pistol"
+    damage         = 20.0
+    fire_rate_ms   = 350
+    bullet_speed   = 650.0
+    bullet_radius  = 5
+    bullet_color   = (220, 220, 50)
+    max_range      = 800.0
+    max_ammo       = 12
+    reload_time_ms = 1400
+    team = "player"
 
 
 class Shotgun(Gun):
@@ -107,11 +169,15 @@ class Shotgun(Gun):
     max_range      = 350.0    # short range intentionally
     pellets        = 5
     spread_degrees = 20.0
+    max_ammo       = 6
+    reload_time_ms = 2000
+    team = "player"
 
     def shoot(self, origin: tuple[float, float], direction: Vector2) -> list[Bullet]:
         if not self.can_shoot() or direction.length_squared() == 0:
             return []
         self._last_shot_at = pygame.time.get_ticks()
+        self._consume_ammo(1)     # one trigger pull = one shell
         return [
             self._make_bullet(origin, direction, spread=self.spread_degrees)
             for _ in range(self.pellets)
@@ -120,19 +186,24 @@ class Shotgun(Gun):
 
 class MachineGun(Gun):
     """Fast firing, lower damage per bullet. High spread."""
-    name          = "Machine Gun"
-    damage        = 10.0
-    fire_rate_ms  = 100
-    bullet_speed  = 700.0
-    bullet_radius = 4
-    bullet_color  = (100, 220, 255)
-    max_range     = 750.0
+    name           = "Machine Gun"
+    damage         = 10.0
+    fire_rate_ms   = 100
+    bullet_speed   = 700.0
+    bullet_radius  = 4
+    bullet_color   = (100, 220, 255)
+    max_range      = 750.0
     spread_degrees = 8.0
+    max_ammo       = 30
+    reload_time_ms = 2500
+    team = "player"
+
 
     def shoot(self, origin: tuple[float, float], direction: Vector2) -> list[Bullet]:
         if not self.can_shoot() or direction.length_squared() == 0:
             return []
         self._last_shot_at = pygame.time.get_ticks()
+        self._consume_ammo(1)
         return [self._make_bullet(origin, direction, spread=self.spread_degrees)]
 
 
@@ -141,18 +212,53 @@ class SniperRifle(Gun):
     Very high damage, very slow fire rate.
     Bullet pierces the first enemy it hits.
     """
-    name          = "Sniper"
-    damage        = 80.0
-    fire_rate_ms  = 1200
-    bullet_speed  = 1200.0
-    bullet_radius = 4
-    bullet_color  = (180, 80, 255)
-    max_range     = 1200.0
+    name           = "Sniper"
+    damage         = 80.0
+    fire_rate_ms   = 1200
+    bullet_speed   = 1200.0
+    bullet_radius  = 4
+    bullet_color   = (180, 80, 255)
+    max_range      = 1200.0
+    max_ammo       = 5
+    reload_time_ms = 2800
+    team = "player"
 
     def shoot(self, origin: tuple[float, float], direction: Vector2) -> list[Bullet]:
         if not self.can_shoot() or direction.length_squared() == 0:
             return []
         self._last_shot_at = pygame.time.get_ticks()
+        self._consume_ammo(1)
         bullet = self._make_bullet(origin, direction)
         bullet.piercing = True   # handled in world.update
         return [bullet]
+
+
+# ========== Enemy-only gun variants ==========
+# Weaker versions tuned for enemies — same bullet types but less damage
+# and slower fire rate so ranged enemies feel fair.
+
+class EnemyPistol(Gun):
+    """Standard ranged-enemy sidearm."""
+    name           = "Enemy Pistol"
+    damage         = 10.0
+    fire_rate_ms   = 800
+    bullet_speed   = 380.0
+    bullet_radius  = 4
+    bullet_color   = (200, 80, 80)    # reddish so player can read enemy shots
+    max_range      = 700.0
+    max_ammo       = 8
+    reload_time_ms = 2200
+    team = "enemy"
+
+class EnemyRifle(Gun):
+    """High-damage slow rifle for elite ranged enemies."""
+    name           = "Enemy Rifle"
+    damage         = 22.0
+    fire_rate_ms   = 1400
+    bullet_speed   = 560.0
+    bullet_radius  = 5
+    bullet_color   = (255, 60, 60)
+    max_range      = 1000.0
+    max_ammo       = 5
+    reload_time_ms = 3000
+    team = "enemy"

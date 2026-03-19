@@ -28,6 +28,12 @@ class World:
             enemy.move(player, self.obstacles, self.current_room, dt_ms)
             enemy._apply_separation(self.enemies)
 
+            # Collect bullets fired by ranged enemies this frame
+            pending = getattr(enemy, 'pending_bullets', None)
+            if pending:
+                self.bullets.extend(pending)
+                pending.clear()
+
             if enemy.hit:
                 self._spawn_hit_particles(enemy.rect.centerx, enemy.rect.centery, n=5)
 
@@ -46,15 +52,24 @@ class World:
                 continue
 
             piercing = getattr(bullet, 'piercing', False)
+
             for enemy in self.enemies:
-                if bullet.rect.colliderect(enemy.rect):
+                if bullet.team == "player" and bullet.rect.colliderect(enemy.rect):
                     enemy.health -= bullet.damage
                     enemy.hit     = True
                     if not piercing:
                         bullet.alive = False
                         break
+            if (bullet.team == "enemy" and
+                    not player.is_invincible
+                    and bullet.rect.colliderect(player.rect)):
+                player.health -= bullet.damage
+                player.hurt_invincible_until = (pygame.time.get_ticks() + constants.PLAYER_HIT_INVINCIBLE_MS)
+                if player.health <= 0:
+                    player.alive = False
+                    bullet.alive = False
 
-            if not bullet.alive:
+            if not bullet.alive and bullet in self.bullets:
                 self.bullets.remove(bullet)
 
         # -- Powerups --
@@ -102,7 +117,9 @@ class World:
             p.draw(screen, camera)
 
     def add_bullets(self, bullets: list[Bullet]):
-        """Add a list of bullets to the world (returned by gun.shoot())."""
+        """Add a list of player bullets to the world (returned by gun.shoot())."""
+        for b in bullets:
+            b.source = 'player'   # tag so world knows these hit enemies, not the player
         self.bullets.extend(bullets)
 
     def clear(self):

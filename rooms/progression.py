@@ -1,7 +1,7 @@
 import random
 from entities import (
     FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy,
-    AssassinEnemy, BruteEnemy, SwarmEnemy
+    AssassinEnemy, BruteEnemy, SwarmEnemy, ShooterEnemy, MarksmanEnemy
 )
 
 # Antall rom ryddet → progression level
@@ -12,13 +12,13 @@ ENEMY_POOL = {
     1:  [SwarmEnemy, SwarmEnemy, FastEnemy],
     2:  [SwarmEnemy, FastEnemy, FastEnemy],
     3:  [FastEnemy, FastEnemy, SlowEnemy],
-    4:  [FastEnemy, SlowEnemy, ScoutEnemy],
-    5:  [FastEnemy, SlowEnemy, ScoutEnemy, AssassinEnemy],
-    6:  [FastEnemy, SlowEnemy, AssassinEnemy, TankEnemy],
-    7:  [SlowEnemy, AssassinEnemy, TankEnemy, BruteEnemy],
-    8:  [AssassinEnemy, AssassinEnemy, TankEnemy, BruteEnemy],
-    9:  [TankEnemy, TankEnemy, BruteEnemy, BruteEnemy, AssassinEnemy],
-    10: [TankEnemy, BruteEnemy, BruteEnemy, AssassinEnemy],
+    4:  [FastEnemy, SlowEnemy, ScoutEnemy, ShooterEnemy],
+    5:  [FastEnemy, SlowEnemy, ScoutEnemy, AssassinEnemy, ShooterEnemy],
+    6:  [FastEnemy, SlowEnemy, AssassinEnemy, TankEnemy, ShooterEnemy, MarksmanEnemy],
+    7:  [SlowEnemy, AssassinEnemy, TankEnemy, BruteEnemy, ShooterEnemy, MarksmanEnemy],
+    8:  [AssassinEnemy, AssassinEnemy, TankEnemy, BruteEnemy, ShooterEnemy, MarksmanEnemy, MarksmanEnemy],
+    9:  [TankEnemy, TankEnemy, BruteEnemy, BruteEnemy, AssassinEnemy, ShooterEnemy, ShooterEnemy, MarksmanEnemy, MarksmanEnemy],
+    10: [TankEnemy, BruteEnemy, BruteEnemy, AssassinEnemy, ShooterEnemy, ShooterEnemy, MarksmanEnemy, MarksmanEnemy]
 }
 
 

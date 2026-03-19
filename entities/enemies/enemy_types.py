@@ -1,4 +1,6 @@
 from .enemy import Enemy
+from .ranged_enemy import RangedEnemy
+from components.gun import EnemyPistol, EnemyRifle
 
 
 # ---------------------------------------------------------------------------
@@ -199,3 +201,64 @@ class BossEnemy(Enemy):
         super().draw(screen, camera)
         draw_rect = camera.apply(self.rect)
         pygame.draw.rect(screen, (255, 255, 120), draw_rect, 3)
+
+
+# ---------------------------------------------------------------------------
+# Ranged enemies
+# ---------------------------------------------------------------------------
+
+class ShooterEnemy(RangedEnemy):
+    """
+    Standard ranged enemy. Keeps its distance and peppers the player
+    with pistol fire. Repositions when LOS is broken.
+    Fragile — punish it before it can reload. ~4 shots to kill.
+    """
+    gun_class          = EnemyPistol
+    preferred_range_px = 300
+    min_range_px       = 130
+
+    speed              = 105
+    health             = 75
+    detection_radius   = 750
+    knockback_strength = 0       # ranged — no melee knockback
+    color              = (180, 80, 220)   # violet
+    xp_reward          = 35
+    width              = 36
+    height             = 36
+    wander_radius      = 5
+
+    def __init__(self, x, y):
+        super().__init__(x, y)
+
+
+class MarksmanEnemy(RangedEnemy):
+    """
+    Long-range threat equipped with a slow but punishing rifle.
+    Prefers to stay far back and take precise shots.
+    Tougher than ShooterEnemy — needs focus fire to bring down. ~6 shots.
+    """
+    gun_class          = EnemyRifle
+    preferred_range_px = 460
+    min_range_px       = 200
+    reposition_interval = 600   # repositions faster to keep sightlines open
+
+    speed              = 80
+    health             = 120
+    detection_radius   = 900
+    knockback_strength = 0
+    color              = (220, 60, 60)   # deep red
+    xp_reward          = 55
+    width              = 40
+    height             = 40
+    wander_radius      = 4
+
+    def __init__(self, x, y):
+        super().__init__(x, y)
+
+    def draw(self, screen, camera):
+        """Draw with a subtle border to telegraph elite ranged threat."""
+        import pygame
+        super().draw(screen, camera)
+        if self.state not in ("dead", "reload"):
+            draw_rect = camera.apply(self.rect)
+            pygame.draw.rect(screen, (255, 120, 120), draw_rect, 2)

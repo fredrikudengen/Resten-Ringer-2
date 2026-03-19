@@ -1,6 +1,6 @@
 from entities import (
     Enemy, FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy,
-    AssassinEnemy, BruteEnemy, SwarmEnemy, BossEnemy,
+    AssassinEnemy, BruteEnemy, SwarmEnemy, BossEnemy, ShooterEnemy, MarksmanEnemy
 )
 from components import Speed_Powerup, Attack_Powerup, Shield_Powerup
 
@@ -89,10 +89,12 @@ CHAR_TO_SPAWN: dict[str, str] = {
     'R': 'brute_enemy',
     'W': 'swarm_enemy',
     'B': 'boss_enemy',
+    'G': 'shooter_enemy',
+    'M': 'marksman_enemy',
     'S': 'speed_powerup',
     'C': 'attack_powerup',
     'H': 'shield_powerup',
-    'D': 'door',
+    'D': 'door'
 }
 
 # room manager
@@ -105,6 +107,8 @@ _TAG_TO_ENEMY: dict[str, type[Enemy]] = {
     'brute_enemy':    BruteEnemy,
     'swarm_enemy':    SwarmEnemy,
     'boss_enemy':     BossEnemy,
+    'shooter_enemy':  ShooterEnemy,
+    'marksman_enemy': MarksmanEnemy
 }
 
 _TAG_TO_POWERUP: dict[str, tuple[type, int]] = {
