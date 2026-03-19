@@ -60,11 +60,14 @@ class RoomManager:
             if self.current_room_type != "start":
                 self.rooms_cleared += 1
                 self.progression_level = level_from_rooms_cleared(self.rooms_cleared)
-            candidates = (
-                self.rooms["reward"]
-                if random.random() < 0.15
-                else self.rooms["combat"]
-            )
+
+            rc = self.rooms_cleared
+            if rc > 0 and rc % 3 == 0:
+                candidates = self.rooms["boss"]
+            elif random.random() < 0.15:
+                candidates = self.rooms["reward"]
+            else:
+                candidates = self.rooms["combat"]
 
         self._load_room(random.choice(candidates), entry_side)
 

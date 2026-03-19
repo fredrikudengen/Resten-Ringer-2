@@ -1,7 +1,7 @@
 from .player import Player
 from .entity import Entity
 from .enemies import Enemy, FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy, AssassinEnemy, BruteEnemy, SwarmEnemy, \
-    BossEnemy, ShooterEnemy, MarksmanEnemy
+    BossEnemy, ShooterEnemy, MarksmanEnemy, WardenBoss
 
 __all__ = [
     # Base classes
@@ -20,5 +20,6 @@ ENEMY_TYPES = {
     "SwarmEnemy":    SwarmEnemy,
     "BossEnemy":     BossEnemy,
     "ShooterEnemy":  ShooterEnemy,
-    "MarksmanEnemy": MarksmanEnemy
+    "MarksmanEnemy": MarksmanEnemy,
+    "WardenBoss":    WardenBoss
 }

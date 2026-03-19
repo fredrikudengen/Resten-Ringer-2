@@ -34,6 +34,13 @@ class World:
                 self.bullets.extend(pending)
                 pending.clear()
 
+            # Collect minions queued by boss enemies this frame
+            spawns = getattr(enemy, 'pending_spawns', None)
+            if spawns:
+                for cls, sx, sy in spawns:
+                    self.add_enemy(sx, sy, enemy_type=cls)
+                spawns.clear()
+
             if enemy.hit:
                 self._spawn_hit_particles(enemy.rect.centerx, enemy.rect.centery, n=5)
 
