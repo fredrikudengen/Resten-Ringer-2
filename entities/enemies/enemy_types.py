@@ -301,6 +301,7 @@ class WardenBoss(Enemy):
     _PHASE1_SPAWN_INTERVAL = 8000
     _PHASE2_SPAWN_INTERVAL = 5000
     _MINION_CAP = 6
+    _MINION_CAP_PHASE2 = 9
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -313,7 +314,7 @@ class WardenBoss(Enemy):
 
     def move(self, player, obstacles, room, dt_ms):
         self._update_phase()
-        self._try_spawn(pygame.time.get_ticks())
+        self._try_spawn(room, pygame.time.get_ticks())
         super().move(player, obstacles, room, dt_ms)
 
     def draw(self, screen, camera):
@@ -339,8 +340,9 @@ class WardenBoss(Enemy):
         if self._phase == 1 and self.health <= self._initial_health * 0.5:
             self._phase = 2
             self.speed = 130
+            self._MINION_CAP = self._MINION_CAP_PHASE2
 
-    def _try_spawn(self, now):
+    def _try_spawn(self, room, now):
         if now < self._next_spawn_at:
             return
 
@@ -352,10 +354,11 @@ class WardenBoss(Enemy):
         count = random.randint(2, 3)
         minion_cls = FastEnemy if self._phase == 2 else SwarmEnemy
         for _ in range(count):
-            ox = random.randint(-120, 120)
-            oy = random.randint(-120, 120)
+            spawn_tile = self._pick_random_free_tile(room, self._grid_pos(), 4)
+            if spawn_tile is None:
+                continue
             self.pending_spawns.append(
-                (minion_cls, self.rect.centerx + ox, self.rect.centery + oy)
+                (minion_cls, *self._center_of_tile(*spawn_tile))
             )
 
         interval = self._PHASE2_SPAWN_INTERVAL if self._phase == 2 else self._PHASE1_SPAWN_INTERVAL

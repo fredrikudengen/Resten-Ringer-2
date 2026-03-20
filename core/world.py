@@ -1,6 +1,6 @@
 import pygame
 from core import constants
-from entities import enemies
+from entities import enemies, WardenBoss
 from entities import Enemy
 from components import Particle
 from components.bullet import Bullet
@@ -36,7 +36,8 @@ class World:
 
             # Collect minions queued by boss enemies this frame
             spawns = getattr(enemy, 'pending_spawns', None)
-            if spawns:
+            cap = getattr(enemy, '_MINION_CAP', None)
+            if spawns and (len(self.enemies) < cap):
                 for cls, sx, sy in spawns:
                     self.add_enemy(sx, sy, enemy_type=cls)
                 spawns.clear()
@@ -44,7 +45,9 @@ class World:
             if enemy.hit:
                 self._spawn_hit_particles(enemy.rect.centerx, enemy.rect.centery, n=5)
 
-            if not enemy.alive:
+            if isinstance(enemy, WardenBoss) and not enemy.alive:
+                self.enemies.clear()
+            elif not enemy.alive:
                 self._spawn_hit_particles(enemy.rect.centerx, enemy.rect.centery, n=10)
                 player.gain_xp(enemy.xp_reward)
                 player.total_kills += 1
@@ -72,9 +75,9 @@ class World:
                     and bullet.rect.colliderect(player.rect)):
                 player.health -= bullet.damage
                 player.hurt_invincible_until = (pygame.time.get_ticks() + constants.PLAYER_HIT_INVINCIBLE_MS)
+                bullet.alive = False
                 if player.health <= 0:
                     player.alive = False
-                    bullet.alive = False
 
             if not bullet.alive and bullet in self.bullets:
                 self.bullets.remove(bullet)

@@ -63,7 +63,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             self.last_seen_pos  = player.rect.center
             self.search_started = now
             # TODO: implement true hurt state
-            self.state          = "hurt"
+            self.state          = "chase"
 
         if self.hit_timer and (now - self.hit_timer > 500):
             self.hit_timer = None
@@ -189,14 +189,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             self.search_started = None  
 
     def _damage_player(self, player, amount):
-        """
-        Ta skade fra en kilde med knockback.
-        Gjør ingenting hvis spilleren er invincible.
 
-        Args:
-            amount:     Mengde skade
-            source_pos: (x, y) posisjon til angriperen – brukes for knockback-retning
-        """
         if player.is_invincible:
             return
 
@@ -221,6 +214,13 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             player.alive = False
 
     def _pick_random_free_tile(self, room, center_g, radius):
+        """
+        Chooses a random free tile from room.
+
+        Args:
+            center_g: grid position to start from.
+            radius: radius to choose from, in tiles.
+        """
         tries = 7
         cx, cy = center_g
         for _ in range(tries):

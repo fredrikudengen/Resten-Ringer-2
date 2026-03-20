@@ -1,6 +1,6 @@
 from entities import (
     Enemy, FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy,
-    AssassinEnemy, BruteEnemy, SwarmEnemy, BossEnemy, ShooterEnemy, MarksmanEnemy,
+    AssassinEnemy, BruteEnemy, SwarmEnemy, ShooterEnemy, MarksmanEnemy,
     WardenBoss,
 )
 from components import Speed_Powerup, Attack_Powerup, Shield_Powerup
@@ -18,10 +18,10 @@ WHITE = (255, 255, 255)
 PLAYER_COLOR = (255, 255, 255)
 
 # gameplay – player
-PLAYER_SPEED = 5
+PLAYER_SPEED = 10
 PLAYER_DPS = 1
 PLAYER_HEALTH = 100
-PLAYER_SIZE = (50, 50)
+PLAYER_SIZE = (64, 64)
 ALIVE = True
 PLAYER_ATTACK_COOLDOWN = 500
 DASH_SPEED = 8
@@ -56,7 +56,7 @@ XP_SPEED_BONUS_PER_LEVEL = 1
 # gameplay - door
 OPPOSITE = {"N": "S", "S": "N", "E": "W", "W": "E"}
 
-TILE_SIZE = 64
+TILE_SIZE = 96
 
 # terrain tiles
 TILE_FLOOR = 0
@@ -88,7 +88,7 @@ CHAR_TO_SPAWN: dict[str, str] = {
     'A': 'assassin_enemy',
     'R': 'brute_enemy',
     'W': 'swarm_enemy',
-    'B': 'boss_enemy',
+    'B': 'warden_boss',
     'G': 'shooter_enemy',
     'M': 'marksman_enemy',
     'S': 'speed_powerup',
@@ -106,7 +106,6 @@ _TAG_TO_ENEMY: dict[str, type[Enemy]] = {
     'assassin_enemy': AssassinEnemy,
     'brute_enemy': BruteEnemy,
     'swarm_enemy': SwarmEnemy,
-    'boss_enemy': BossEnemy,
     'shooter_enemy': ShooterEnemy,
     'marksman_enemy': MarksmanEnemy,
     'warden_boss': WardenBoss,

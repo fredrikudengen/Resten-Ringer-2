@@ -6,7 +6,6 @@ from collections import deque
 class PathfindingMixin:
 
     def _has_los(self, room, enemy_x, enemy_y, player_x, player_y):
-        """Line-of-sight på GRID (Bresenham)."""
         dx = abs(player_x - enemy_x)
         dy = -abs(player_y - enemy_y)
         x_steps = 1 if enemy_x < player_x else -1
@@ -18,12 +17,23 @@ class PathfindingMixin:
             if (x, y) != (enemy_x, enemy_y) and room.is_blocked(x, y):
                 return False
             if x == player_x and y == player_y:
-                return True 
+                return True
+
             e2 = 2 * err
-            if e2 >= dy:
+            step_x = e2 >= dy
+            step_y = e2 <= dx
+
+            # Diagonal step — check both intermediate neighbours first
+            if step_x and step_y:
+                if room.is_blocked(x + x_steps, y):
+                    return False
+                if room.is_blocked(x, y + y_steps):
+                    return False
+
+            if step_x:
                 err += dy
                 x += x_steps
-            if e2 <= dx:
+            if step_y:
                 err += dx
                 y += y_steps
 

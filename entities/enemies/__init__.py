@@ -8,7 +8,6 @@ from .enemy_types import (
     AssassinEnemy,
     BruteEnemy,
     SwarmEnemy,
-    BossEnemy,
     ShooterEnemy,
     MarksmanEnemy,
     WardenBoss
@@ -25,10 +24,9 @@ all = [
     'AssassinEnemy',
     'BruteEnemy',
     'SwarmEnemy',
-    'BossEnemy',
     'ShooterEnemy',
     'MarksmanEnemy',
-    WardenBoss,
+    "WardenBoss",
     
     # Utility functions
     'spawn_mixed_wave',
