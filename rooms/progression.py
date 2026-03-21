@@ -54,6 +54,7 @@ def scale_enemy(enemy, progression_level: int):
     hp_mult  = 1.0 + (progression_level - 1) * 0.15
     dmg_mult = 1.0 + (progression_level - 1) * 0.08
 
+    # TODO: fix enemy scaling
     enemy.health = int(enemy.health * hp_mult)
     enemy.damage = round(enemy.damage * dmg_mult, 1)
     return enemy

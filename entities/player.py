@@ -1,7 +1,7 @@
 import pygame
 from core import constants
 from .entity import Entity
-from components import Pistol, Shotgun, MachineGun, SniperRifle
+from components.gun import Pistol, Shotgun, MachineGun, SniperRifle
 from gamestates.char_select import CHARACTERS
 
 _GUN_MAP = {
@@ -20,19 +20,20 @@ class Player(Entity):
     def __init__(self, selected_character: int = 0, hud=None):
         char = CHARACTERS[selected_character]
 
-        self.health     = char.get('health', constants.PLAYER_HEALTH)
-        self.max_health = self.health
+        self.max_health = char.get('max_health')
+        self.health     = self.max_health
         self.alive      = True
-        self.speed      = char.get('speed',  constants.PLAYER_SPEED)
-        self.width      = constants.PLAYER_SIZE[0]
-        self.height     = constants.PLAYER_SIZE[1]
+        self.speed      = char.get('speed')
+        self.width      = char.get('size')[0]
+        self.height     = char.get('size')[1]
+        self.dash_cooldown = char.get('dash_cooldown')
+        self.dash_speed = char.get('dash_speed')
 
         super().__init__(x=0, y=0)
 
         self.selected_character = selected_character
         self.char_name          = char['name']
         self.color              = char.get('color', constants.PLAYER_COLOR)
-        self.dps                = constants.PLAYER_DPS
         self.is_moving          = False
         self.total_kills       = 0
 
@@ -43,16 +44,17 @@ class Player(Entity):
 
         # Per-character dash timings
         self._dash_duration = constants.DASH_DURATION
-        self._dash_cooldown = char.get('dash_cooldown', constants.DASH_COOLDOWN)
+        self.dash_cooldown = char.get('dash_cooldown')
 
         # Attack / debug
-        self.attack_cooldown    = constants.PLAYER_ATTACK_COOLDOWN
         self.playerAttack       = False
         self.debug_attack_rect  = None
         self.debug_attack_until = 0
 
         # Buffs
         self.buff_timers: dict[str, int] = {}
+        self.relics: list = []
+        self.adrenaline_until: int = 0
 
         # Dash
         self.is_dashing        = False
@@ -91,6 +93,8 @@ class Player(Entity):
             color = constants.WHITE
         elif self.playerAttack:
             color = constants.RED
+        elif self.is_invincible:
+            color = constants.BLUE
         else:
             color = self.color
         pygame.draw.rect(screen, color, draw_rect)
@@ -161,10 +165,13 @@ class Player(Entity):
         if direction.length_squared() == 0:
             return
 
+        for relic in self.relics:
+            relic.on_dash(self)
+
         self.is_dashing        = True
         self.dash_direction    = direction.normalize()
         self.dash_end_time     = now + self._dash_duration
-        self.dash_cooldown_end = now + self._dash_cooldown
+        self.dash_cooldown_end = now + self.dash_cooldown
 
     def update_dash(self, obstacles):
         """Update dash movement. Call every frame."""
@@ -175,8 +182,8 @@ class Player(Entity):
             self.is_dashing = False
             return
 
-        dx = int(self.dash_direction.x * constants.DASH_SPEED)
-        dy = int(self.dash_direction.y * constants.DASH_SPEED)
+        dx = int(self.dash_direction.x * self.dash_speed)
+        dy = int(self.dash_direction.y * self.dash_speed)
 
         old_x = self.rect.x
         self.rect.x += dx
@@ -192,6 +199,17 @@ class Player(Entity):
 
         self.sync_pos_from_rect()
 
+    def add_relic(self, relic_class):
+        relic = relic_class()
+        self.relics.append(relic)
+        relic.on_equip(self)
+
+    def update_relics(self):
+        now = pygame.time.get_ticks()
+        if self.adrenaline_until and now >= self.adrenaline_until:
+            self.speed -= 3
+            self.adrenaline_until = 0
+
     # ========== HELPERS ==========
 
     def _level_up(self):
@@ -200,8 +218,7 @@ class Player(Entity):
 
         self.health     += constants.XP_HP_BONUS_PER_LEVEL
         self.max_health += constants.XP_HP_BONUS_PER_LEVEL
-        self.dps        += constants.XP_DPS_BONUS_PER_LEVEL
-        self.speed      += constants.XP_SPEED_BONUS_PER_LEVEL
+        self.gun.damage += constants.XP_DPS_BONUS_PER_LEVEL
 
         if self._hud is not None:
             self._hud.notify_levelup(self.level)

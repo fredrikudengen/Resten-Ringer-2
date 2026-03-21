@@ -186,7 +186,7 @@ class HUD:
 
         _draw_bar(
             screen, pygame.Rect(x, cy, w, self.HP_BAR_H),
-            player.health, constants.PLAYER_HEALTH,
+            player.health, player.max_health,
             fill_color=hp_color, border_color=_C["hp_border"], flicker=flicker,
         )
         cy += self.HP_BAR_H + self.BAR_GAP
@@ -307,7 +307,7 @@ class HUD:
         cy = self.DASH_Y + self.DASH_RADIUS
         r  = self.DASH_RADIUS
 
-        total_cd = constants.DASH_COOLDOWN
+        total_cd = player.dash_cooldown
         elapsed  = now - (player.dash_cooldown_end - total_cd)
         ratio    = max(0.0, min(1.0, elapsed / total_cd)) if total_cd > 0 else 1.0
 

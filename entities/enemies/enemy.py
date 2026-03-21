@@ -194,6 +194,8 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             return
 
         player.health -= amount
+        for relic in player.relics:
+            relic.on_hit(player)
 
         # Beregn knockback-retning bort fra kilden
         direction = pygame.math.Vector2(

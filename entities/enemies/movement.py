@@ -55,8 +55,9 @@ class MovementMixin:
             direction /= dist
             self._slide_move(direction.x * self.speed, direction.y * self.speed, dt_ms, obstacles)
         return self._dist2(int(self.pos.x), int(self.pos.y), int(target_px[0]), int(target_px[1])) <= (24 * 24)
-    
-    def _apply_separation(self, others):
+
+
+    def apply_separation(self, others):
         """Myk dytting bort fra andre fiender."""
         strength = 0.08
         radius = 64
@@ -71,10 +72,10 @@ class MovementMixin:
             distance_x, distance_y = self_x - other_x, self_y - other_y
             distance2 = distance_x * distance_x + distance_y * distance_y
             if 0 < distance2 < r2:
-                weight = 1.0 / max(1.0, distance2)
+                weight = 1.0 - (distance2 / r2)   # 1.0 at touching, 0.0 at edge of radius
                 pushx += distance_x * weight
                 pushy += distance_y * weight
 
         self.pos.x += pushx * strength
         self.pos.y += pushy * strength
-        self._sync_rect_from_pos() 
+        self._sync_rect_from_pos()

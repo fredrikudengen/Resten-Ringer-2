@@ -3,6 +3,7 @@ from __future__ import annotations
 import pygame
 
 from .basestate import BaseState, State
+from .boss_reward import BossRewardState
 from .main_menu import MainMenuState
 from .char_select import CharacterSelectState
 from .playing import PlayingState
@@ -99,9 +100,11 @@ class StateMachine:
         playing   = PlayingState(self)
         game_over = GameOverState(self)
         paused    = PausedState(self, playing)
+        boss_reward = BossRewardState(self)
 
         self._states[State.PLAYING]   = playing
         self._states[State.GAME_OVER] = game_over
         self._states[State.PAUSED]    = paused
+        self._states[State.BOSS_REWARD] = boss_reward
 
         self.transition(State.PLAYING)

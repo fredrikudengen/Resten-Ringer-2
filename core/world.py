@@ -1,10 +1,9 @@
 import pygame
 from core import constants
-from entities import enemies, WardenBoss
+from entities import WardenBoss
 from entities import Enemy
 from components import Particle
 from components.bullet import Bullet
-import random
 from entities import ENEMY_TYPES
 
 
@@ -26,7 +25,7 @@ class World:
         # -- Enemies --
         for enemy in self.enemies[:]:
             enemy.move(player, self.obstacles, self.current_room, dt_ms)
-            enemy._apply_separation(self.enemies)
+            enemy.apply_separation(self.enemies)
 
             # Collect bullets fired by ranged enemies this frame
             pending = getattr(enemy, 'pending_bullets', None)
@@ -51,6 +50,8 @@ class World:
                 self._spawn_hit_particles(enemy.rect.centerx, enemy.rect.centery, n=10)
                 player.gain_xp(enemy.xp_reward)
                 player.total_kills += 1
+                for relic in player.relics:
+                    relic.on_kill(player)
                 self.enemies.remove(enemy)
 
         # -- Bullets --
@@ -74,6 +75,8 @@ class World:
                     not player.is_invincible
                     and bullet.rect.colliderect(player.rect)):
                 player.health -= bullet.damage
+                for relic in player.relics:
+                    relic.on_hit(player)
                 player.hurt_invincible_until = (pygame.time.get_ticks() + constants.PLAYER_HIT_INVINCIBLE_MS)
                 bullet.alive = False
                 if player.health <= 0:

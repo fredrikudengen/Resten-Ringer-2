@@ -5,23 +5,27 @@ import pygame
 from .basestate import BaseState, State
 from .ui_helpers import Button, draw_panel, C
 
-
 CHARACTERS: list[dict] = [
     {
         'name':          'Fredrik',
         'description':   'Balanced stats and reliable pistol. Solid choice for any situation.',
         'color':         (100, 180, 255),
-        'health':        100,
+        'max_health':    100,
         'speed':         5,
+        'size':          (64, 64),
         'gun':           'Pistol',
         'dash_cooldown': 1300,
+        'dash_speed':    8,
     },
     {
         'name':          'Johanne',
         'description':   'Lightning fast with a quick dash cooldown. Fragile but relentless.',
         'color':         (180, 100, 255),
-        'health':        75,
-        'speed':         7,
+        'max_health':    70,
+        'health':        'max_health',
+        'speed':         8,
+        'size':          (56, 56),
+        'dash_speed':    10,
         'gun':           'MachineGun',
         'dash_cooldown': 800,
     },
@@ -29,8 +33,11 @@ CHARACTERS: list[dict] = [
         'name':          'Jonathan',
         'description':   'Slow and heavy. Enormous HP and a shotgun that punishes close range.',
         'color':         (255, 160, 60),
-        'health':        150,
-        'speed':         3,
+        'max_health':    130,
+        'health':        'max_health',
+        'speed':         4,
+        'size':          (80, 80),
+        'dash_speed':    10,
         'gun':           'Shotgun',
         'dash_cooldown': 1600,
     },
@@ -38,8 +45,11 @@ CHARACTERS: list[dict] = [
         'name':          'Leila',
         'description':   'Precise and deadly. Piercing sniper shots reward careful positioning.',
         'color':         (80, 220, 160),
-        'health':        80,
-        'speed':         5,
+        'max_health':    80,
+        'health':        'max_health',
+        'dash_speed':    10,
+        'speed':         6,
+        'size':          (48, 48),
         'gun':           'SniperRifle',
         'dash_cooldown': 1000,
     },
@@ -117,7 +127,7 @@ class CharacterSelectState(BaseState):
 
             # Stat lines
             stats = [
-                (f"HP    {char['health']}"),
+                (f"HP    {char['max_health']}"),
                 (f"SPD   {char['speed']}"),
                 (f"GUN   {char['gun']}"),
                 (f"DASH  {char['dash_cooldown']}ms"),

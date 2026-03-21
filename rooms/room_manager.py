@@ -28,6 +28,7 @@ class RoomManager:
         self.progression_level = 1
         self.current_room_type = "start"
         self._room_cleared     = False
+        self.pending_boss_reward = False
 
         self._load_room(self.rooms["start"][0], entry_side="N")
 
@@ -51,21 +52,31 @@ class RoomManager:
         for d in self.doors:
             d.door.draw(screen, self.camera)
 
+    def advance_after_boss(self):
+        self._load_room(
+            random.choice(self.rooms["combat"]), entry_side="N")
+
     # ========== HELPERS ==========
 
     def _go_to_next_room(self, entry_side):
         if self.current_room_type == "reward":
             candidates = self.rooms["combat"]
+        elif self.current_room_type == "boss":
+            self.pending_boss_reward = True
+            return
         else:
-            if self.current_room_type != "start":
+            if self.current_room_type != "start" or "reward":
                 self.rooms_cleared += 1
                 self.progression_level = level_from_rooms_cleared(self.rooms_cleared)
 
             rc = self.rooms_cleared
-            if rc > 0 and rc % 3 == 0:
+            if rc > 0 and rc % 10 == 0:
                 candidates = self.rooms["boss"]
+                entry_side = "N"
             elif random.random() < 0.15:
                 candidates = self.rooms["reward"]
+            elif random.random() < 0.10:
+                candidates = self.rooms["elite"]
             else:
                 candidates = self.rooms["combat"]
 

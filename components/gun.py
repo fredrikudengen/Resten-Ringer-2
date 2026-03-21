@@ -213,7 +213,7 @@ class SniperRifle(Gun):
     Bullet pierces the first enemy it hits.
     """
     name           = "Sniper"
-    damage         = 80.0
+    damage         = 30.0
     fire_rate_ms   = 1200
     bullet_speed   = 1200.0
     bullet_radius  = 4

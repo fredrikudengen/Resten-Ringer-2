@@ -10,6 +10,7 @@ class State(Enum):
     PLAYING          = auto()
     PAUSED           = auto()
     GAME_OVER        = auto()
+    BOSS_REWARD      = auto()
 
 
 class BaseState:

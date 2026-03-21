@@ -3,7 +3,7 @@ from entities import (
     AssassinEnemy, BruteEnemy, SwarmEnemy, ShooterEnemy, MarksmanEnemy,
     WardenBoss,
 )
-from components import Speed_Powerup, Attack_Powerup, Shield_Powerup
+from components.power_up import Speed_Powerup, Attack_Powerup, Shield_Powerup
 
 # colors
 BLACK = (0, 0, 0)
@@ -18,15 +18,7 @@ WHITE = (255, 255, 255)
 PLAYER_COLOR = (255, 255, 255)
 
 # gameplay – player
-PLAYER_SPEED = 10
-PLAYER_DPS = 1
-PLAYER_HEALTH = 100
-PLAYER_SIZE = (64, 64)
-ALIVE = True
-PLAYER_ATTACK_COOLDOWN = 500
-DASH_SPEED = 8
 DASH_DURATION = 230
-DASH_COOLDOWN = 1300
 PLAYER_KNOCKBACK_FRICTION = 0.9
 PLAYER_HIT_INVINCIBLE_MS = 600
 BUFF_VALUES = {
@@ -49,9 +41,8 @@ ENEMY_WANDER_INTERVAL_MS = (1200, 2500)  # (min, max) pause
 # XP og level
 XP_BASE = 100  # XP til level 2
 XP_SCALE = 1.5  # Skalering per level (100 → 150 → 225 …)
-XP_HP_BONUS_PER_LEVEL = 15
-XP_DPS_BONUS_PER_LEVEL = 2
-XP_SPEED_BONUS_PER_LEVEL = 1
+XP_HP_BONUS_PER_LEVEL = 10
+XP_DPS_BONUS_PER_LEVEL = 4
 
 # gameplay - door
 OPPOSITE = {"N": "S", "S": "N", "E": "W", "W": "E"}

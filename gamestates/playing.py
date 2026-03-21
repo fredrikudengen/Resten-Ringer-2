@@ -29,6 +29,11 @@ class PlayingState(BaseState):
         sm.world.update(dt, sm.player)
         sm.room_manager.update(sm.player)
 
+        if sm.room_manager.pending_boss_reward:
+            sm.room_manager.pending_boss_reward = False
+            sm.transition(State.BOSS_REWARD)
+            return
+
         if not sm.player.alive:
             self._sm.transition(State.GAME_OVER)
 
