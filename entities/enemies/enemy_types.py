@@ -21,6 +21,7 @@ class SwarmEnemy(Enemy):
     Tiny, fast, attacks rapidly with almost no telegraph.
     ~1 shot to kill — the danger is sheer numbers.
     """
+    name              = "swarm_enemy"
     speed             = 140
     health            = 25
     damage            = 8
@@ -44,6 +45,7 @@ class FastEnemy(Enemy):
     Quick and nimble; closes distance before you can react.
     Medium damage, short telegraph. ~2 shots to kill.
     """
+    name              = "fast_enemy"
     speed             = 165
     health            = 45
     damage            = 12
@@ -67,6 +69,7 @@ class SlowEnemy(Enemy):
     Lumbering but hits brutally hard.
     Long telegraph — punishes players who don't dash away. ~4 shots.
     """
+    name              = "slow_enemy"
     speed             = 55
     health            = 80
     damage            = 28
@@ -90,6 +93,7 @@ class ScoutEnemy(Enemy):
     Enormous detection radius — spots you across the room.
     Weak in a fight but will always find you first. ~3 shots.
     """
+    name              = "scout_enemy"
     speed             = 115
     health            = 55
     damage            = 10
@@ -113,6 +117,7 @@ class AssassinEnemy(Enemy):
     Deceptively fast with devastating burst damage.
     Medium telegraph; rewards players who read the timing. ~3 shots.
     """
+    name              = "assassin_enemy"
     speed             = 155
     health            = 65
     damage            = 35
@@ -136,6 +141,7 @@ class BruteEnemy(Enemy):
     Slow, massive, and extremely tough.
     Very long telegraph but massive damage and knockback. ~9 shots.
     """
+    name              = "brute_enemy"
     speed             = 70
     health            = 180
     damage            = 32
@@ -159,6 +165,7 @@ class TankEnemy(Enemy):
     Armoured behemoth — almost unkillable without sustained focus.
     Moderate damage but incredible hp and reach. ~15 shots.
     """
+    name              = "tank_enemy"
     speed             = 40
     health            = 300
     damage            = 22
@@ -176,36 +183,6 @@ class TankEnemy(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y)
 
-
-class BossEnemy(Enemy):
-    """
-    The apex threat. Fast for its size, enormous health pool,
-    crushing damage. The long windup is your only window. ~25 shots.
-    """
-    speed             = 90
-    health            = 500
-    damage            = 50
-    detection_radius  = 850
-    attack_range      = 10000   # 100 px
-    attack_cooldown   = 2200
-    attack_windup_ms  = 1600
-    knockback_strength= 45
-    color             = (255, 200, 30)   # gold
-    xp_reward         = 150
-    width             = 78
-    height            = 78
-    wander_radius     = 4
-
-    def __init__(self, x, y):
-        super().__init__(x, y)
-
-    def draw(self, screen, camera):
-        """Custom draw: gold body + bright border to signal 'elite threat'."""
-        super().draw(screen, camera)
-        draw_rect = camera.apply(self.rect)
-        pygame.draw.rect(screen, (255, 255, 120), draw_rect, 3)
-
-
 # ---------------------------------------------------------------------------
 # Ranged enemies
 # ---------------------------------------------------------------------------
@@ -216,6 +193,7 @@ class ShooterEnemy(RangedEnemy):
     with pistol fire. Repositions when LOS is broken.
     Fragile — punish it before it can reload. ~4 shots to kill.
     """
+    name              = "shooter_enemy"
     gun_class          = EnemyPistol
     preferred_range_px = 300
     min_range_px       = 130
@@ -240,6 +218,7 @@ class MarksmanEnemy(RangedEnemy):
     Prefers to stay far back and take precise shots.
     Tougher than ShooterEnemy — needs focus fire to bring down. ~6 shots.
     """
+    name              = "marksman_enemy"
     gun_class          = EnemyRifle
     preferred_range_px = 460
     min_range_px       = 200
@@ -283,7 +262,7 @@ class WardenBoss(Enemy):
       - Spawn interval drops to 5s; spawns FastEnemies instead
       - Body pulses red to telegraph the phase shift
     """
-
+    name = "warden_boss"
     speed = 70
     health = 800
     damage = 55

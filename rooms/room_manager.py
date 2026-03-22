@@ -5,6 +5,7 @@ import pygame
 
 from core import constants
 from components import Door
+from core.sound_manager import sound
 from rooms.room_registry import build_rooms
 from rooms.progression import level_from_rooms_cleared, choose_enemy, scale_enemy
 
@@ -36,7 +37,9 @@ class RoomManager:
 
     def update(self, player):
         if not self._room_cleared:
-            self._room_cleared = len(self.world.enemies) == 0
+            if len(self.world.enemies) == 0:
+                self._room_cleared = True
+                sound.play("room_cleared")
             for d in self.doors:
                 d.door.is_open = self._room_cleared
             self._sync_door_blockers()
@@ -65,7 +68,7 @@ class RoomManager:
             self.pending_boss_reward = True
             return
         else:
-            if self.current_room_type != "start" or "reward":
+            if self.current_room_type != "start" and self.current_room_type != "reward":
                 self.rooms_cleared += 1
                 self.progression_level = level_from_rooms_cleared(self.rooms_cleared)
 

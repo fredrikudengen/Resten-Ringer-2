@@ -53,7 +53,6 @@ def player_input(player, obstacles, world, camera):
         if keys[pygame.K_a]: dash_dir.x -= 1
         if keys[pygame.K_d]: dash_dir.x += 1
 
-        # Hvis ingen retning, dash mot musen
         if dash_dir.length_squared() == 0:
             dash_dir = pygame.math.Vector2(
                 mouse_pos_world[0] - player.rect.centerx,

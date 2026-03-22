@@ -3,7 +3,7 @@ from entities import (
     AssassinEnemy, BruteEnemy, SwarmEnemy, ShooterEnemy, MarksmanEnemy,
     WardenBoss,
 )
-from components.power_up import Speed_Powerup, Attack_Powerup, Shield_Powerup
+from components.power_up import SpeedPowerup, AttackPowerup, ShieldPowerup
 
 # colors
 BLACK = (0, 0, 0)
@@ -103,9 +103,9 @@ _TAG_TO_ENEMY: dict[str, type[Enemy]] = {
 }
 
 _TAG_TO_POWERUP: dict[str, tuple[type, int]] = {
-    'speed_powerup': (Speed_Powerup, 20),
-    'attack_powerup': (Attack_Powerup, 20),
-    'shield_powerup': (Shield_Powerup, 20),
+    'speed_powerup': (SpeedPowerup, 20),
+    'attack_powerup': (AttackPowerup, 20),
+    'shield_powerup': (ShieldPowerup, 20),
 }
 
 # hud

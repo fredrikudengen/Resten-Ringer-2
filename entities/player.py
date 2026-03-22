@@ -3,6 +3,7 @@ from core import constants
 from .entity import Entity
 from components.gun import Pistol, Shotgun, MachineGun, SniperRifle
 from gamestates.char_select import CHARACTERS
+from core.sound_manager import sound
 
 _GUN_MAP = {
     'Pistol':      Pistol,
@@ -172,6 +173,8 @@ class Player(Entity):
         self.dash_direction    = direction.normalize()
         self.dash_end_time     = now + self._dash_duration
         self.dash_cooldown_end = now + self.dash_cooldown
+
+        sound.play("dash")
 
     def update_dash(self, obstacles):
         """Update dash movement. Call every frame."""

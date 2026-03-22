@@ -6,7 +6,7 @@ import pygame
 from pygame.math import Vector2
 
 from components.bullet import Bullet
-
+from core.sound_manager import sound
 
 class Gun:
     """
@@ -37,8 +37,9 @@ class Gun:
     team:          str   = "player"
 
     # Ammo — set max_ammo > 0 in subclass to enable tracking
-    max_ammo:      int   = -1        # -1 = infinite
-    reload_time_ms: int  = 2000
+    max_ammo:        int = -1 # -1 = infinite
+    reload_time_ms:  int = 2000
+    spread:          float = 0.0
 
     def __init__(self):
         self._last_shot_at: int        = 0
@@ -62,6 +63,8 @@ class Gun:
             return
         if self._reload_start is None and self.current_ammo < self.max_ammo:
             self._reload_start = pygame.time.get_ticks()
+            if self.team == "player":
+                sound.play("reload")
 
     def update_reload(self):
         """
@@ -99,9 +102,15 @@ class Gun:
 
         self._last_shot_at = pygame.time.get_ticks()
         self._consume_ammo(1)
-        return [self._make_bullet(origin, direction)]
+        gun_name = self.name.lower().replace(" ", "_")
+        sound.play(f"{gun_name}/shoot")
+        return self._fire(origin, direction)
 
     # ========== Helpers ==========
+
+    def _fire(self, origin, direction):
+        """Override in subclasses to define bullet pattern."""
+        return [self._make_bullet(origin, direction)]
 
     def _consume_ammo(self, n: int = 1):
         """Decrement ammo and auto-start reload when empty."""
@@ -115,14 +124,12 @@ class Gun:
         self,
         origin:    tuple[float, float],
         direction: Vector2,
-        spread:    float = 0.0,
     ) -> Bullet:
         """
         Create a single bullet, optionally with angular spread (degrees).
         """
-        if spread:
-            angle = math.radians(random.uniform(-spread / 2, spread / 2))
-            direction = Vector2(
+        angle = math.radians(random.uniform(-self.spread / 2, self.spread / 2))
+        direction = Vector2(
                 direction.x * math.cos(angle) - direction.y * math.sin(angle),
                 direction.x * math.sin(angle) + direction.y * math.cos(angle),
             )
@@ -149,6 +156,7 @@ class Pistol(Gun):
     bullet_speed   = 650.0
     bullet_radius  = 5
     bullet_color   = (220, 220, 50)
+    spread         = 4
     max_range      = 800.0
     max_ammo       = 12
     reload_time_ms = 1400
@@ -168,21 +176,14 @@ class Shotgun(Gun):
     bullet_color   = (255, 140, 40)
     max_range      = 350.0    # short range intentionally
     pellets        = 5
-    spread_degrees = 20.0
+    spread         = 20.0
     max_ammo       = 6
     reload_time_ms = 2000
     team = "player"
 
-    def shoot(self, origin: tuple[float, float], direction: Vector2) -> list[Bullet]:
-        if not self.can_shoot() or direction.length_squared() == 0:
-            return []
-        self._last_shot_at = pygame.time.get_ticks()
-        self._consume_ammo(1)     # one trigger pull = one shell
-        return [
-            self._make_bullet(origin, direction, spread=self.spread_degrees)
-            for _ in range(self.pellets)
-        ]
-
+    def _fire(self, origin, direction) -> list[Bullet]:
+        return [self._make_bullet(origin, direction)
+                for _ in range(self.pellets)]
 
 class MachineGun(Gun):
     """Fast firing, lower damage per bullet. High spread."""
@@ -193,19 +194,10 @@ class MachineGun(Gun):
     bullet_radius  = 4
     bullet_color   = (100, 220, 255)
     max_range      = 750.0
-    spread_degrees = 8.0
+    spread         = 8.0
     max_ammo       = 30
     reload_time_ms = 2500
     team = "player"
-
-
-    def shoot(self, origin: tuple[float, float], direction: Vector2) -> list[Bullet]:
-        if not self.can_shoot() or direction.length_squared() == 0:
-            return []
-        self._last_shot_at = pygame.time.get_ticks()
-        self._consume_ammo(1)
-        return [self._make_bullet(origin, direction, spread=self.spread_degrees)]
-
 
 class SniperRifle(Gun):
     """
@@ -223,14 +215,10 @@ class SniperRifle(Gun):
     reload_time_ms = 2800
     team = "player"
 
-    def shoot(self, origin: tuple[float, float], direction: Vector2) -> list[Bullet]:
-        if not self.can_shoot() or direction.length_squared() == 0:
-            return []
-        self._last_shot_at = pygame.time.get_ticks()
-        self._consume_ammo(1)
-        bullet = self._make_bullet(origin, direction)
-        bullet.piercing = True   # handled in world.update
-        return [bullet]
+    def _fire(self, origin, direction) -> list[Bullet]:
+        b = self._make_bullet(origin, direction)
+        b.piercing = True
+        return [b]
 
 
 # ========== Enemy-only gun variants ==========
@@ -244,7 +232,8 @@ class EnemyPistol(Gun):
     fire_rate_ms   = 800
     bullet_speed   = 380.0
     bullet_radius  = 4
-    bullet_color   = (200, 80, 80)    # reddish so player can read enemy shots
+    bullet_color   = (200, 80, 80) # reddish so player can read enemy shots
+    spread         = 4
     max_range      = 700.0
     max_ammo       = 8
     reload_time_ms = 2200

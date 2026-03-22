@@ -124,7 +124,7 @@ class RangedEnemy(Enemy):
             elif self.gun.is_reloading:
                 self.state = "reload"
             else:
-                self._do_shoot(player, player_center)
+                self._do_shoot(player_center)
                 # Drift slightly if player gets too close
                 if dist2 < self.min_range_px ** 2:
                     self._retreat_from(player_center, obstacles, dt_ms)
@@ -213,7 +213,7 @@ class RangedEnemy(Enemy):
             # No good tile found — approach cautiously
             self._move_towards(player.rect.center, obstacles, dt_ms)
 
-    def _do_shoot(self, player, player_center: tuple[int, int]):
+    def _do_shoot(self, player_center: tuple[int, int]):
         """Fire one bullet toward the player (respects gun fire rate)."""
         direction = Vector2(
             player_center[0] - self.rect.centerx,

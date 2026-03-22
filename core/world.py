@@ -1,5 +1,6 @@
 import pygame
 from core import constants
+from core.sound_manager import sound
 from entities import WardenBoss
 from entities import Enemy
 from components import Particle
@@ -42,6 +43,7 @@ class World:
                 spawns.clear()
 
             if enemy.hit:
+                sound.play(f"{enemy.name}/hit")
                 self._spawn_hit_particles(enemy.rect.centerx, enemy.rect.centery, n=5)
 
             if isinstance(enemy, WardenBoss) and not enemy.alive:
@@ -52,6 +54,8 @@ class World:
                 player.total_kills += 1
                 for relic in player.relics:
                     relic.on_kill(player)
+
+                sound.play(f"{enemy.name}/die")
                 self.enemies.remove(enemy)
 
         # -- Bullets --
@@ -89,6 +93,7 @@ class World:
         for pu in self.powerups[:]:
             if player.rect.colliderect(pu.rect):
                 pu.apply(player)
+                sound.play(f"powerups/{pu.name}")
                 self.powerups.remove(pu)
 
         # -- Particles --
