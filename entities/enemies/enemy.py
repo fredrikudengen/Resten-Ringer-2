@@ -62,7 +62,6 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             self.hit            = False
             self.last_seen_pos  = player.rect.center
             self.search_started = now
-            # TODO: implement true hurt state
             self.state          = "chase"
 
         if self.hit_timer and (now - self.hit_timer > 500):
@@ -80,6 +79,8 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
                 self.last_seen_pos  = player_center
                 self.search_started = None
 
+        self.update_knockback(obstacles)
+
         if self.state in ("idle", "walk", "hurt"):
             if see_player:
                 self.state = "chase"
@@ -89,7 +90,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         elif self.state == "chase":
             self.wander_goal_g = None
             if see_player:
-                if now >= self.attack_cooldown_until and self._dist2(*player_center, *enemy_center) <= (self.attack_range):
+                if now >= self.attack_cooldown_until and dist2_to_player <= (self.attack_range):
                     self.state = "attack"
                     self.attack_windup_until = now + self.attack_windup_ms
                 else:
@@ -194,20 +195,11 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             return
 
         player.health -= amount
+
         for relic in player.relics:
             relic.on_hit(player)
 
-        # Beregn knockback-retning bort fra kilden
-        direction = pygame.math.Vector2(
-            player.rect.centerx - self.rect.centerx,
-            player.rect.centery - self.rect.centery
-        )
-        if direction.length_squared() > 0:
-            direction = direction.normalize()
-        else:
-            direction = pygame.math.Vector2(1, 0)
-
-        player.knockback_velocity = direction * self.knockback_strength
+        player.apply_knockback(self.rect, self.knockback_strength)
 
         # iframes
         player.hurt_invincible_until = pygame.time.get_ticks() + constants.PLAYER_HIT_INVINCIBLE_MS

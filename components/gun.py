@@ -142,7 +142,8 @@ class Gun:
             radius    = self.bullet_radius,
             color     = self.bullet_color,
             max_range = self.max_range,
-            team      = self.team
+            team      = self.team,
+            knockback_strength = self.knockback_strength
         )
 
 
@@ -161,6 +162,7 @@ class Pistol(Gun):
     max_ammo       = 12
     reload_time_ms = 1400
     team = "player"
+    knockback_strength = 5
 
 
 class Shotgun(Gun):
@@ -180,6 +182,7 @@ class Shotgun(Gun):
     max_ammo       = 6
     reload_time_ms = 2000
     team = "player"
+    knockback_strength = 14
 
     def _fire(self, origin, direction) -> list[Bullet]:
         return [self._make_bullet(origin, direction)
@@ -198,6 +201,7 @@ class MachineGun(Gun):
     max_ammo       = 30
     reload_time_ms = 2500
     team = "player"
+    knockback_strength = 3
 
 class SniperRifle(Gun):
     """
@@ -214,12 +218,12 @@ class SniperRifle(Gun):
     max_ammo       = 5
     reload_time_ms = 2800
     team = "player"
+    knockback_strength = 8
 
     def _fire(self, origin, direction) -> list[Bullet]:
         b = self._make_bullet(origin, direction)
         b.piercing = True
         return [b]
-
 
 # ========== Enemy-only gun variants ==========
 # Weaker versions tuned for enemies — same bullet types but less damage
@@ -238,6 +242,7 @@ class EnemyPistol(Gun):
     max_ammo       = 8
     reload_time_ms = 2200
     team = "enemy"
+    knockback_strength = 4
 
 class EnemyRifle(Gun):
     """High-damage slow rifle for elite ranged enemies."""
@@ -251,3 +256,4 @@ class EnemyRifle(Gun):
     max_ammo       = 5
     reload_time_ms = 3000
     team = "enemy"
+    knockback_strength = 6

@@ -1,5 +1,6 @@
 from .enemy import Enemy
 
+from .boss_enemy import WardenBoss
 from .enemy_types import (
     FastEnemy,
     SlowEnemy,
@@ -9,8 +10,7 @@ from .enemy_types import (
     BruteEnemy,
     SwarmEnemy,
     ShooterEnemy,
-    MarksmanEnemy,
-    WardenBoss
+    MarksmanEnemy
 )
 
 all = [

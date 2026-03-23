@@ -6,7 +6,6 @@ from components import Bullet
 
 def player_input(player, obstacles, world, camera):
     keys = pygame.key.get_pressed()
-    now = pygame.time.get_ticks()
     mouse_pos_screen = pygame.mouse.get_pos()
     mouse_pos_world = camera.screen_to_world(*mouse_pos_screen)
     player.is_moving = False

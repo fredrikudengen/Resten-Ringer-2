@@ -12,9 +12,11 @@ class Entity:
             x, y: Startposisjon (top-left)
             width, height: Størrelse
             """
+        self.knockback_friction = 0.85
         self.rect = pygame.Rect(x, y, self.width, self.height)
-        self.pos  = Vector2(self.rect.center) 
-    
+        self.pos  = Vector2(self.rect.center)
+        self.knockback_velocity    = pygame.math.Vector2(0, 0)
+
     def draw(self, screen, camera):
         """
         Tegn entity. Override for custom tegning.
@@ -103,3 +105,35 @@ class Entity:
         """
         dx, dy = a1 - b1, a2 - b2
         return dx * dx + dy * dy
+
+    def update_knockback(self, obstacles):
+        """Apply knockback velocity with friction. Call every frame."""
+        if self.knockback_velocity.length_squared() < 0.5:
+            self.knockback_velocity.update(0, 0)
+            return
+
+        old_x = self.rect.x
+        self.rect.x += int(self.knockback_velocity.x)
+        if any(self.rect.colliderect(obs) for obs in obstacles):
+            self.rect.x = old_x
+            self.knockback_velocity.x = 0
+
+        old_y = self.rect.y
+        self.rect.y += int(self.knockback_velocity.y)
+        if any(self.rect.colliderect(obs) for obs in obstacles):
+            self.rect.y = old_y
+            self.knockback_velocity.y = 0
+
+        self.sync_pos_from_rect()
+        self.knockback_velocity *= self.knockback_friction
+
+    def apply_knockback(self, source_rect, strength):
+        direction = pygame.math.Vector2(
+                self.rect.centerx - source_rect.centerx,
+                self.rect.centery - source_rect.centery
+        )
+        if direction.length_squared() > 0:
+            direction = direction.normalize()
+        else:
+            direction = pygame.math.Vector2(1, 0)
+        self.knockback_velocity = direction * strength

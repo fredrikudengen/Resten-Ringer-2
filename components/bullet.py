@@ -3,6 +3,8 @@ from __future__ import annotations
 import pygame
 from pygame.math import Vector2
 
+from core import constants
+
 
 class Bullet:
     """
@@ -20,8 +22,10 @@ class Bullet:
         radius,
         color,
         max_range,
-        team
+        team,
+        knockback_strength,
     ):
+        self.piercing  = False
         self.pos       = Vector2(pos)
         self.direction = direction.normalize()
         self.speed     = speed
@@ -30,7 +34,8 @@ class Bullet:
         self.color     = color
         self.max_range = max_range
         self.alive     = True
-        self.team = team
+        self.team      = team
+        self.knockback_strength = knockback_strength
 
         self._distance_travelled = 0.0
 
@@ -57,3 +62,36 @@ class Bullet:
     def draw(self, screen: pygame.Surface, camera):
         dr = camera.apply(self.rect)
         pygame.draw.circle(screen, self.color, dr.center, self.radius)
+
+    def damage_enemy(self, enemy):
+        enemy.hit = True
+        enemy.health -= self.damage
+
+        enemy.apply_knockback(self.rect, self.knockback_strength)
+
+        if enemy.health <= 0:
+            enemy.alive = False
+
+        if not self.piercing:
+            self.alive = False
+
+    def damage_player(self, player):
+
+        if player.is_invincible:
+            return
+
+        player.hit = True
+        player.health -= self.damage
+
+        for relic in player.relics:
+            relic.on_hit(player)
+
+        player.apply_knockback(self.rect, self.knockback_strength)
+
+        player.hurt_invincible_until = pygame.time.get_ticks() + player.knockback_friction
+
+        if player.health <= 0:
+            player.alive = False
+
+        self.alive = False
+

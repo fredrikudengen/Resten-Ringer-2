@@ -19,6 +19,8 @@ class Player(Entity):
     """
 
     def __init__(self, selected_character: int = 0, hud=None):
+        self.hit = False
+        self.hit_timer = None
         char = CHARACTERS[selected_character]
 
         self.max_health = char.get('max_health')
@@ -29,6 +31,7 @@ class Player(Entity):
         self.height     = char.get('size')[1]
         self.dash_cooldown = char.get('dash_cooldown')
         self.dash_speed = char.get('dash_speed')
+        self.knockback_friction = 0.75
 
         super().__init__(x=0, y=0)
 
@@ -48,7 +51,6 @@ class Player(Entity):
         self.dash_cooldown = char.get('dash_cooldown')
 
         # Attack / debug
-        self.playerAttack       = False
         self.debug_attack_rect  = None
         self.debug_attack_until = 0
 
@@ -64,7 +66,6 @@ class Player(Entity):
         self.dash_cooldown_end = 0
 
         # Damage / knockback
-        self.knockback_velocity    = pygame.math.Vector2(0, 0)
         self.hurt_invincible_until = 0
 
         # XP and level
@@ -92,8 +93,6 @@ class Player(Entity):
         draw_rect = camera.apply(self.rect)
         if self.is_dashing:
             color = constants.WHITE
-        elif self.playerAttack:
-            color = constants.RED
         elif self.is_invincible:
             color = constants.BLUE
         else:
@@ -121,27 +120,6 @@ class Player(Entity):
         while self.xp >= self.xp_to_next:
             self.xp -= self.xp_to_next
             self._level_up()
-
-    def update_knockback(self, obstacles):
-        """Apply knockback velocity with friction. Call every frame."""
-        if self.knockback_velocity.length_squared() < 0.5:
-            self.knockback_velocity.update(0, 0)
-            return
-
-        old_x = self.rect.x
-        self.rect.x += int(self.knockback_velocity.x)
-        if any(self.rect.colliderect(obs) for obs in obstacles):
-            self.rect.x = old_x
-            self.knockback_velocity.x = 0
-
-        old_y = self.rect.y
-        self.rect.y += int(self.knockback_velocity.y)
-        if any(self.rect.colliderect(obs) for obs in obstacles):
-            self.rect.y = old_y
-            self.knockback_velocity.y = 0
-
-        self.sync_pos_from_rect()
-        self.knockback_velocity *= constants.PLAYER_KNOCKBACK_FRICTION
 
     def apply_powerup(self, powerup):
         if powerup in self.buff_timers:

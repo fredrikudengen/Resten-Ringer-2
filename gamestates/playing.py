@@ -29,6 +29,11 @@ class PlayingState(BaseState):
         sm.world.update(dt, sm.player)
         sm.room_manager.update(sm.player)
 
+        for enemy in sm.world.enemies:
+            if getattr(enemy, 'did_slam', False):
+                sm.camera.shake(8, 400)
+                enemy.did_slam = False
+
         if sm.room_manager.pending_boss_reward:
             sm.room_manager.pending_boss_reward = False
             sm.transition(State.BOSS_REWARD)

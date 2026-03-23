@@ -19,7 +19,6 @@ PLAYER_COLOR = (255, 255, 255)
 
 # gameplay – player
 DASH_DURATION = 230
-PLAYER_KNOCKBACK_FRICTION = 0.9
 PLAYER_HIT_INVINCIBLE_MS = 600
 BUFF_VALUES = {
     'speed_boost': ('speed', 3),
