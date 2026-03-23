@@ -25,10 +25,7 @@ class Entity:
             screen: pygame Surface
             camera: Camera objekt med .apply(rect) metode
         """
-        draw_rect = camera.apply(self.rect)
-        color = constants.RED if self.hit else self.color
-        pygame.draw.rect(screen, color, draw_rect)
-    
+
     def check_collision(self, obstacles):
         """
         Sjekk kollisjon med obstacles.

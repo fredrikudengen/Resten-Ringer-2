@@ -1,16 +1,11 @@
 import pygame
 
-from core import constants
-from components import Bullet
-
-
-def player_input(player, obstacles, world, camera):
+def player_input(player, obstacles, camera):
     keys = pygame.key.get_pressed()
     mouse_pos_screen = pygame.mouse.get_pos()
     mouse_pos_world = camera.screen_to_world(*mouse_pos_screen)
     player.is_moving = False
 
-    # --- bevegelse ---
     old_x, old_y = player.rect.x, player.rect.y
     if keys[pygame.K_w]:
         player.rect.y -= player.speed
@@ -28,21 +23,6 @@ def player_input(player, obstacles, world, camera):
         player.rect.x += player.speed
         player.is_moving = True
         if _collides(player, obstacles): player.rect.x = old_x
-
-    # --- skyting ---
-    mouse_buttons = pygame.mouse.get_pressed()
-    if mouse_buttons[0]:
-        mx, my      = pygame.mouse.get_pos()
-        world_mouse = camera.screen_to_world(mx, my)
-        bullets     = player.shoot(world_mouse)
-        world.add_bullets(bullets)
-
-    # --- reload (R) ---
-    if keys[pygame.K_r]:
-        player.gun.start_reload()
-
-    # --- oppdater reload-timer kvar frame ---
-    player.gun.update_reload()
 
     # --- dash ---
     if keys[pygame.K_SPACE]:

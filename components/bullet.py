@@ -88,7 +88,7 @@ class Bullet:
 
         player.apply_knockback(self.rect, self.knockback_strength)
 
-        player.hurt_invincible_until = pygame.time.get_ticks() + player.knockback_friction
+        player.hurt_invincible_until = pygame.time.get_ticks() + constants.PLAYER_HIT_INVINCIBLE_MS
 
         if player.health <= 0:
             player.alive = False

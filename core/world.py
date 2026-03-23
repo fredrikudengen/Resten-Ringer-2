@@ -45,7 +45,6 @@ class World:
 
             if enemy.hit:
                 sound.play(f"{enemy.name}/hit")
-                self._spawn_hit_particles(enemy.rect.centerx, enemy.rect.centery, n=5)
 
             if isinstance(enemy, WardenBoss) and not enemy.alive:
                 self.enemies.clear()
@@ -58,6 +57,8 @@ class World:
 
                 sound.play(f"{enemy.name}/die")
                 self.enemies.remove(enemy)
+
+            enemy.hit = False
 
         # -- Bullets --
         for bullet in self.bullets[:]:

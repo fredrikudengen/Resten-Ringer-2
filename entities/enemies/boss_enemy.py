@@ -66,7 +66,6 @@ class WardenBoss(Enemy):
         if self.health <= 0:
             self.alive = False
             self.state = "dead"
-            self.wander_goal_g = None
             return
 
         player_center = player.rect.center

@@ -4,7 +4,7 @@ import pygame
 
 from .basestate import BaseState, State
 from core import constants
-
+from controller import player_input
 
 class PlayingState(BaseState):
     """
@@ -15,19 +15,43 @@ class PlayingState(BaseState):
 
     def __init__(self, sm):
         self._sm = sm
+        self._shoot_requested = False
+        self._reload_requested = False
+        self._mouse_held = False
 
     def handle_event(self, event: pygame.event.Event):
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            self._sm.transition(State.PAUSED)
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self._sm.transition(State.PAUSED)
+            if event.key == pygame.K_r:
+                self._reload_requested = True
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                self._mouse_held = True
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                self._mouse_held = False
 
     def update(self, dt: int):
-        from controller import player_input
         sm = self._sm
 
-        player_input(sm.player, sm.world.obstacles, sm.world, sm.camera)
+        player_input(sm.player, sm.world.obstacles, sm.camera)
         sm.camera.update(sm.player.rect)
         sm.world.update(dt, sm.player)
         sm.room_manager.update(sm.player)
+
+        if self._mouse_held or self._shoot_requested:
+            mx, my = pygame.mouse.get_pos()
+            world_mouse = sm.camera.screen_to_world(mx, my)
+            bullets = sm.player.shoot(world_mouse)
+            sm.world.add_bullets(bullets)
+            self._shoot_requested = False
+
+        if self._reload_requested:
+            sm.player.gun.start_reload()
+            self._reload_requested = False
+
+        sm.player.gun.update_reload()
 
         for enemy in sm.world.enemies:
             if getattr(enemy, 'did_slam', False):

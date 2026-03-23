@@ -62,6 +62,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             self.hit            = False
             self.last_seen_pos  = player.rect.center
             self.search_started = now
+            # TODO: implement true hurt state
             self.state          = "chase"
 
         if self.hit_timer and (now - self.hit_timer > 500):
