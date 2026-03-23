@@ -25,6 +25,7 @@ class World:
 
         # -- Enemies --
         for enemy in self.enemies[:]:
+
             enemy.move(player, self.obstacles, self.current_room, dt_ms)
             enemy.apply_separation(self.enemies)
 
@@ -66,25 +67,15 @@ class World:
                 self.bullets.remove(bullet)
                 continue
 
-            piercing = getattr(bullet, 'piercing', False)
-
             for enemy in self.enemies:
                 if bullet.team == "player" and bullet.rect.colliderect(enemy.rect):
-                    enemy.health -= bullet.damage
-                    enemy.hit     = True
-                    if not piercing:
-                        bullet.alive = False
-                        break
+                    bullet.damage_enemy(enemy)
+                    break
+
             if (bullet.team == "enemy" and
                     not player.is_invincible
                     and bullet.rect.colliderect(player.rect)):
-                player.health -= bullet.damage
-                for relic in player.relics:
-                    relic.on_hit(player)
-                player.hurt_invincible_until = (pygame.time.get_ticks() + constants.PLAYER_HIT_INVINCIBLE_MS)
-                bullet.alive = False
-                if player.health <= 0:
-                    player.alive = False
+                bullet.damage_player(player)
 
             if not bullet.alive and bullet in self.bullets:
                 self.bullets.remove(bullet)
@@ -101,6 +92,8 @@ class World:
             p.update(dt_ms)
             if p.timer <= 0:
                 self.particles.remove(p)
+
+        player.hit = False
 
     def draw(self, screen: pygame.Surface, camera):
         """Draw all entities and components."""

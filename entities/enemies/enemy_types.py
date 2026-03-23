@@ -1,5 +1,3 @@
-import random
-
 import pygame
 
 from .enemy import Enemy
@@ -22,10 +20,10 @@ class SwarmEnemy(Enemy):
     ~1 shot to kill — the danger is sheer numbers.
     """
     name              = "swarm_enemy"
-    speed             = 140
+    speed             = 180
     health            = 25
     damage            = 8
-    detection_radius  = 450
+    detection_radius  = 800
     attack_range      = 3600    # 60 px
     attack_cooldown   = 500
     attack_windup_ms  = 180
@@ -35,6 +33,7 @@ class SwarmEnemy(Enemy):
     width             = 28
     height            = 28
     wander_radius     = 6
+    knockback_friction= 0.90
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -46,7 +45,7 @@ class FastEnemy(Enemy):
     Medium damage, short telegraph. ~2 shots to kill.
     """
     name              = "fast_enemy"
-    speed             = 165
+    speed             = 170
     health            = 45
     damage            = 12
     detection_radius  = 650
@@ -59,6 +58,7 @@ class FastEnemy(Enemy):
     width             = 36
     height            = 36
     wander_radius     = 5
+    knockback_friction= 0.85
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -70,7 +70,7 @@ class SlowEnemy(Enemy):
     Long telegraph — punishes players who don't dash away. ~4 shots.
     """
     name              = "slow_enemy"
-    speed             = 55
+    speed             = 100
     health            = 80
     damage            = 28
     detection_radius  = 550
@@ -83,6 +83,7 @@ class SlowEnemy(Enemy):
     width             = 52
     height            = 52
     wander_radius     = 2
+    knockback_friction= 0.75
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -94,10 +95,10 @@ class ScoutEnemy(Enemy):
     Weak in a fight but will always find you first. ~3 shots.
     """
     name              = "scout_enemy"
-    speed             = 115
+    speed             = 130
     health            = 55
     damage            = 10
-    detection_radius  = 1100    # biggest in the game
+    detection_radius  = 1200    # biggest in the game
     attack_range      = 4225    # 65 px
     attack_cooldown   = 900
     attack_windup_ms  = 550
@@ -107,6 +108,7 @@ class ScoutEnemy(Enemy):
     width             = 38
     height            = 38
     wander_radius     = 5
+    knockback_friction= 0.85
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -117,6 +119,7 @@ class AssassinEnemy(Enemy):
     Deceptively fast with devastating burst damage.
     Medium telegraph; rewards players who read the timing. ~3 shots.
     """
+    # TODO: add lunge attack to assassin
     name              = "assassin_enemy"
     speed             = 155
     health            = 65
@@ -131,6 +134,7 @@ class AssassinEnemy(Enemy):
     width             = 34
     height            = 34
     wander_radius     = 4
+    knockback_friction= 0.80
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -142,7 +146,7 @@ class BruteEnemy(Enemy):
     Very long telegraph but massive damage and knockback. ~9 shots.
     """
     name              = "brute_enemy"
-    speed             = 70
+    speed             = 110
     health            = 180
     damage            = 32
     detection_radius  = 520
@@ -155,6 +159,7 @@ class BruteEnemy(Enemy):
     width             = 58
     height            = 58
     wander_radius     = 3
+    knockback_friction= 0.70
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -166,7 +171,7 @@ class TankEnemy(Enemy):
     Moderate damage but incredible hp and reach. ~15 shots.
     """
     name              = "tank_enemy"
-    speed             = 40
+    speed             = 90
     health            = 300
     damage            = 22
     detection_radius  = 480
@@ -179,6 +184,7 @@ class TankEnemy(Enemy):
     width             = 64
     height            = 64
     wander_radius     = 2
+    knockback_friction= 0.65
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -198,7 +204,7 @@ class ShooterEnemy(RangedEnemy):
     preferred_range_px = 300
     min_range_px       = 130
 
-    speed              = 105
+    speed              = 125
     health             = 75
     detection_radius   = 750
     knockback_strength = 0       # ranged — no melee knockback
@@ -207,6 +213,7 @@ class ShooterEnemy(RangedEnemy):
     width              = 36
     height             = 36
     wander_radius      = 5
+    knockback_friction= 0.80
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -224,7 +231,7 @@ class MarksmanEnemy(RangedEnemy):
     min_range_px       = 200
     reposition_interval = 600   # repositions faster to keep sightlines open
 
-    speed              = 80
+    speed              = 110
     health             = 120
     detection_radius   = 900
     knockback_strength = 0
@@ -233,6 +240,7 @@ class MarksmanEnemy(RangedEnemy):
     width              = 40
     height             = 40
     wander_radius      = 4
+    knockback_friction= 0.75
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -243,117 +251,3 @@ class MarksmanEnemy(RangedEnemy):
         if self.state not in ("dead", "reload"):
             draw_rect = camera.apply(self.rect)
             pygame.draw.rect(screen, (255, 120, 120), draw_rect, 2)
-
-
-# ---------------------------------------------------------------------------
-# Boss enemy
-# ---------------------------------------------------------------------------
-
-class WardenBoss(Enemy):
-    """
-    The Warden — a slow, commanding boss that spawns minions.
-
-    Phase 1 (100-50% HP):
-      - Slow melee with long windup
-      - Spawns 2-3 SwarmEnemies every 8 seconds (cap: 6 minions)
-
-    Phase 2 (< 50% HP):
-      - Speed increases noticeably
-      - Spawn interval drops to 5s; spawns FastEnemies instead
-      - Body pulses red to telegraph the phase shift
-    """
-    name = "warden_boss"
-    speed = 70
-    health = 800
-    damage = 55
-    detection_radius = 900
-    attack_range = 12100  # 110 px
-    attack_cooldown = 2000
-    attack_windup_ms = 1800
-    knockback_strength = 50
-    color = (255, 180, 20)  # deep gold
-    xp_reward = 300
-    width = 88
-    height = 88
-    wander_radius = 3
-
-    _PHASE1_SPAWN_INTERVAL = 8000
-    _PHASE2_SPAWN_INTERVAL = 5000
-    _MINION_CAP = 6
-    _MINION_CAP_PHASE2 = 9
-
-    def __init__(self, x, y):
-        super().__init__(x, y)
-        self._phase = 1
-        self._next_spawn_at = pygame.time.get_ticks() + self._PHASE1_SPAWN_INTERVAL
-        self._initial_health = self.health  # snapshot before scaling
-        self.pending_spawns: list = []
-
-    # ---- overrides ----
-
-    def move(self, player, obstacles, room, dt_ms):
-        self._update_phase()
-        self._try_spawn(room, pygame.time.get_ticks())
-        super().move(player, obstacles, room, dt_ms)
-
-    def draw(self, screen, camera):
-        draw_rect = camera.apply(self.rect)
-
-        if self.state == "dead":
-            body_color = (80, 80, 80)
-        elif self.state == "hurt":
-            body_color = (255, 255, 255)
-        elif self._phase == 2:
-            pulse = (pygame.time.get_ticks() // 200) % 2 == 0
-            body_color = (255, 60, 20) if pulse else (255, 140, 20)
-        else:
-            body_color = self.color
-
-        pygame.draw.rect(screen, body_color, draw_rect)
-        pygame.draw.rect(screen, (255, 255, 120), draw_rect, 4)  # gold border
-        self._draw_health_bar(screen, draw_rect)
-
-    # ---- private ----
-
-    def _update_phase(self):
-        if self._phase == 1 and self.health <= self._initial_health * 0.5:
-            self._phase = 2
-            self.speed = 130
-            self._MINION_CAP = self._MINION_CAP_PHASE2
-
-    def _try_spawn(self, room, now):
-        if now < self._next_spawn_at:
-            return
-
-        live = len(self.pending_spawns)
-        if live >= self._MINION_CAP:
-            self._next_spawn_at = now + 1000
-            return
-
-        count = random.randint(2, 3)
-        minion_cls = FastEnemy if self._phase == 2 else SwarmEnemy
-        for _ in range(count):
-            spawn_tile = self._pick_random_free_tile(room, self._grid_pos(), 4)
-            if spawn_tile is None:
-                continue
-            self.pending_spawns.append(
-                (minion_cls, *self._center_of_tile(*spawn_tile))
-            )
-
-        interval = self._PHASE2_SPAWN_INTERVAL if self._phase == 2 else self._PHASE1_SPAWN_INTERVAL
-        self._next_spawn_at = now + interval
-
-    def _draw_health_bar(self, screen, draw_rect):
-        bar_w = draw_rect.width + 20
-        bar_h = 8
-        bar_x = draw_rect.x - 10
-        bar_y = draw_rect.y - 16
-
-        ratio = max(0.0, self.health / max(1, self._initial_health))
-        fill_w = int(bar_w * ratio)
-        hp_color = (220, 60, 60) if self._phase == 2 else (255, 180, 20)
-
-        pygame.draw.rect(screen, (40, 40, 50), (bar_x, bar_y, bar_w, bar_h))
-        if fill_w > 0:
-            pygame.draw.rect(screen, hp_color, (bar_x, bar_y, fill_w, bar_h))
-        pygame.draw.rect(screen, (200, 200, 200), (bar_x, bar_y, bar_w, bar_h), 1)
