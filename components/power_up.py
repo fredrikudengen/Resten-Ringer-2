@@ -24,7 +24,7 @@ class SpeedPowerup(BasePowerup):
 class AttackPowerup(BasePowerup):
     def __init__(self, x, y, size):
         super().__init__(x, y, size, constants.RED)
-        self.name = 'speed_boost'
+        self.name = 'attack_boost'
     def apply(self, player):
         player.apply_powerup(self.name)
 

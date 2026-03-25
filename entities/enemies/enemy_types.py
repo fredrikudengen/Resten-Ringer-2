@@ -8,6 +8,7 @@ from components.gun import EnemyPistol, EnemyRifle
 # ---------------------------------------------------------------------------
 # Stat reference
 # ---------------------------------------------------------------------------
+# Player speed = ~300
 # Pistol baseline: 20 dmg/shot, 350 ms fire rate ≈ 57 DPS
 # "shots" below = pistol shots to kill (hp / 20), rounded
 # attack_range   = squared pixel radius (64 px melee = 4 096, 80 px = 6 400)
@@ -20,10 +21,10 @@ class SwarmEnemy(Enemy):
     ~1 shot to kill — the danger is sheer numbers.
     """
     name              = "swarm_enemy"
-    speed             = 180
-    health            = 25
+    speed             = 280
+    health            = 40
     damage            = 8
-    detection_radius  = 800
+    detection_radius  = 1500
     attack_range      = 3600    # 60 px
     attack_cooldown   = 500
     attack_windup_ms  = 180
@@ -33,7 +34,7 @@ class SwarmEnemy(Enemy):
     width             = 28
     height            = 28
     wander_radius     = 6
-    knockback_friction= 0.90
+    knockback_friction= 0.95
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -45,20 +46,20 @@ class FastEnemy(Enemy):
     Medium damage, short telegraph. ~2 shots to kill.
     """
     name              = "fast_enemy"
-    speed             = 170
+    speed             = 310
     health            = 45
     damage            = 12
-    detection_radius  = 650
+    detection_radius  = 1500
     attack_range      = 4225    # 65 px
     attack_cooldown   = 650
-    attack_windup_ms  = 300
+    attack_windup_ms  = 250
     knockback_strength= 10
     color             = (255, 120, 30)   # bright orange
     xp_reward         = 15
     width             = 36
     height            = 36
     wander_radius     = 5
-    knockback_friction= 0.85
+    knockback_friction= 0.9
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -70,20 +71,20 @@ class SlowEnemy(Enemy):
     Long telegraph — punishes players who don't dash away. ~4 shots.
     """
     name              = "slow_enemy"
-    speed             = 100
+    speed             = 200
     health            = 80
     damage            = 28
     detection_radius  = 550
-    attack_range      = 5625    # 75 px
+    attack_range      = 6500    # 75 px
     attack_cooldown   = 1300
-    attack_windup_ms  = 900
+    attack_windup_ms  = 600
     knockback_strength= 22
     color             = (140, 60, 200)   # dark purple
     xp_reward         = 22
     width             = 52
     height            = 52
     wander_radius     = 2
-    knockback_friction= 0.75
+    knockback_friction= 0.6
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -95,7 +96,7 @@ class ScoutEnemy(Enemy):
     Weak in a fight but will always find you first. ~3 shots.
     """
     name              = "scout_enemy"
-    speed             = 130
+    speed             = 230
     health            = 55
     damage            = 10
     detection_radius  = 1200    # biggest in the game
@@ -108,7 +109,7 @@ class ScoutEnemy(Enemy):
     width             = 38
     height            = 38
     wander_radius     = 5
-    knockback_friction= 0.85
+    knockback_friction= 0.75
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -121,7 +122,7 @@ class AssassinEnemy(Enemy):
     """
     # TODO: add lunge attack to assassin
     name              = "assassin_enemy"
-    speed             = 155
+    speed             = 230
     health            = 65
     damage            = 35
     detection_radius  = 750
@@ -134,7 +135,7 @@ class AssassinEnemy(Enemy):
     width             = 34
     height            = 34
     wander_radius     = 4
-    knockback_friction= 0.80
+    knockback_friction= 0.75
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -146,7 +147,7 @@ class BruteEnemy(Enemy):
     Very long telegraph but massive damage and knockback. ~9 shots.
     """
     name              = "brute_enemy"
-    speed             = 110
+    speed             = 180
     health            = 180
     damage            = 32
     detection_radius  = 520
@@ -159,7 +160,7 @@ class BruteEnemy(Enemy):
     width             = 58
     height            = 58
     wander_radius     = 3
-    knockback_friction= 0.70
+    knockback_friction= 0.5
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -171,7 +172,7 @@ class TankEnemy(Enemy):
     Moderate damage but incredible hp and reach. ~15 shots.
     """
     name              = "tank_enemy"
-    speed             = 90
+    speed             = 170
     health            = 300
     damage            = 22
     detection_radius  = 480
@@ -184,7 +185,7 @@ class TankEnemy(Enemy):
     width             = 64
     height            = 64
     wander_radius     = 2
-    knockback_friction= 0.65
+    knockback_friction= 0.4
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -204,7 +205,7 @@ class ShooterEnemy(RangedEnemy):
     preferred_range_px = 300
     min_range_px       = 130
 
-    speed              = 125
+    speed              = 250
     health             = 75
     detection_radius   = 750
     knockback_strength = 0       # ranged — no melee knockback
@@ -213,7 +214,7 @@ class ShooterEnemy(RangedEnemy):
     width              = 36
     height             = 36
     wander_radius      = 5
-    knockback_friction= 0.80
+    knockback_friction= 0.8
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -231,7 +232,7 @@ class MarksmanEnemy(RangedEnemy):
     min_range_px       = 200
     reposition_interval = 600   # repositions faster to keep sightlines open
 
-    speed              = 110
+    speed              = 240
     health             = 120
     detection_radius   = 900
     knockback_strength = 0
@@ -240,7 +241,7 @@ class MarksmanEnemy(RangedEnemy):
     width              = 40
     height             = 40
     wander_radius      = 4
-    knockback_friction= 0.75
+    knockback_friction= 0.7
 
     def __init__(self, x, y):
         super().__init__(x, y)

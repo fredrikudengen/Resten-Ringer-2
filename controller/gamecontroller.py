@@ -1,3 +1,5 @@
+import math
+
 import pygame
 
 def player_input(player, obstacles, camera):
@@ -6,23 +8,24 @@ def player_input(player, obstacles, camera):
     mouse_pos_world = camera.screen_to_world(*mouse_pos_screen)
     player.is_moving = False
 
-    old_x, old_y = player.rect.x, player.rect.y
-    if keys[pygame.K_w]:
-        player.rect.y -= player.speed
+    dx = (keys[pygame.K_d] - keys[pygame.K_a])
+    dy = (keys[pygame.K_s] - keys[pygame.K_w])
+
+    if dx != 0 or dy != 0:
         player.is_moving = True
-        if _collides(player, obstacles): player.rect.y = old_y
-    if keys[pygame.K_s]:
-        player.rect.y += player.speed
-        player.is_moving = True
-        if _collides(player, obstacles): player.rect.y = old_y
-    if keys[pygame.K_a]:
-        player.rect.x -= player.speed
-        player.is_moving = True
-        if _collides(player, obstacles): player.rect.x = old_x
-    if keys[pygame.K_d]:
-        player.rect.x += player.speed
-        player.is_moving = True
-        if _collides(player, obstacles): player.rect.x = old_x
+        length = math.sqrt(dx * dx + dy * dy)
+        dx = round(dx / length * player.speed)
+        dy = round(dy / length * player.speed)
+
+        old_x = player.rect.x
+        player.rect.x += dx
+        if _collides(player, obstacles):
+            player.rect.x = old_x
+
+        old_y = player.rect.y
+        player.rect.y += dy
+        if _collides(player, obstacles):
+            player.rect.y = old_y
 
     # --- dash ---
     if keys[pygame.K_SPACE]:

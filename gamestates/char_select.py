@@ -8,7 +8,7 @@ from .ui_helpers import Button, draw_panel, C
 CHARACTERS: list[dict] = [
     {
         'name':          'Fredrik',
-        'description':   'Balanced stats and reliable pistol. Solid choice for any situation.',
+        'description':   "A reliable pistol and he's ready for every situation.",
         'color':         (100, 180, 255),
         'max_health':    100,
         'speed':         5,
@@ -19,7 +19,7 @@ CHARACTERS: list[dict] = [
     },
     {
         'name':          'Johanne',
-        'description':   'Lightning fast with a quick dash cooldown. Fragile but relentless.',
+        'description':   "Lightning fast. Fragile but relentless.",
         'color':         (180, 100, 255),
         'max_health':    70,
         'health':        'max_health',
@@ -31,7 +31,7 @@ CHARACTERS: list[dict] = [
     },
     {
         'name':          'Jonathan',
-        'description':   'Slow and heavy. Enormous HP and a shotgun that punishes close range.',
+        'description':   "Don't get too close or you'll get full of lead",
         'color':         (255, 160, 60),
         'max_health':    130,
         'health':        'max_health',
@@ -43,7 +43,7 @@ CHARACTERS: list[dict] = [
     },
     {
         'name':          'Leila',
-        'description':   'Precise and deadly. Piercing sniper shots reward careful positioning.',
+        'description':   "Precise and deadly. One shot is all she needs.",
         'color':         (80, 220, 160),
         'max_health':    80,
         'health':        'max_health',
@@ -55,9 +55,9 @@ CHARACTERS: list[dict] = [
     },
 ]
 
-_CARD_W = 160
-_CARD_H = 280
-_CARD_GAP = 24
+_CARD_W = 200
+_CARD_H = 340
+_CARD_GAP = 32
 
 
 class CharacterSelectState(BaseState):
@@ -68,9 +68,9 @@ class CharacterSelectState(BaseState):
         sw, sh = sm.screen.get_size()
 
         pygame.font.init()
-        self._font_name = pygame.font.SysFont('consolas', 20, bold=True)
-        self._font_desc = pygame.font.SysFont('consolas', 14)
-        font_title      = pygame.font.SysFont('consolas', 32, bold=True)
+        self._font_name = pygame.font.SysFont('consolas', 24, bold=True)
+        self._font_desc = pygame.font.SysFont('consolas', 17)
+        font_title      = pygame.font.SysFont('consolas', 52, bold=True)
         font_btn        = pygame.font.SysFont('consolas', 20, bold=True)
 
         self._title_surf = font_title.render('SELECT CHARACTER', True, C['title'])
@@ -85,8 +85,8 @@ class CharacterSelectState(BaseState):
         ]
 
         btn_w, btn_h = 160, 46
-        self._btn_confirm = Button(pygame.Rect(sw // 2 - btn_w - 12, sh // 2 + 150, btn_w, btn_h), 'CONFIRM', font_btn)
-        self._btn_back    = Button(pygame.Rect(sw // 2 + 12,         sh // 2 + 150, btn_w, btn_h), 'BACK',    font_btn)
+        self._btn_confirm = Button(pygame.Rect(sw // 2 - btn_w - 12, sh // 2 + 210, btn_w, btn_h), 'CONFIRM', font_btn)
+        self._btn_back    = Button(pygame.Rect(sw // 2 + 12,         sh // 2 + 210, btn_w, btn_h), 'BACK',    font_btn)
 
     def handle_event(self, event: pygame.event.Event):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -103,7 +103,7 @@ class CharacterSelectState(BaseState):
     def draw(self, surface: pygame.Surface):
         surface.fill(C['bg'])
         sw, sh = surface.get_size()
-        surface.blit(self._title_surf, (sw // 2 - self._title_surf.get_width() // 2, 60))
+        surface.blit(self._title_surf, (sw // 2 - self._title_surf.get_width() // 2, 90))
 
         for i, (card, char) in enumerate(zip(self._cards, CHARACTERS)):
             selected     = (i == self._selected)
@@ -113,17 +113,17 @@ class CharacterSelectState(BaseState):
             pygame.draw.rect(surface, border_color, card, 3 if selected else 2, border_radius=10)
 
             # Colour swatch
-            swatch = pygame.Rect(card.x + card.w // 2 - 30, card.y + 20, 60, 60)
-            pygame.draw.rect(surface, char['color'], swatch, border_radius=8)
+            swatch = pygame.Rect(card.x + card.w // 2 - 36, card.y + 24, 72, 72)
+            pygame.draw.rect(surface, char['color'], swatch, border_radius=10)
             if selected:
-                pygame.draw.rect(surface, (255, 255, 255), swatch, 2, border_radius=8)
+                pygame.draw.rect(surface, (255, 255, 255), swatch, 2, border_radius=10)
 
             name_surf = self._font_name.render(char['name'], True, char['color'] if selected else C['text'])
-            surface.blit(name_surf, (card.centerx - name_surf.get_width() // 2, card.y + 96))
+            surface.blit(name_surf, (card.centerx - name_surf.get_width() // 2, card.y + 112))
 
             for j, line in enumerate(self._wrap(char['description'], 18)):
                 ln_surf = self._font_desc.render(line, True, C['text_dim'])
-                surface.blit(ln_surf, (card.centerx - ln_surf.get_width() // 2, card.y + 126 + j * 18))
+                surface.blit(ln_surf, (card.centerx - ln_surf.get_width() // 2, card.y + 148 + j * 22))
 
             # Stat lines
             stats = [
@@ -132,11 +132,11 @@ class CharacterSelectState(BaseState):
                 (f"GUN   {char['gun']}"),
                 (f"DASH  {char['dash_cooldown']}ms"),
             ]
-            stat_y = card.y + _CARD_H - 4 - len(stats) * 16
+            stat_y = card.y + _CARD_H - 8 - len(stats) * 20
             for k, stat in enumerate(stats):
                 col = char['color'] if selected else C['stat_label']
                 s = self._font_desc.render(stat, True, col)
-                surface.blit(s, (card.x + 10, stat_y + k * 16))
+                surface.blit(s, (card.x + 12, stat_y + k * 20))
 
         self._btn_confirm.draw(surface, selected=True)
         self._btn_back.draw(surface)

@@ -22,8 +22,11 @@ DASH_DURATION = 230
 PLAYER_HIT_INVINCIBLE_MS = 600
 BUFF_VALUES = {
     'speed_boost': ('speed', 3),
-    'attack_boost': ('dps', 1),
+    'attack_boost': ('damage', 1),
     'shield_boost': ('health', 20),
+    # 'speed_boost': ('speed', (int) (player.speed*0.30)),
+    # 'attack_boost': ('damage', (int) (player.gun.damage*0.30)),
+    # 'shield_boost': ('health', (int) (player.health*0.30)),
 }
 BUFF_DURATIONS = {
     'speed_boost': 5000,

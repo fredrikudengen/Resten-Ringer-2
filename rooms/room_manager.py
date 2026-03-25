@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 from dataclasses import dataclass
 
@@ -6,14 +8,16 @@ import pygame
 from core import constants
 from components import Door
 from core.sound_manager import sound
-from rooms.room_registry import build_rooms
+from rooms.room_registry import RoomRegistry
+from rooms.floor_generator import generate_floor
+from rooms.floor_map import FloorMap, RoomNode
 from rooms.progression import level_from_rooms_cleared, choose_enemy, scale_enemy
 
 
 @dataclass
 class DoorEntry:
     door: Door
-    grid_pos: tuple[int, int]  # (gx, gy)
+    grid_pos: tuple[int, int]  # (gx, gy) inside the GridRoom layout
 
 
 class RoomManager:
@@ -23,15 +27,26 @@ class RoomManager:
         self.player = player
         self.camera = camera
 
-        self.rooms             = build_rooms()
+        self.registry = RoomRegistry()
+
+        # Floor state
+        self.floor_map:    FloorMap | None  = None
+        self.current_node: RoomNode | None  = None
+
+        # Door widgets for the current room
         self.doors: list[DoorEntry] = []
+
+        # Stats (persist across floors)
         self.rooms_cleared     = 0
         self.progression_level = 1
         self.current_room_type = "start"
-        self._room_cleared     = False
+
+        # Room-local state
+        self._room_cleared       = False
         self.pending_boss_reward = False
 
-        self._load_room(self.rooms["start"][0], entry_side="N")
+        # Generate and enter floor 1
+        self._generate_floor(floor_number=1)
 
     # ========== PUBLIC API ==========
 
@@ -39,7 +54,10 @@ class RoomManager:
         if not self._room_cleared:
             if len(self.world.enemies) == 0:
                 self._room_cleared = True
+                if self.current_node is not None:
+                    self.current_node.cleared = True
                 sound.play("room_cleared")
+
             for d in self.doors:
                 d.door.is_open = self._room_cleared
             self._sync_door_blockers()
@@ -47,8 +65,10 @@ class RoomManager:
         if self._room_cleared:
             for d in self.doors:
                 if self.player.rect.colliderect(d.door.trigger) and player.is_moving:
-                    entry_side = self._door_side(self.world.current_room, *d.grid_pos)
-                    self._go_to_next_room(entry_side)
+                    side = self._door_side(
+                        self.current_node.grid_room, *d.grid_pos
+                    )
+                    self._go_to_next_room(side)
                     break
 
     def draw(self, screen):
@@ -56,47 +76,89 @@ class RoomManager:
             d.door.draw(screen, self.camera)
 
     def advance_after_boss(self):
-        self._load_room(
-            random.choice(self.rooms["combat"]), entry_side="N")
+        """Called by BossRewardState after the player picks a reward."""
+        floor_num = self.floor_map.floor_number + 1
+        self._generate_floor(floor_num)
 
-    # ========== HELPERS ==========
+    # ========== FLOOR GENERATION ==========
 
-    def _go_to_next_room(self, entry_side):
-        if self.current_room_type == "reward":
-            candidates = self.rooms["combat"]
-        elif self.current_room_type == "boss":
+    def _generate_floor(self, floor_number: int):
+        """Generate a new floor and enter its start room."""
+        self.floor_map = generate_floor(floor_number)
+        start_node = self.floor_map.get_node(*self.floor_map.start_pos)
+        self._visit_node(start_node, entry_side=None)
+
+    # ========== ROOM TRANSITIONS ==========
+
+    def _go_to_next_room(self, side: str):
+        """Player walked through a door on the given side."""
+
+        # Boss room: trigger reward screen instead of advancing
+        if self.current_room_type == "boss":
             self.pending_boss_reward = True
             return
-        else:
-            if self.current_room_type != "start" and self.current_room_type != "reward":
-                self.rooms_cleared += 1
-                self.progression_level = level_from_rooms_cleared(self.rooms_cleared)
 
-            rc = self.rooms_cleared
-            if rc > 0 and rc % 10 == 0:
-                candidates = self.rooms["boss"]
-                entry_side = "N"
-            elif random.random() < 0.15:
-                candidates = self.rooms["reward"]
-            elif random.random() < 0.10:
-                candidates = self.rooms["elite"]
-            else:
-                candidates = self.rooms["combat"]
+        # Increment stats for rooms that count
+        if self.current_room_type not in ("start", "reward"):
+            self.rooms_cleared += 1
+            self.progression_level = level_from_rooms_cleared(self.rooms_cleared)
 
-        self._load_room(random.choice(candidates), entry_side)
+        # Look up the neighbour in the floor graph
+        next_node = self.floor_map.neighbour(self.current_node, side)
+        if next_node is None:
+            return  # safety: door leads nowhere
 
-    def _load_room(self, room, entry_side):
+        self._visit_node(next_node, entry_side=side)
+
+    def _visit_node(self, node: RoomNode, entry_side: str | None):
+        """
+        Enter a room node.  Instantiates the GridRoom on first visit,
+        then loads it into the world.
+        """
+        if not node.visited:
+            node.visited = True
+            node.grid_room = self._instantiate_room(node)
+
+        self.current_node = node
+        self._load_room(node, entry_side)
+
+    def _instantiate_room(self, node: RoomNode):
+        """
+        Pick a compatible room template and build a GridRoom for this node.
+        """
+        required = node.door_sides
+
+        templates = self.registry.find_compatible(node.room_type, required)
+        if not templates:
+            # Fallback: any template of this type, activate what we can
+            templates = self.registry.all_templates(node.room_type)
+
+        if not templates:
+            raise RuntimeError(
+                f"No room templates available for type '{node.room_type}'"
+            )
+
+        template = random.choice(templates)
+
+        # Activate the intersection: required sides that the layout supports
+        active = required & template.potential_doors
+        return self.registry.instantiate(template, active)
+
+    # ========== ROOM LOADING ==========
+
+    def _load_room(self, node: RoomNode, entry_side):
+        room = node.grid_room
         self.current_room_type = room.room_type
-        self._room_cleared     = False
+        self._room_cleared     = node.cleared
         self.world.clear()
         room.reset_spawns()
 
         self._place_obstacles(room)
-        self._place_spawns(room)            
+        self._place_spawns(room, skip_enemies=node.cleared)
         self._place_player(room, entry_side)
 
         for d in self.doors:
-            d.door.is_open = False
+            d.door.is_open = node.cleared
         self._sync_door_blockers()
 
         self.world.current_room = room
@@ -107,12 +169,15 @@ class RoomManager:
                 if room.terrain[gy][gx] == constants.TILE_WALL:
                     self.world.add_obstacle(room.tile_rect(gx, gy))
 
-    def _place_spawns(self, room):
+    def _place_spawns(self, room, skip_enemies: bool = False):
         self.doors = []
         for gy in range(room.rows):
             for gx in range(room.cols):
                 tag = room.spawns[gy][gx]
                 if not tag:
+                    continue
+                if skip_enemies and tag in (*constants._TAG_TO_ENEMY, 'enemy'):
+                    room.spawns[gy][gx] = None
                     continue
                 x = gx * constants.TILE_SIZE
                 y = gy * constants.TILE_SIZE
@@ -144,6 +209,8 @@ class RoomManager:
             self.player.rect.topleft = self._pick_spawn_near_door(room, spawn_side)
         else:
             self.player.rect.topleft = (constants.TILE_SIZE * 2, constants.TILE_SIZE * 2)
+
+    # ========== HELPERS ==========
 
     def _door_side(self, room, gx, gy) -> str | None:
         if gx == 0:             return "W"

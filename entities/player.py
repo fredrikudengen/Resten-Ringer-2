@@ -125,7 +125,10 @@ class Player(Entity):
         if powerup in self.buff_timers:
             return
         attr, value = constants.BUFF_VALUES[powerup]
-        setattr(self, attr, getattr(self, attr) + value)
+        if powerup == 'attack_boost':
+            setattr(self.gun, attr, getattr(self.gun, attr) + value)
+        else:
+            setattr(self, attr, getattr(self, attr) + value)
         self.buff_timers[powerup] = pygame.time.get_ticks()
 
     def update_powerups(self):
@@ -133,7 +136,10 @@ class Player(Entity):
         for name, start in list(self.buff_timers.items()):
             if now - start >= constants.BUFF_DURATIONS.get(name, 0):
                 attr, value = constants.BUFF_VALUES[name]
-                setattr(self, attr, getattr(self, attr) - value)
+                if name == 'attack_boost':
+                    setattr(self.gun, attr, getattr(self.gun, attr) - value)
+                else:
+                    setattr(self, attr, getattr(self, attr) - value)
                 del self.buff_timers[name]
 
     def start_dash(self, direction: pygame.math.Vector2):

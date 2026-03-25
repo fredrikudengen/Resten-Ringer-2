@@ -155,14 +155,14 @@ class Pistol(Gun):
     damage         = 20.0
     fire_rate_ms   = 350
     bullet_speed   = 650.0
-    bullet_radius  = 5
+    bullet_radius  = 10
     bullet_color   = (220, 220, 50)
     spread         = 4
     max_range      = 800.0
     max_ammo       = 12
     reload_time_ms = 1400
     team = "player"
-    knockback_strength = 5
+    knockback_strength = 2
 
 
 class Shotgun(Gun):
@@ -174,7 +174,7 @@ class Shotgun(Gun):
     damage         = 12.0     # per pellet — 5 pellets = 60 total at point blank
     fire_rate_ms   = 750
     bullet_speed   = 500.0
-    bullet_radius  = 4
+    bullet_radius  = 7
     bullet_color   = (255, 140, 40)
     max_range      = 350.0    # short range intentionally
     pellets        = 5
@@ -182,7 +182,7 @@ class Shotgun(Gun):
     max_ammo       = 6
     reload_time_ms = 2000
     team = "player"
-    knockback_strength = 14
+    knockback_strength = 4
 
     def _fire(self, origin, direction) -> list[Bullet]:
         return [self._make_bullet(origin, direction)
@@ -194,14 +194,14 @@ class MachineGun(Gun):
     damage         = 10.0
     fire_rate_ms   = 100
     bullet_speed   = 700.0
-    bullet_radius  = 4
+    bullet_radius  = 6
     bullet_color   = (100, 220, 255)
     max_range      = 750.0
     spread         = 8.0
     max_ammo       = 30
     reload_time_ms = 2500
     team = "player"
-    knockback_strength = 3
+    knockback_strength = 1
 
 class SniperRifle(Gun):
     """
@@ -212,13 +212,13 @@ class SniperRifle(Gun):
     damage         = 30.0
     fire_rate_ms   = 1200
     bullet_speed   = 1200.0
-    bullet_radius  = 4
+    bullet_radius  = 8
     bullet_color   = (180, 80, 255)
     max_range      = 1200.0
     max_ammo       = 5
     reload_time_ms = 2800
     team = "player"
-    knockback_strength = 8
+    knockback_strength = 3
 
     def _fire(self, origin, direction) -> list[Bullet]:
         b = self._make_bullet(origin, direction)
@@ -235,25 +235,25 @@ class EnemyPistol(Gun):
     damage         = 10.0
     fire_rate_ms   = 800
     bullet_speed   = 380.0
-    bullet_radius  = 4
+    bullet_radius  = 10
     bullet_color   = (200, 80, 80) # reddish so player can read enemy shots
     spread         = 4
     max_range      = 700.0
     max_ammo       = 8
     reload_time_ms = 2200
     team = "enemy"
-    knockback_strength = 4
+    knockback_strength = 2
 
 class EnemyRifle(Gun):
     """High-damage slow rifle for elite ranged enemies."""
     name           = "Enemy Rifle"
     damage         = 22.0
     fire_rate_ms   = 1400
-    bullet_speed   = 560.0
-    bullet_radius  = 5
+    bullet_speed   = 1000.0
+    bullet_radius  = 8
     bullet_color   = (255, 60, 60)
     max_range      = 1000.0
     max_ammo       = 5
     reload_time_ms = 3000
     team = "enemy"
-    knockback_strength = 6
+    knockback_strength = 3

@@ -97,6 +97,8 @@ class RangedEnemy(Enemy):
                 self.last_seen_pos = player_center
                 self.search_started = None
 
+        self.update_knockback(obstacles)
+
         # --- state machine ---
         if self.state in ("idle", "walk", "hurt"):
             if see_player:

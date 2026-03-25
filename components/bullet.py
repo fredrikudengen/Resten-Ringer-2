@@ -77,9 +77,6 @@ class Bullet:
 
     def damage_player(self, player):
 
-        if player.is_invincible:
-            return
-
         player.hit = True
         player.health -= self.damage
 
