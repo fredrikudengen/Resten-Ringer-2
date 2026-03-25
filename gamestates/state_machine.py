@@ -4,6 +4,7 @@ import pygame
 
 from .basestate import BaseState, State
 from .boss_reward import BossRewardState
+from .floor_transition import FloorTransitionState
 from .main_menu import MainMenuState
 from .char_select import CharacterSelectState
 from .playing import PlayingState
@@ -97,14 +98,16 @@ class StateMachine:
         self.player       = Player(selected_character=self.selected_character, hud=self.hud)
         self.room_manager = RoomManager(self.world, self.player, self.camera)
 
-        playing   = PlayingState(self)
-        game_over = GameOverState(self)
-        paused    = PausedState(self, playing)
-        boss_reward = BossRewardState(self)
+        playing          = PlayingState(self)
+        game_over        = GameOverState(self)
+        paused           = PausedState(self, playing)
+        boss_reward      = BossRewardState(self)
+        floor_transition = FloorTransitionState(self)
 
-        self._states[State.PLAYING]   = playing
-        self._states[State.GAME_OVER] = game_over
-        self._states[State.PAUSED]    = paused
-        self._states[State.BOSS_REWARD] = boss_reward
+        self._states[State.PLAYING]          = playing
+        self._states[State.GAME_OVER]        = game_over
+        self._states[State.PAUSED]           = paused
+        self._states[State.BOSS_REWARD]      = boss_reward
+        self._states[State.FLOOR_TRANSITION] = floor_transition
 
         self.transition(State.PLAYING)

@@ -5,6 +5,8 @@ import pygame
 from .basestate import BaseState, State
 from core import constants
 from controller import player_input
+from rooms.minimap import Minimap
+
 
 class PlayingState(BaseState):
     """
@@ -18,6 +20,7 @@ class PlayingState(BaseState):
         self._shoot_requested = False
         self._reload_requested = False
         self._mouse_held = False
+        self._minimap = Minimap()
 
     def handle_event(self, event: pygame.event.Event):
         if event.type == pygame.KEYDOWN:
@@ -73,3 +76,6 @@ class PlayingState(BaseState):
         sm.room_manager.draw(surface)
         sm.player.draw(surface, sm.camera)
         sm.hud.draw(surface, sm.player)
+        self._minimap.draw(
+            surface, sm.room_manager.floor_map, sm.room_manager.current_node
+        )

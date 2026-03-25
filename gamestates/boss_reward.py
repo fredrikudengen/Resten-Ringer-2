@@ -88,8 +88,7 @@ class BossRewardState(BaseState):
             idx = self._card_at(event.pos)
             if idx is not None:
                 self._offers[idx]["apply"](self._sm.player)
-                self._sm.room_manager.advance_after_boss()
-                self._sm.transition(State.PLAYING)
+                self._sm.transition(State.FLOOR_TRANSITION)
 
     # ------------------------------------------------------------------
 
