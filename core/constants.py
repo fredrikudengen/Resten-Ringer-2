@@ -3,7 +3,6 @@ from entities import (
     AssassinEnemy, BruteEnemy, SwarmEnemy, ShooterEnemy, MarksmanEnemy,
     WardenBoss,
 )
-from components.power_up import SpeedPowerup, AttackPowerup, ShieldPowerup
 
 # colors
 BLACK = (0, 0, 0)
@@ -21,17 +20,15 @@ PLAYER_COLOR = (255, 255, 255)
 DASH_DURATION = 230
 PLAYER_HIT_INVINCIBLE_MS = 600
 BUFF_VALUES = {
-    'speed_boost': ('speed', 3),
-    'attack_boost': ('damage', 1),
-    'shield_boost': ('health', 20),
-    # 'speed_boost': ('speed', (int) (player.speed*0.30)),
-    # 'attack_boost': ('damage', (int) (player.gun.damage*0.30)),
-    # 'shield_boost': ('health', (int) (player.health*0.30)),
+    'SpeedPowerup':  ('speed',  0.30),
+    'AttackPowerup': ('damage', 0.30),
+    'ShieldPowerup': ('health', 0.30),
+    'HealthPowerup': ('health', 0.30),
 }
 BUFF_DURATIONS = {
-    'speed_boost': 5000,
-    'attack_boost': 7000,
-    'shield_boost': 10000,
+    'SpeedPowerup': 5000,
+    'AttackPowerup': 7000,
+    'ShieldPowerup': 10000,
 }
 BUFF_SPEED_MULTIPLIER = 1.5
 BUFF_ATTACK_MULTIPLIER = 1.75
@@ -74,6 +71,7 @@ COLOR_DOOR_OUTLINE = (0, 0, 0)
 # grid room
 CHAR_TO_SPAWN: dict[str, str] = {
     'E': 'enemy',
+    'P': 'powerup',
     'F': 'fast_enemy',
     'L': 'slow_enemy',
     'T': 'tank_enemy',
@@ -91,7 +89,7 @@ CHAR_TO_SPAWN: dict[str, str] = {
 }
 
 # room manager
-_TAG_TO_ENEMY: dict[str, type[Enemy]] = {
+TAG_TO_ENEMY: dict[str, type[Enemy]] = {
     'fast_enemy': FastEnemy,
     'slow_enemy': SlowEnemy,
     'tank_enemy': TankEnemy,
@@ -102,12 +100,6 @@ _TAG_TO_ENEMY: dict[str, type[Enemy]] = {
     'shooter_enemy': ShooterEnemy,
     'marksman_enemy': MarksmanEnemy,
     'warden_boss': WardenBoss,
-}
-
-_TAG_TO_POWERUP: dict[str, tuple[type, int]] = {
-    'speed_powerup': (SpeedPowerup, 20),
-    'attack_powerup': (AttackPowerup, 20),
-    'shield_powerup': (ShieldPowerup, 20),
 }
 
 # hud

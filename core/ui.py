@@ -18,9 +18,9 @@ _C = {
     "dash_charge": (50,  80,  130),
     "dash_border": (60,  120, 200),
 
-    "buff_speed":  (255, 220, 60),
-    "buff_shield": (80,  160, 255),
-    "buff_attack": (255, 80,  80),
+    "SpeedPowerup":  (255, 220, 60),
+    "ShieldPowerup": (80,  160, 255),
+    "AttackPowerup": (255, 80,  80),
     "buff_border": (200, 200, 200, 180),
     "buff_timer":  (220, 220, 220),
 
@@ -40,14 +40,14 @@ _C = {
 }
 
 _BUFF_COLORS = {
-    "speed_boost":  _C["buff_speed"],
-    "shield_boost": _C["buff_shield"],
-    "attack_boost": _C["buff_attack"],
+    "SpeedPowerup":  _C["SpeedPowerup"],
+    "ShieldPowerup": _C["ShieldPowerup"],
+    "AttackPowerup": _C["AttackPowerup"],
 }
 _BUFF_LABELS = {
-    "speed_boost":  "SPD",
-    "shield_boost": "DEF",
-    "attack_boost": "ATK",
+    "SpeedPowerup":  "SPD",
+    "ShieldPowerup": "DEF",
+    "AttackPowerup": "ATK",
 }
 
 # Maks antall patroner som vises som enkeltikoner.
@@ -304,8 +304,8 @@ class HUD:
 
     def _draw_dash_indicator(self, screen, player, now, screen_w):
         cx = screen_w - self.DASH_X_OFFSET - self.DASH_RADIUS
-        cy = self.DASH_Y + self.DASH_RADIUS
-        r  = self.DASH_RADIUS
+        cy = screen.get_height() - self.DASH_Y - self.DASH_RADIUS  # bottom-right instead of top-right
+        r = self.DASH_RADIUS
 
         total_cd = player.dash_cooldown
         elapsed  = now - (player.dash_cooldown_end - total_cd)
@@ -331,7 +331,7 @@ class HUD:
             "DASH", True,
             _C["dash_ready"] if ratio >= 1.0 else _C["text_dim"]
         )
-        screen.blit(label, (cx - label.get_width() // 2, cy + r + 4))
+        screen.blit(label, (cx - label.get_width() // 2, cy - r - label.get_height() - 4))
 
     # ------------------------------------------------------------------ #
     #  Buff icons
@@ -343,7 +343,7 @@ class HUD:
 
         y_base = screen_h - self.BUFF_Y_OFFSET - self.BUFF_SIZE
 
-        for i, (name, start) in enumerate(player.buff_timers.items()):
+        for i, (name, (start, attr, bonus)) in enumerate(player.buff_timers.items()):
             duration = constants.BUFF_DURATIONS.get(name, 1)
             elapsed  = now - start
             ratio    = max(0.0, 1.0 - elapsed / duration)

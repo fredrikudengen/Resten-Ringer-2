@@ -4,7 +4,6 @@ from .enemies import (Enemy, FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy, Assass
                       SwarmEnemy, ShooterEnemy, MarksmanEnemy, WardenBoss)
 
 __all__ = [
-    # Base classes
     'Entity',
     'Player',
 ]

@@ -3,7 +3,6 @@ from __future__ import annotations
 import pygame
 from enum import Enum, auto
 
-
 class State(Enum):
     MAIN_MENU        = auto()
     CHARACTER_SELECT = auto()

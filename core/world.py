@@ -1,4 +1,6 @@
 import pygame
+
+from components.power_up import BasePowerup, POWERUP_TYPES
 from core import constants
 from core.sound_manager import sound
 from entities import WardenBoss
@@ -155,8 +157,19 @@ class World:
         self.enemies.append(enemy)
         return enemy
 
-    def add_powerup(self, powerup):
+    def add_powerup(self, powerup_or_x, y=None, powerup_type=None):
+        if isinstance(powerup_or_x, BasePowerup):
+            self.powerups.append(powerup_or_x)
+            return powerup_or_x
+        x = powerup_or_x
+        if powerup_type is None:
+            powerup = BasePowerup(x, y)
+        elif isinstance(powerup_type, str):
+            powerup = self._resolve_powerup_type(powerup_type)(x, y)
+        else:
+            powerup = powerup_type(x, y)
         self.powerups.append(powerup)
+        return powerup
 
     # =========== HELPERS ===========
 
@@ -169,3 +182,9 @@ class World:
             return ENEMY_TYPES[type_name]
         print(f"Warning: unknown enemy type '{type_name}', falling back to Enemy")
         return ENEMY_TYPES["Enemy"]
+
+    def _resolve_powerup_type(self, type_name: str):
+        if type_name in POWERUP_TYPES:
+            return POWERUP_TYPES
+        print(f"Warning: unknown powerup type '{type_name}', falling back to Powerup")
+        return POWERUP_TYPES["Powerup"]

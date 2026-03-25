@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import pygame
 
-from rooms.floor_map import FloorMap, RoomNode, DIRECTIONS
+from .floor_map import FloorMap, RoomNode, DIRECTIONS
 
 
 # ---- Layout ----
 MINIMAP_MARGIN   = 16     # px from screen edge
 MINIMAP_PADDING  = 10     # px inside the panel border
-ROOM_SIZE        = 16     # px per room square
+ROOM_SIZE        = 22     # px per room square
 ROOM_GAP         = 6      # px between rooms (door corridors live here)
 DOOR_THICKNESS   = 3      # px wide door line
 CELL             = ROOM_SIZE + ROOM_GAP   # total grid cell pitch
@@ -26,7 +26,7 @@ _C = {
     "reward":      (80,  180, 255),
 
     "door":        (160, 160, 170),
-    "door_to_unknown": (80, 80, 90),
+    "door_to_unknown": (255, 210, 60),
 }
 
 def _room_color(node: RoomNode, is_current: bool) -> tuple:
@@ -150,10 +150,3 @@ class Minimap:
                 ROOM_SIZE,
             )
             pygame.draw.rect(screen, color, room_rect, border_radius=2)
-
-            # Thin highlight border on current room
-            if is_current:
-                pygame.draw.rect(
-                    screen, (255, 255, 255),
-                    room_rect.inflate(4, 4), 2, border_radius=3,
-                )

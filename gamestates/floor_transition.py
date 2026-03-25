@@ -5,11 +5,9 @@ import pygame
 from .basestate import BaseState, State
 from .ui_helpers import C
 
-
 _DISPLAY_DURATION_MS = 1800   # how long the screen shows before gameplay starts
 _FADE_IN_MS          = 400    # text fade-in duration
 _FADE_OUT_MS         = 300    # text fade-out before transitioning
-
 
 class FloorTransitionState(BaseState):
     """

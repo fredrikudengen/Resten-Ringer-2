@@ -122,24 +122,37 @@ class Player(Entity):
             self._level_up()
 
     def apply_powerup(self, powerup):
+        attr, pct = constants.BUFF_VALUES[powerup]
+
+        # Health powerup is a one-time heal, not a timed buff
+        if powerup == 'HealthPowerup':
+            heal = int(self.max_health * pct)
+            self.health = min(self.health + heal, self.max_health)
+            return
+
         if powerup in self.buff_timers:
             return
-        attr, value = constants.BUFF_VALUES[powerup]
-        if powerup == 'attack_boost':
-            setattr(self.gun, attr, getattr(self.gun, attr) + value)
+
+        # Compute the actual boost from current stats
+        if powerup == 'AttackPowerup':
+            bonus = int(self.gun.damage * pct)
+            self.gun.damage += bonus
         else:
-            setattr(self, attr, getattr(self, attr) + value)
-        self.buff_timers[powerup] = pygame.time.get_ticks()
+            base = getattr(self, attr)
+            bonus = int(base * pct)
+            setattr(self, attr, base + bonus)
+
+        # Store both the timestamp AND the computed bonus
+        self.buff_timers[powerup] = (pygame.time.get_ticks(), attr, bonus)
 
     def update_powerups(self):
         now = pygame.time.get_ticks()
-        for name, start in list(self.buff_timers.items()):
+        for name, (start, attr, bonus) in list(self.buff_timers.items()):
             if now - start >= constants.BUFF_DURATIONS.get(name, 0):
-                attr, value = constants.BUFF_VALUES[name]
-                if name == 'attack_boost':
-                    setattr(self.gun, attr, getattr(self.gun, attr) - value)
+                if name == 'AttackPowerup':
+                    self.gun.damage -= bonus
                 else:
-                    setattr(self, attr, getattr(self, attr) - value)
+                    setattr(self, attr, getattr(self, attr) - bonus)
                 del self.buff_timers[name]
 
     def start_dash(self, direction: pygame.math.Vector2):

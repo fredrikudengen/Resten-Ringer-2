@@ -6,18 +6,28 @@ from dataclasses import dataclass
 import pygame
 
 from core import constants
-from components import Door
+from components import Door, ShieldPowerup, AttackPowerup, SpeedPowerup, HealthPowerup
 from core.sound_manager import sound
-from rooms.room_registry import RoomRegistry
-from rooms.floor_generator import generate_floor
-from rooms.floor_map import FloorMap, RoomNode
-from rooms.progression import level_from_rooms_cleared, choose_enemy, scale_enemy
+from .room_registry import RoomRegistry
+from .floor_generator import generate_floor
+from .floor_map import FloorMap, RoomNode
+from .progression import level_from_rooms_cleared, choose_enemy, scale_enemy
 
 
 @dataclass
 class DoorEntry:
     door: Door
     grid_pos: tuple[int, int]  # (gx, gy) inside the GridRoom layout
+
+TAG_TO_POWERUP: dict[str, type] = {
+    'SpeedPowerup': SpeedPowerup,
+    'AttackPowerup': AttackPowerup,
+    'ShieldPowerup': ShieldPowerup,
+    'HealthPowerup': HealthPowerup
+}
+
+def choose_powerup():
+    return random.choice([ShieldPowerup, AttackPowerup, SpeedPowerup, HealthPowerup])
 
 
 class RoomManager:
@@ -53,10 +63,11 @@ class RoomManager:
     def update(self, player):
         if not self._room_cleared:
             if len(self.world.enemies) == 0:
+                if self.current_room_type != "reward" or self.current_room_type == "start":
+                    sound.play("room_cleared")
                 self._room_cleared = True
                 if self.current_node is not None:
                     self.current_node.cleared = True
-                sound.play("room_cleared")
 
             for d in self.doors:
                 d.door.is_open = self._room_cleared
@@ -176,7 +187,7 @@ class RoomManager:
                 tag = room.spawns[gy][gx]
                 if not tag:
                     continue
-                if skip_enemies and tag in (*constants._TAG_TO_ENEMY, 'enemy'):
+                if skip_enemies and tag in (*constants.TAG_TO_ENEMY, 'enemy', *TAG_TO_POWERUP, 'powerup'):
                     room.spawns[gy][gx] = None
                     continue
                 x = gx * constants.TILE_SIZE
@@ -185,15 +196,16 @@ class RoomManager:
                 room.spawns[gy][gx] = None
 
     def _handle_tag(self, tag, x, y, gx, gy):
-        if tag in constants._TAG_TO_ENEMY:
-            enemy = self.world.add_enemy(x, y, enemy_type=constants._TAG_TO_ENEMY[tag])
+        if tag in constants.TAG_TO_ENEMY:
+            enemy = self.world.add_enemy(x, y, enemy_type=constants.TAG_TO_ENEMY[tag])
             scale_enemy(enemy, self.progression_level)
+        if tag in TAG_TO_POWERUP:
+            self.world.add_powerup(x, y, powerup_type=constants.TAG_TO_POWERUP[tag])
         elif tag == 'enemy':
             enemy = self.world.add_enemy(x, y, enemy_type=choose_enemy(self.progression_level))
             scale_enemy(enemy, self.progression_level)
-        elif tag in constants._TAG_TO_POWERUP:
-            cls, amount = constants._TAG_TO_POWERUP[tag]
-            self.world.add_powerup(cls(x, y, amount))
+        elif tag == 'powerup':
+            self.world.add_powerup(x, y, powerup_type=choose_powerup())
         elif tag == 'door':
             self.doors.append(DoorEntry(door=Door(x, y), grid_pos=(gx, gy)))
 
