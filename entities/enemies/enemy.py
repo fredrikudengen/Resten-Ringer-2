@@ -1,9 +1,6 @@
-import itertools
 import random
-import math
 
 import pygame
-from pygame.math import Vector2
 from core import constants
 
 from ..entity import Entity
@@ -62,7 +59,6 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             self.hit            = False
             self.last_seen_pos  = player.rect.center
             self.search_started = now
-            # TODO: implement true hurt state
             self.state          = "chase"
 
         if self.hit_timer and (now - self.hit_timer > 500):

@@ -4,8 +4,10 @@ import pygame
 
 from .enemy import Enemy
 from .enemy_types import FastEnemy, SwarmEnemy
+from .movement import MovementMixin
 
-class WardenBoss(Enemy):
+
+class WardenBoss(Enemy, MovementMixin):
     """
     The Warden — a slow, commanding boss that spawns minions.
 
@@ -30,6 +32,7 @@ class WardenBoss(Enemy):
     xp_reward = 300
     width = 88
     height = 88
+    is_boss = True
 
     _PHASE1_SPAWN_INTERVAL = 8000
     _PHASE2_SPAWN_INTERVAL = 5000
@@ -40,7 +43,7 @@ class WardenBoss(Enemy):
     _PHASE1_LUNGE_COOLDOWN = 8000
     _PHASE2_LUNGE_COOLDOWN = 6000
     _DAZE_DURATION_WALL = 3000
-    _DAZE_DURATION_DIST = 1500
+    _DAZE_DURATION = 1500
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -108,7 +111,7 @@ class WardenBoss(Enemy):
         elif self.state == "lunge":
             if (self.pos - self._lunge_start).length() > self._LUNGE_MAX_DIST:
                 self.did_slam = True
-                self._daze_until = now + self._DAZE_DURATION_DIST
+                self._daze_until = now + self._DAZE_DURATION
                 self.state = "dazed"
             else:
                 hit = self._lunge(self._lunge_direction.x * self._LUNGE_SPEED,
@@ -188,31 +191,3 @@ class WardenBoss(Enemy):
         if fill_w > 0:
             pygame.draw.rect(screen, hp_color, (bar_x, bar_y, fill_w, bar_h))
         pygame.draw.rect(screen, (200, 200, 200), (bar_x, bar_y, bar_w, bar_h), 1)
-
-    def _lunge(self, vx, vy, dt_ms, obstacles):
-            """Lunge attack, returns when it hits an obstacle"""
-            dt = dt_ms / 1000.0
-            dx_total = vx * dt
-            dy_total = vy * dt
-            steps = max(1, int(max(abs(dx_total), abs(dy_total)) // 4))
-            sdx = dx_total / steps
-            sdy = dy_total / steps
-
-            for _ in range(steps):
-
-                if sdx:
-                    self.pos.x += sdx
-                    self._sync_rect_from_pos()
-                    if self.check_collision(obstacles):
-                        self.pos.x -= sdx
-                        self._sync_rect_from_pos()
-                        return True
-
-                if sdy:
-                    self.pos.y += sdy
-                    self._sync_rect_from_pos()
-                    if self.check_collision(obstacles):
-                        self.pos.y -= sdy
-                        self._sync_rect_from_pos()
-                        return True
-            return False

@@ -22,14 +22,14 @@ class World:
 
     # =========== PUBLIC API ===========
 
-    def update(self, dt_ms: int, player):
+    def update(self, dt_ms, player, obstacles):
         """Update all entities and components."""
 
         # -- Enemies --
         for enemy in self.enemies[:]:
 
             enemy.move(player, self.obstacles, self.current_room, dt_ms)
-            enemy.apply_separation(self.enemies)
+            enemy.apply_separation(self.enemies, obstacles)
 
             # Collect bullets fired by ranged enemies this frame
             pending = getattr(enemy, 'pending_bullets', None)

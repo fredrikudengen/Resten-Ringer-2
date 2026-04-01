@@ -1,7 +1,7 @@
 import pygame
 
 from .enemy import Enemy
-from .ranged_enemy import RangedEnemy
+from .ranged_enemies import RangedEnemy
 from components.gun import EnemyPistol, EnemyRifle
 
 
@@ -113,33 +113,6 @@ class ScoutEnemy(Enemy):
 
     def __init__(self, x, y):
         super().__init__(x, y)
-
-
-class AssassinEnemy(Enemy):
-    """
-    Deceptively fast with devastating burst damage.
-    Medium telegraph; rewards players who read the timing. ~3 shots.
-    """
-    # TODO: add lunge attack to assassin
-    name              = "assassin_enemy"
-    speed             = 230
-    health            = 65
-    damage            = 35
-    detection_radius  = 750
-    attack_range      = 4900    # 70 px
-    attack_cooldown   = 1100
-    attack_windup_ms  = 400
-    knockback_strength= 18
-    color             = (200, 30, 60)    # crimson
-    xp_reward         = 28
-    width             = 34
-    height            = 34
-    wander_radius     = 4
-    knockback_friction= 0.75
-
-    def __init__(self, x, y):
-        super().__init__(x, y)
-
 
 class BruteEnemy(Enemy):
     """

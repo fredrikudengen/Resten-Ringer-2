@@ -9,7 +9,6 @@ from pygame.math import Vector2
 from core import constants
 from .enemy import Enemy
 
-# Import gun classes — adjust path if your package layout differs
 from components.gun import EnemyPistol, EnemyRifle
 
 
@@ -78,10 +77,6 @@ class RangedEnemy(Enemy):
             self.last_seen_pos  = player.rect.center
             self.search_started = now
             self.state          = "hurt"
-
-        if self.hit_timer and (now - self.hit_timer > 400):
-            self.hit_timer = None
-            self.state     = "chase"   # re-engage after brief stagger
 
         # --- sense player ---
         player_center   = player.rect.center

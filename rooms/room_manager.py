@@ -74,6 +74,11 @@ class RoomManager:
             self._sync_door_blockers()
 
         if self._room_cleared:
+            if self.current_room_type == "boss":
+                if not self.pending_boss_reward:
+                    self.pending_boss_reward = True
+                return
+
             for d in self.doors:
                 if self.player.rect.colliderect(d.door.trigger) and player.is_moving:
                     side = self._door_side(
@@ -102,23 +107,13 @@ class RoomManager:
     # ========== ROOM TRANSITIONS ==========
 
     def _go_to_next_room(self, side: str):
-        """Player walked through a door on the given side."""
-
-        # Boss room: trigger reward screen instead of advancing
-        if self.current_room_type == "boss":
-            self.pending_boss_reward = True
-            return
-
-        # Increment stats for rooms that count
-        if self.current_room_type not in ("start", "reward"):
+        if self.current_room_type not in ("start", "reward", "boss"):
             self.rooms_cleared += 1
             self.progression_level = level_from_rooms_cleared(self.rooms_cleared)
 
-        # Look up the neighbour in the floor graph
         next_node = self.floor_map.neighbour(self.current_node, side)
         if next_node is None:
-            return  # safety: door leads nowhere
-
+            return
         self._visit_node(next_node, entry_side=side)
 
     def _visit_node(self, node: RoomNode, entry_side: str | None):
@@ -200,7 +195,7 @@ class RoomManager:
             enemy = self.world.add_enemy(x, y, enemy_type=constants.TAG_TO_ENEMY[tag])
             scale_enemy(enemy, self.progression_level)
         if tag in TAG_TO_POWERUP:
-            self.world.add_powerup(x, y, powerup_type=constants.TAG_TO_POWERUP[tag])
+            self.world.add_powerup(x, y, powerup_type=TAG_TO_POWERUP[tag])
         elif tag == 'enemy':
             enemy = self.world.add_enemy(x, y, enemy_type=choose_enemy(self.progression_level))
             scale_enemy(enemy, self.progression_level)

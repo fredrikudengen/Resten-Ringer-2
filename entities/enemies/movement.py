@@ -56,9 +56,36 @@ class MovementMixin:
             self._slide_move(direction.x * self.speed, direction.y * self.speed, dt_ms, obstacles)
         return self._dist2(int(self.pos.x), int(self.pos.y), int(target_px[0]), int(target_px[1])) <= (24 * 24)
 
+    def _lunge(self, vx, vy, dt_ms, obstacles):
+            """Lunge attack, returns when it hits an obstacle"""
+            dt = dt_ms / 1000.0
+            dx_total = vx * dt
+            dy_total = vy * dt
+            steps = max(1, int(max(abs(dx_total), abs(dy_total)) // 4))
+            sdx = dx_total / steps
+            sdy = dy_total / steps
 
-    def apply_separation(self, others):
-        """Myk dytting bort fra andre fiender."""
+            for _ in range(steps):
+
+                if sdx:
+                    self.pos.x += sdx
+                    self._sync_rect_from_pos()
+                    if self.check_collision(obstacles):
+                        self.pos.x -= sdx
+                        self._sync_rect_from_pos()
+                        return True
+
+                if sdy:
+                    self.pos.y += sdy
+                    self._sync_rect_from_pos()
+                    if self.check_collision(obstacles):
+                        self.pos.y -= sdy
+                        self._sync_rect_from_pos()
+                        return True
+            return False
+
+    def apply_separation(self, others, obstacles):
+        """Myk dytting bort fra andre fiender – respekterer vegger."""
         strength = 0.08
         radius = 64
         self_x, self_y = self.pos.x, self.pos.y
@@ -68,14 +95,26 @@ class MovementMixin:
         for other in others:
             if other is self or not other.alive:
                 continue
-            other_x, other_y = other.pos.x, other.pos.y
-            distance_x, distance_y = self_x - other_x, self_y - other_y
-            distance2 = distance_x * distance_x + distance_y * distance_y
-            if 0 < distance2 < r2:
-                weight = 1.0 - (distance2 / r2)   # 1.0 at touching, 0.0 at edge of radius
-                pushx += distance_x * weight
-                pushy += distance_y * weight
+            dx = self_x - other.pos.x
+            dy = self_y - other.pos.y
+            dist2 = dx * dx + dy * dy
+            if 0 < dist2 < r2:
+                weight = 1.0 - (dist2 / r2)
+                pushx += dx * weight
+                pushy += dy * weight
 
-        self.pos.x += pushx * strength
-        self.pos.y += pushy * strength
-        self._sync_rect_from_pos()
+        # X-akse
+        if pushx:
+            self.pos.x += pushx * strength
+            self._sync_rect_from_pos()
+            if self.check_collision(obstacles):
+                self.pos.x -= pushx * strength
+                self._sync_rect_from_pos()
+
+        # Y-akse
+        if pushy:
+            self.pos.y += pushy * strength
+            self._sync_rect_from_pos()
+            if self.check_collision(obstacles):
+                self.pos.y -= pushy * strength
+                self._sync_rect_from_pos()

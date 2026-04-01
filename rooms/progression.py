@@ -3,6 +3,8 @@ from entities import (
     FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy,
     AssassinEnemy, BruteEnemy, SwarmEnemy, ShooterEnemy, MarksmanEnemy
 )
+from entities.enemies import ranged_enemies
+from entities.enemies.ranged_enemies import RangedEnemy
 
 # Antall rom ryddet → progression level
 _THRESHOLDS = [2, 4, 6, 8, 10, 12, 14, 16, 18]
@@ -49,12 +51,15 @@ def scale_enemy(enemy, progression_level: int):
     Level 10: 2.35x HP, 1.72x dmg
     """
     if progression_level <= 1:
-        return enemy
+        return
 
-    hp_mult  = 1.0 + (progression_level - 1) * 0.15
+    if hasattr(enemy, 'is_boss'):
+        return
+    hp_mult = 1.0 + (progression_level - 1) * 0.15
     dmg_mult = 1.0 + (progression_level - 1) * 0.08
 
-    # TODO: fix enemy scaling
     enemy.health = int(enemy.health * hp_mult)
-    enemy.damage = round(enemy.damage * dmg_mult, 1)
-    return enemy
+    if hasattr(enemy, 'gun'):
+        enemy.gun.damage = round(enemy.gun.damage * dmg_mult, 1)
+    else:
+        enemy.damage = round(enemy.damage * dmg_mult, 1)

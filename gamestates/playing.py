@@ -40,7 +40,7 @@ class PlayingState(BaseState):
 
         player_input(sm.player, sm.world.obstacles, sm.camera)
         sm.camera.update(sm.player.rect)
-        sm.world.update(dt, sm.player)
+        sm.world.update(dt, sm.player, sm.world.obstacles)
         sm.room_manager.update(sm.player)
 
         if self._mouse_held or self._shoot_requested:
