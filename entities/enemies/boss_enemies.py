@@ -132,8 +132,6 @@ class WardenBoss(Enemy, MovementMixin):
 
         if self.state == "dead":
             body_color = (80, 80, 80)
-        elif self.state == "hurt":
-            body_color = (255, 255, 255)
         elif self.state == "lunge_windup":
             pulse = (pygame.time.get_ticks() // 150) % 2 == 0
             body_color = (255, 255, 255) if pulse else self.color

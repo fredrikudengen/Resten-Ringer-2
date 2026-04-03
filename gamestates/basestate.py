@@ -10,6 +10,7 @@ class State(Enum):
     PAUSED           = auto()
     GAME_OVER        = auto()
     BOSS_REWARD      = auto()
+    ROOM_REWARD      = auto()
     FLOOR_TRANSITION = auto()
 
 class BaseState:

@@ -19,7 +19,6 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         # Combat state
         self.alive                 = True
         self.hit                   = False
-        self.hit_timer             = None
         self.attack_cooldown_until = 0
         self.attack_windup_until   = 0  
 
@@ -54,16 +53,11 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             self.wander_goal_g = None
             return
 
-        if self.hit:
-            self.hit_timer      = now
+        if self.hit and self.state not in ("attack", "chase"):
             self.hit            = False
             self.last_seen_pos  = player.rect.center
             self.search_started = now
-            self.state          = "chase"
-
-        if self.hit_timer and (now - self.hit_timer > 500):
-            self.hit_timer = None
-            self.state = "search"
+            self.state          = "search"
 
         player_center = player.rect.center
         enemy_center  = self.rect.center
@@ -78,7 +72,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
         self.update_knockback(obstacles)
 
-        if self.state in ("idle", "walk", "hurt"):
+        if self.state in ("idle", "walk"):
             if see_player:
                 self.state = "chase"
             else:
@@ -132,8 +126,6 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             color = tuple(max(c - 40, 0) for c in self.color)
         elif self.state == "attack":
             color = (255, 255, 255)
-        elif self.state == "hurt":
-            color = constants.RED
         elif self.state == "dead":
             color = (100, 100, 100)
         else:

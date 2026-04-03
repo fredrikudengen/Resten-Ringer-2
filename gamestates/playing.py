@@ -66,6 +66,11 @@ class PlayingState(BaseState):
             sm.transition(State.BOSS_REWARD)
             return
 
+        if sm.room_manager.pending_room_reward:
+            sm.room_manager.pending_room_reward = False
+            sm.transition(State.ROOM_REWARD)
+            return
+
         if not sm.player.alive:
             self._sm.transition(State.GAME_OVER)
 

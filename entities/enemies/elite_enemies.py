@@ -47,15 +47,10 @@ class AssassinEnemy(Enemy):
             self.wander_goal_g = None
             return
 
-        if self.hit:
-            self.hit_timer = now
+        if self.hit and self.state not in ("lunge", "lunge_windup", "attack"):
             self.hit = False
             self.last_seen_pos = player.rect.center
             self.search_started = now
-            self.state = "chase"
-
-        if self.hit_timer and (now - self.hit_timer > 500):
-            self.hit_timer = None
             self.state = "search"
 
         player_center = player.rect.center
@@ -71,7 +66,7 @@ class AssassinEnemy(Enemy):
 
         self.update_knockback(obstacles)
 
-        if self.state in ("idle", "walk", "hurt"):
+        if self.state in ("idle", "walk"):
             if see_player:
                 self.state = "chase"
             else:

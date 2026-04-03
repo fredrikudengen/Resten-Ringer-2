@@ -31,13 +31,11 @@ class World:
             enemy.move(player, self.obstacles, self.current_room, dt_ms)
             enemy.apply_separation(self.enemies, obstacles)
 
-            # Collect bullets fired by ranged enemies this frame
             pending = getattr(enemy, 'pending_bullets', None)
             if pending:
                 self.bullets.extend(pending)
                 pending.clear()
 
-            # Collect minions queued by boss enemies this frame
             spawns = getattr(enemy, 'pending_spawns', None)
             cap = getattr(enemy, '_MINION_CAP', None)
             if spawns and (len(self.enemies) < cap):

@@ -70,13 +70,10 @@ class RangedEnemy(Enemy):
             self.state  = "dead"
             return
 
-        # --- hurt interrupt ---
-        if self.hit:
-            self.hit_timer      = now
+        if self.hit and self.state not in ("attack", "chase"):
             self.hit            = False
             self.last_seen_pos  = player.rect.center
             self.search_started = now
-            self.state          = "hurt"
 
         # --- sense player ---
         player_center   = player.rect.center
@@ -95,7 +92,7 @@ class RangedEnemy(Enemy):
         self.update_knockback(obstacles)
 
         # --- state machine ---
-        if self.state in ("idle", "walk", "hurt"):
+        if self.state in ("idle", "walk"):
             if see_player:
                 self.state               = "chase"
                 self._reposition_target  = None
@@ -163,8 +160,6 @@ class RangedEnemy(Enemy):
         elif self.state == "reload":
             # Grey-ish tint + pulsing bar to telegraph "reloading"
             color = (120, 120, 140)
-        elif self.state == "hurt":
-            color = constants.RED
         elif self.state == "dead":
             color = (80, 80, 80)
         else:

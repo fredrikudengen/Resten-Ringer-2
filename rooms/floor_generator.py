@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import random
 
-from .floor_map import FloorMap, RoomNode, DIRECTIONS, OPPOSITE
+from .floor_map import FloorMap, RoomNode, DIRECTIONS
 
 
-# ---- Tuning knobs ----
+# ---- Floor generator variables ----
 
 MIN_MAIN_PATH     = 7      # minimum rooms on the main path (including start + boss)
 MAX_MAIN_PATH     = 10     # maximum main path length
@@ -21,7 +21,7 @@ BRANCH_MAX_DEPTH  = 2      # how many levels of sub-branching allowed
 # Room type weights for dead-end rooms (non-boss, non-start)
 _DEADEND_WEIGHTS: list[tuple[str, float]] = [
     ("combat",  0.45),
-    ("reward",  0.30),
+    ("reward",  0.70),
     ("elite",   0.25),
 ]
 
@@ -132,7 +132,7 @@ def _grow_path(
             candidates.append(s)
 
         if not candidates:
-            break   # boxed in — path ends early
+            break
 
         chosen = _pick_biased(candidates, prev_dir)
         dx, dy = DIRECTIONS[chosen]
@@ -163,7 +163,6 @@ def _grow_branch(
     if root_node is None:
         return
 
-    # Pick a free adjacent direction
     sides = list(DIRECTIONS.keys())
     random.shuffle(sides)
     start_side: str | None = None
@@ -178,30 +177,25 @@ def _grow_branch(
             break
 
     if start_side is None or first_pos is None:
-        return   # no free neighbours
+        return
 
-    # Grow a short path from this new position
     branch_length = random.randint(1, BRANCH_MAX_LENGTH)
     branch_path = _grow_path(first_pos, branch_length, occupied)
 
     if not branch_path:
         return
 
-    # Create nodes and connect
     for pos in branch_path:
         floor_map.add_node(RoomNode(gx=pos[0], gy=pos[1], room_type="combat"))
 
-    # Connect root → first branch room
     floor_map.connect(root_node, start_side, floor_map.get_node(*branch_path[0]))
 
-    # Connect consecutive branch rooms
     for i in range(len(branch_path) - 1):
         a = floor_map.get_node(*branch_path[i])
         b = floor_map.get_node(*branch_path[i + 1])
         side = _side_between(branch_path[i], branch_path[i + 1])
         floor_map.connect(a, side, b)
 
-    # Sub-branch from random rooms in this branch
     for pos in branch_path:
         if floor_map.room_count >= MAX_TOTAL_ROOMS:
             break

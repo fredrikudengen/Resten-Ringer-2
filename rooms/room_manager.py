@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 import pygame
 
+from components.chest import Chest
 from core import constants
 from components import Door, ShieldPowerup, AttackPowerup, SpeedPowerup, HealthPowerup
 from core.sound_manager import sound
@@ -54,6 +55,9 @@ class RoomManager:
         # Room-local state
         self._room_cleared       = False
         self.pending_boss_reward = False
+        self.pending_room_reward = False
+
+        self.chest: Chest | None = None
 
         # Generate and enter floor 1
         self._generate_floor(floor_number=1)
@@ -79,6 +83,12 @@ class RoomManager:
                     self.pending_boss_reward = True
                 return
 
+            if self.current_room_type == "reward" and self.chest and not self.chest.opened:
+                if self.player.rect.colliderect(self.chest.rect):
+                    self.chest.opened = True
+                    if not self.pending_room_reward:
+                        self.pending_room_reward = True
+
             for d in self.doors:
                 if self.player.rect.colliderect(d.door.trigger) and player.is_moving:
                     side = self._door_side(
@@ -90,6 +100,8 @@ class RoomManager:
     def draw(self, screen):
         for d in self.doors:
             d.door.draw(screen, self.camera)
+        if self.chest:
+            self.chest.draw(screen, self.camera)
 
     def advance_after_boss(self):
         """Called by BossRewardState after the player picks a reward."""
@@ -162,6 +174,10 @@ class RoomManager:
         self._place_obstacles(room)
         self._place_spawns(room, skip_enemies=node.cleared)
         self._place_player(room, entry_side)
+        if room.room_type == "reward":
+            self._place_chest(room)
+        else:
+            self.chest = None
 
         for d in self.doors:
             d.door.is_open = node.cleared
@@ -266,3 +282,8 @@ class RoomManager:
                 if k not in existing:
                     self.world.add_obstacle(d.door.rect)
                     existing.add(k)
+
+    def _place_chest(self, room):
+        cx = (room.cols * constants.TILE_SIZE) // 2 - Chest.WIDTH // 2
+        cy = (room.rows * constants.TILE_SIZE) // 2 - Chest.HEIGHT // 2
+        self.chest = Chest(cx, cy)

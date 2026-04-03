@@ -10,6 +10,7 @@ from .char_select import CharacterSelectState
 from .playing import PlayingState
 from .paused import PausedState
 from .game_over import GameOverState
+from .room_reward import RoomRewardState
 
 
 class StateMachine:
@@ -102,12 +103,14 @@ class StateMachine:
         game_over        = GameOverState(self)
         paused           = PausedState(self, playing)
         boss_reward      = BossRewardState(self)
+        room_reward      = RoomRewardState(self)
         floor_transition = FloorTransitionState(self)
 
         self._states[State.PLAYING]          = playing
         self._states[State.GAME_OVER]        = game_over
         self._states[State.PAUSED]           = paused
         self._states[State.BOSS_REWARD]      = boss_reward
+        self._states[State.ROOM_REWARD]      = room_reward
         self._states[State.FLOOR_TRANSITION] = floor_transition
 
         self.transition(State.PLAYING)

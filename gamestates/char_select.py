@@ -11,7 +11,7 @@ CHARACTERS: list[dict] = [
         'description':   "A reliable pistol and he's ready for every situation.",
         'color':         (100, 180, 255),
         'max_health':    100,
-        'speed':         5,
+        'speed':         6,
         'size':          (64, 64),
         'gun':           'Pistol',
         'dash_cooldown': 1300,

@@ -23,11 +23,11 @@ _CARD_H   = 300
 _CARD_GAP = 40
 
 
-class BossRewardState(BaseState):
+class RoomRewardState(BaseState):
 
     def __init__(self, sm):
         self._sm      = sm
-        self._offers  = []   # populated in on_enter
+        self._offers  = None  # populated in on_enter
         self._hovered = None
 
         pygame.font.init()
@@ -44,7 +44,6 @@ class BossRewardState(BaseState):
         sm     = self._sm
         player = sm.player
 
-        # Pick one gun the player doesn't currently have
         other_guns = [g for g in _ALL_GUNS if not isinstance(player.gun, g)]
         gun_cls    = random.choice(other_guns)
         gun_offer  = {
@@ -77,7 +76,7 @@ class BossRewardState(BaseState):
             "apply": lambda p, rc=relic_cls: p.add_relic(rc),
         }
 
-        self._offers = [gun_offer, stat_offer, relic_offer]
+        self._offers = [random.choice([gun_offer, stat_offer, relic_offer])]
 
     # ------------------------------------------------------------------
 
@@ -89,7 +88,10 @@ class BossRewardState(BaseState):
             idx = self._card_at(event.pos)
             if idx is not None:
                 self._offers[idx]["apply"](self._sm.player)
-                self._sm.transition(State.FLOOR_TRANSITION)
+                self._sm.transition(State.PLAYING)
+
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            self._sm.transition(State.PLAYING)
 
     # ------------------------------------------------------------------
 
@@ -142,6 +144,8 @@ class BossRewardState(BaseState):
                 ls = self._font_desc.render(line, True, C["text_dim"])
                 surface.blit(ls, (rect.centerx - ls.get_width() // 2, rect.y + 150 + j * 20))
 
+            esc_surf = self._font_type.render("Press ESC to reject reward", True, C["text_dim"])
+            surface.blit(esc_surf, (sw // 2 - esc_surf.get_width() // 2, sh // 2 + _CARD_H // 2 + 20))
     # ------------------------------------------------------------------
 
     def _card_at(self, pos) -> int | None:
