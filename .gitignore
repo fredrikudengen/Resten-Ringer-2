@@ -175,6 +175,10 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/workspace.xml
 .idea/shelf/
+.idea/vcs.xml
+.idea/Resten Ringer 2.iml
+.idea/misc.xml
+.idea/inspectionProfiles/profiles_settings.xml
 
 # Abstra
 # Abstra is an AI-powered process automation framework.
