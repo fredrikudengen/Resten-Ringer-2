@@ -6,23 +6,33 @@ from .enemy import Enemy
 from .enemy_types import FastEnemy, SwarmEnemy
 from .movement import MovementMixin
 
+# ===========================================================================
+# BOSSER — boss_enemies.py
+# ===========================================================================
+#
+# Bosser er sluttutfordringen på hver etasje. De har egne faser,
+# spesialangrep og visuell feedback.
+#
+# WardenBoss — "The Warden"
+#   Fase 1 (100–50% HP): Sakte melee med lang windup + spawner SwarmEnemies
+#   Fase 2 (< 50% HP):   Raskere, spawner FastEnemies, kortere spawn-intervall
+#
+# --- Verdier du kan justere for å endre boss-følelsen ---
+# health              : Total HP (2000 er mye, så senk for raskere kamper)
+# attack_windup_ms    : Telegraph-tid i ms (lengre = lettere å dodge)
+# _LUNGE_SPEED        : Hastighet under lunge-angrep
+# _PHASE1_SPAWN_INTERVAL: Sekunder mellom minion-spawns i fase 1
+# _MINION_CAP         : Maks antall minions i fase 1
+# _DAZE_DURATION_WALL : Hvor lenge bossen er svimmel etter å treffe en vegg
+# ===========================================================================
 
 class WardenBoss(Enemy, MovementMixin):
     """
-    The Warden — a slow, commanding boss that spawns minions.
-
-    Phase 1 (100-50% HP):
-      - Slow melee with long windup
-      - Spawns 2-3 SwarmEnemies every 8 seconds (cap: 6 minions)
-
-    Phase 2 (< 50% HP):
-      - Speed increases noticeably
-      - Spawn interval drops to 5s; spawns FastEnemies instead
-      - Body pulses red to telegraph the phase shift
+    The Warden.
     """
     name = "warden_boss"
     speed = 100
-    health = 800
+    health = 2000
     damage = 55
     attack_range = 12100  # 110 px
     attack_cooldown = 2000
@@ -34,11 +44,11 @@ class WardenBoss(Enemy, MovementMixin):
     height = 88
     is_boss = True
 
-    _PHASE1_SPAWN_INTERVAL = 8000
+    _PHASE1_SPAWN_INTERVAL = 6000
     _PHASE2_SPAWN_INTERVAL = 5000
     _MINION_CAP = 6
     _MINION_CAP_PHASE2 = 9
-    _LUNGE_SPEED = 500
+    _LUNGE_SPEED = 700
     _LUNGE_MAX_DIST = 1200
     _PHASE1_LUNGE_COOLDOWN = 8000
     _PHASE2_LUNGE_COOLDOWN = 6000
@@ -53,7 +63,7 @@ class WardenBoss(Enemy, MovementMixin):
         self.did_slam = False
         self._phase = 1
         self._next_spawn_at = pygame.time.get_ticks() + self._PHASE1_SPAWN_INTERVAL
-        self._initial_health = self.health  # snapshot before scaling
+        self._initial_health = self.health
         self.pending_spawns: list = []
         self._lunge_direction = pygame.Vector2()
         self._lunge_start = pygame.Vector2()
@@ -142,10 +152,54 @@ class WardenBoss(Enemy, MovementMixin):
             body_color = self.color
 
         pygame.draw.rect(screen, body_color, draw_rect)
-        pygame.draw.rect(screen, (255, 255, 120), draw_rect, 4)  # gold border
-        self._draw_health_bar(screen, draw_rect)
+        pygame.draw.rect(screen, (255, 255, 120), draw_rect, 4)
+        self._draw_boss_hud(screen)
 
-    # ---- private ----
+    def _draw_boss_hud(self, screen):
+        sw, sh = screen.get_size()
+
+        bar_w = int(sw * 0.6)
+        bar_h = 28
+        bar_x = (sw - bar_w) // 2
+        bar_y = sh - 60
+
+        ratio = max(0.0, self.health / max(1, self._initial_health))
+        fill_w = int(bar_w * ratio)
+        hp_color = (220, 60, 60) if self._phase == 2 else (255, 180, 20)
+
+        panel_padding = 18
+        panel = pygame.Rect(
+            bar_x - panel_padding,
+            bar_y - 40,
+            bar_w + panel_padding * 2,
+            bar_h + 56
+        )
+        panel_surf = pygame.Surface((panel.width, panel.height), pygame.SRCALPHA)
+        panel_surf.fill((10, 10, 15, 200))
+        screen.blit(panel_surf, panel.topleft)
+        pygame.draw.rect(screen, (80, 70, 30), panel, 1)
+
+        font = pygame.font.SysFont("Arial", 20, bold=True)
+        label = font.render("WARDEN", True, (255, 220, 80))
+        screen.blit(label, (bar_x, bar_y - 30))
+
+        pygame.draw.rect(screen, (30, 30, 35), (bar_x, bar_y, bar_w, bar_h))
+
+        if fill_w > 0:
+            pygame.draw.rect(screen, hp_color, (bar_x, bar_y, fill_w, bar_h))
+            highlight = pygame.Surface((fill_w, bar_h // 2), pygame.SRCALPHA)
+            highlight.fill((255, 255, 255, 35))
+            screen.blit(highlight, (bar_x, bar_y))
+
+        pygame.draw.rect(screen, (180, 150, 40), (bar_x, bar_y, bar_w, bar_h), 2)
+
+        hp_font = pygame.font.SysFont("Arial", 15, bold=True)
+        hp_text = hp_font.render(f"{max(0, int(self.health))} / {self._initial_health}", True, (220, 220, 220))
+        tx = bar_x + (bar_w - hp_text.get_width()) // 2
+        ty = bar_y + (bar_h - hp_text.get_height()) // 2
+        screen.blit(hp_text, (tx, ty))
+
+    # ---- HELPERS ----
 
     def _update_phase(self):
         if self._phase == 1 and self.health <= self._initial_health * 0.5:
@@ -165,7 +219,7 @@ class WardenBoss(Enemy, MovementMixin):
         count = random.randint(2, 3)
         minion_cls = FastEnemy if self._phase == 2 else SwarmEnemy
         for _ in range(count):
-            spawn_tile = self._pick_random_free_tile(room, self._grid_pos(), 4)
+            spawn_tile = self._pick_random_free_tile(room, self._grid_pos(), 2)
             if spawn_tile is None:
                 continue
             self.pending_spawns.append(
@@ -174,18 +228,3 @@ class WardenBoss(Enemy, MovementMixin):
 
         interval = self._PHASE2_SPAWN_INTERVAL if self._phase == 2 else self._PHASE1_SPAWN_INTERVAL
         self._next_spawn_at = now + interval
-
-    def _draw_health_bar(self, screen, draw_rect):
-        bar_w = draw_rect.width + 20
-        bar_h = 8
-        bar_x = draw_rect.x - 10
-        bar_y = draw_rect.y - 16
-
-        ratio = max(0.0, self.health / max(1, self._initial_health))
-        fill_w = int(bar_w * ratio)
-        hp_color = (220, 60, 60) if self._phase == 2 else (255, 180, 20)
-
-        pygame.draw.rect(screen, (40, 40, 50), (bar_x, bar_y, bar_w, bar_h))
-        if fill_w > 0:
-            pygame.draw.rect(screen, hp_color, (bar_x, bar_y, fill_w, bar_h))
-        pygame.draw.rect(screen, (200, 200, 200), (bar_x, bar_y, bar_w, bar_h), 1)

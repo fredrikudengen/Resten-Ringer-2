@@ -10,7 +10,7 @@ MINIMAP_MARGIN   = 16     # px from screen edge
 MINIMAP_PADDING  = 10     # px inside the panel border
 ROOM_SIZE        = 22     # px per room square
 ROOM_GAP         = 6      # px between rooms (door corridors live here)
-DOOR_THICKNESS   = 3      # px wide door line
+DOOR_THICKNESS   = 5      # px wide door line
 CELL             = ROOM_SIZE + ROOM_GAP   # total grid cell pitch
 
 # ---- Colors ----
@@ -63,12 +63,23 @@ class Minimap:
             pos: node for pos, node in floor_map.nodes.items()
             if node.visited
         }
+
+        # Naborom til besøkte rom som er boss
+        revealed_boss: set = set()
+        for pos, node in visited.items():
+            for side, neighbour_pos in node.connections.items():
+                if neighbour_pos not in visited:
+                    neighbour = floor_map.nodes.get(neighbour_pos)
+                    if neighbour and neighbour.room_type == "boss":
+                        revealed_boss.add(neighbour_pos)
+
         if not visited:
             return
 
         # --- Compute bounding box of visited rooms ---
-        all_gx = [pos[0] for pos in visited]
-        all_gy = [pos[1] for pos in visited]
+        all_positions = set(visited.keys()) | revealed_boss
+        all_gx = [pos[0] for pos in all_positions]
+        all_gy = [pos[1] for pos in all_positions]
         min_gx, max_gx = min(all_gx), max(all_gx)
         min_gy, max_gy = min(all_gy), max(all_gy)
 
@@ -117,25 +128,18 @@ class Minimap:
                 door_color = _C["door"] if neighbour_visited else _C["door_to_unknown"]
 
                 # Door line from room edge to midpoint of gap
-                half_step = CELL // 2
                 if dx != 0:
-                    # Horizontal door
-                    start_x = cx + dx * (ROOM_SIZE // 2)
-                    end_x   = cx + dx * half_step
-                    pygame.draw.line(
-                        screen, door_color,
-                        (start_x, cy), (end_x, cy),
-                        DOOR_THICKNESS,
-                    )
+                    door_w = CELL - ROOM_SIZE
+                    door_h = DOOR_THICKNESS * 2
+                    door_x = cx + (ROOM_SIZE // 2) if dx > 0 else cx - (ROOM_SIZE // 2) - door_w
+                    door_y = cy - door_h // 2
+                    pygame.draw.rect(screen, door_color, (door_x, door_y, door_w, door_h))
                 else:
-                    # Vertical door
-                    start_y = cy + dy * (ROOM_SIZE // 2)
-                    end_y   = cy + dy * half_step
-                    pygame.draw.line(
-                        screen, door_color,
-                        (cx, start_y), (cx, end_y),
-                        DOOR_THICKNESS,
-                    )
+                    door_w = DOOR_THICKNESS * 2
+                    door_h = CELL - ROOM_SIZE
+                    door_x = cx - door_w // 2
+                    door_y = cy + (ROOM_SIZE // 2) if dy > 0 else cy - (ROOM_SIZE // 2) - door_h
+                    pygame.draw.rect(screen, door_color, (door_x, door_y, door_w, door_h))
 
         # --- Draw rooms ---
         for pos, node in visited.items():
@@ -150,3 +154,9 @@ class Minimap:
                 ROOM_SIZE,
             )
             pygame.draw.rect(screen, color, room_rect, border_radius=2)
+
+        for pos in revealed_boss:
+            cx, cy = screen_pos(*pos)
+            room_rect = pygame.Rect(cx - ROOM_SIZE // 2, cy - ROOM_SIZE // 2, ROOM_SIZE, ROOM_SIZE)
+            pygame.draw.rect(screen, (60, 15, 15), room_rect, border_radius=2)
+            pygame.draw.rect(screen, _C["boss"], room_rect, 2, border_radius=2)

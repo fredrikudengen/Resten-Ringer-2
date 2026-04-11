@@ -78,7 +78,7 @@ class Bullet:
     def damage_player(self, player):
 
         player.hit = True
-        player.health -= self.damage
+        player.health -= int(self.damage)
 
         for relic in player.relics:
             relic.on_hit(player)

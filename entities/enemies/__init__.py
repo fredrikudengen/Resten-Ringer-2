@@ -1,13 +1,15 @@
 from .enemy import Enemy
 
 from .boss_enemies import WardenBoss
-from .elite_enemies import AssassinEnemy
+from .elite_enemies import (
+    ScoutEnemy,
+    AssassinEnemy,
+    SlowEnemy,
+    BruteEnemy,
+    TankEnemy
+)
 from .enemy_types import (
     FastEnemy,
-    SlowEnemy,
-    TankEnemy,
-    ScoutEnemy,
-    BruteEnemy,
     SwarmEnemy,
     ShooterEnemy,
     MarksmanEnemy

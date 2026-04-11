@@ -11,7 +11,7 @@ CHARACTERS: list[dict] = [
         'description':   "A reliable pistol and he's ready for every situation.",
         'color':         (100, 180, 255),
         'max_health':    100,
-        'speed':         6,
+        'speed':         7,
         'size':          (64, 64),
         'gun':           'Pistol',
         'dash_cooldown': 1300,
@@ -21,25 +21,25 @@ CHARACTERS: list[dict] = [
         'name':          'Johanne',
         'description':   "Lightning fast. Fragile but relentless.",
         'color':         (180, 100, 255),
-        'max_health':    70,
+        'max_health':    80,
         'health':        'max_health',
-        'speed':         8,
+        'speed':         9,
         'size':          (56, 56),
         'dash_speed':    10,
         'gun':           'MachineGun',
-        'dash_cooldown': 800,
+        'dash_cooldown': 1000,
     },
     {
         'name':          'Jonathan',
         'description':   "Don't get too close or you'll get full of lead",
         'color':         (255, 160, 60),
-        'max_health':    130,
+        'max_health':    120,
         'health':        'max_health',
-        'speed':         4,
+        'speed':         6,
         'size':          (80, 80),
-        'dash_speed':    10,
+        'dash_speed':    9,
         'gun':           'Shotgun',
-        'dash_cooldown': 1600,
+        'dash_cooldown': 1800,
     },
     {
         'name':          'Leila',
@@ -47,11 +47,11 @@ CHARACTERS: list[dict] = [
         'color':         (80, 220, 160),
         'max_health':    80,
         'health':        'max_health',
-        'dash_speed':    10,
-        'speed':         6,
+        'dash_speed':    8,
+        'speed':         7,
         'size':          (48, 48),
         'gun':           'SniperRifle',
-        'dash_cooldown': 1000,
+        'dash_cooldown': 1600,
     },
 ]
 
@@ -112,7 +112,6 @@ class CharacterSelectState(BaseState):
             draw_panel(surface, card, radius=10)
             pygame.draw.rect(surface, border_color, card, 3 if selected else 2, border_radius=10)
 
-            # Colour swatch
             swatch = pygame.Rect(card.x + card.w // 2 - 36, card.y + 24, 72, 72)
             pygame.draw.rect(surface, char['color'], swatch, border_radius=10)
             if selected:
@@ -125,7 +124,6 @@ class CharacterSelectState(BaseState):
                 ln_surf = self._font_desc.render(line, True, C['text_dim'])
                 surface.blit(ln_surf, (card.centerx - ln_surf.get_width() // 2, card.y + 148 + j * 22))
 
-            # Stat lines
             stats = [
                 (f"HP    {char['max_health']}"),
                 (f"SPD   {char['speed']}"),

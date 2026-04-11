@@ -89,16 +89,3 @@ class RoomRegistry:
                 potential = _scan_potential_doors(lines)
                 templates.append(RoomTemplate(lines, room_type, potential))
             self._templates[room_type] = templates
-
-
-# ---- Legacy helper (used by current RoomManager until Step 5 rewrites it) ----
-
-def build_rooms() -> dict[str, list[GridRoom]]:
-    """Build pre-instantiated rooms with all doors active. Kept for backward compat."""
-    return {
-        "combat": [GridRoom(layout, room_type="combat") for layout in data.COMBAT],
-        "elite":  [GridRoom(layout, room_type="elite")  for layout in data.ELITE],
-        "boss":   [GridRoom(layout, room_type="boss")   for layout in data.BOSS],
-        "reward": [GridRoom(layout, room_type="reward") for layout in data.REWARD],
-        "start":  [GridRoom(layout, room_type="start")  for layout in data.START],
-    }

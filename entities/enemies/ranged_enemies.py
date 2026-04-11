@@ -11,6 +11,16 @@ from .enemy import Enemy
 
 from components.gun import EnemyPistol, EnemyRifle
 
+# ---------------------------------------------------------------------------
+# Stat referanse
+# ---------------------------------------------------------------------------
+# 1 tile = 96px
+# Spiller synsbredde ~20 tiles (10 på hver side)
+# i px 1920 (dette kommer an på brukerens skjermstørrelse)
+# Spiller synshøyde ~11 tiles (5 på hver side pluss i midten)
+# i px 1080
+# Fredrik hastighet = ~430
+# ---------------------------------------------------------------------------
 
 class RangedEnemy(Enemy):
     """
@@ -33,12 +43,7 @@ class RangedEnemy(Enemy):
     # ---- sensible defaults (subclass can still override) ----
     speed            = 100
     health           = 70
-    damage           = 0          # ranged enemies don't melee — kept for compat
     detection_radius = 700
-    attack_range     = 0          # unused — ranged enemies use preferred_range_px
-    attack_cooldown  = 0
-    attack_windup_ms = 0
-    knockback_strength = 0
     color            = (180, 100, 220)
     xp_reward        = 30
     width            = 38
@@ -181,7 +186,6 @@ class RangedEnemy(Enemy):
         Move to a position that has LOS to the player at preferred range.
         Transitions to "shoot" once we're in a good spot.
         """
-        pref2 = self.preferred_range_px ** 2
         in_range = (self.min_range_px ** 2) <= dist2 <= (self.preferred_range_px * 1.6) ** 2
 
         if has_los and in_range and not self.gun.is_reloading:

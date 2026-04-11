@@ -4,35 +4,46 @@ from .enemy import Enemy
 from .ranged_enemies import RangedEnemy
 from components.gun import EnemyPistol, EnemyRifle
 
+# ===========================================================================
+# VANLIGE FIENDER — enemy_types.py
+# ===========================================================================
+#
+# Her finner du de grunnleggende fiendene i spillet.
+# Elitefiender (SlowEnemy, BruteEnemy, TankEnemy, ScoutEnemy, AssassinEnemy)
+# ligger i elite_enemies.py
+# Bosser ligger i boss_enemies.py
+#
+# --- Stat-referanse ---
+# 1 tile = 96px
+# Spillerens hastighet = ~430 px/s
+# Pistol baseline: 20 skade/skudd, 350ms mellom skudd
+#
+# --- Nyttige verdier å justere ---
+# speed            : px per sekund. Spilleren er ~430, så 400 = omtrent like rask
+# health           : HP. Pistolskudd gjør 20 skade, så health=40 → 2 skudd
+# damage           : Skade ved treff (melee) eller via gun (ranged)
+# detection_radius : Pikselradius der fienden oppdager spilleren (krever siktlinje)
+# attack_cooldown  : Millisekunder mellom angrep
+# knockback_strength: Hvor langt spilleren kastes ved treff (høyere = lengre)
+# knockback_friction: Hvor raskt knockback bremser (0.0 = stopper straks, 1.0 = glir evig)
+# ===========================================================================
 
-# ---------------------------------------------------------------------------
-# Stat reference
-# ---------------------------------------------------------------------------
-# Player speed = ~300
-# Pistol baseline: 20 dmg/shot, 350 ms fire rate ≈ 57 DPS
-# "shots" below = pistol shots to kill (hp / 20), rounded
-# attack_range   = squared pixel radius (64 px melee = 4 096, 80 px = 6 400)
-# ---------------------------------------------------------------------------
 
 class SwarmEnemy(Enemy):
     """
-    Individually fragile; lethal in packs.
-    Tiny, fast, attacks rapidly with almost no telegraph.
-    ~1 shot to kill — the danger is sheer numbers.
+    Liten og rask.
     """
     name              = "swarm_enemy"
-    speed             = 280
+    speed             = 400
     health            = 40
     damage            = 8
-    detection_radius  = 1500
-    attack_range      = 3600    # 60 px
+    detection_radius  = 1000
     attack_cooldown   = 500
-    attack_windup_ms  = 180
     knockback_strength= 6
     color             = (120, 220, 80)   # lime-green
     xp_reward         = 8
-    width             = 28
-    height            = 28
+    width             = 32
+    height            = 32
     wander_radius     = 6
     knockback_friction= 0.95
 
@@ -42,22 +53,19 @@ class SwarmEnemy(Enemy):
 
 class FastEnemy(Enemy):
     """
-    Quick and nimble; closes distance before you can react.
-    Medium damage, short telegraph. ~2 shots to kill.
+    Raskeste fiende, litt mer liv enn swarm.
     """
     name              = "fast_enemy"
-    speed             = 310
+    speed             = 440
     health            = 45
     damage            = 12
-    detection_radius  = 1500
-    attack_range      = 4225    # 65 px
+    detection_radius  = 1000
     attack_cooldown   = 650
-    attack_windup_ms  = 250
     knockback_strength= 10
     color             = (255, 120, 30)   # bright orange
     xp_reward         = 15
-    width             = 36
-    height            = 36
+    width             = 40
+    height            = 40
     wander_radius     = 5
     knockback_friction= 0.9
 
@@ -65,113 +73,21 @@ class FastEnemy(Enemy):
         super().__init__(x, y)
 
 
-class SlowEnemy(Enemy):
-    """
-    Lumbering but hits brutally hard.
-    Long telegraph — punishes players who don't dash away. ~4 shots.
-    """
-    name              = "slow_enemy"
-    speed             = 200
-    health            = 80
-    damage            = 28
-    detection_radius  = 550
-    attack_range      = 6500    # 75 px
-    attack_cooldown   = 1300
-    attack_windup_ms  = 600
-    knockback_strength= 22
-    color             = (140, 60, 200)   # dark purple
-    xp_reward         = 22
-    width             = 52
-    height            = 52
-    wander_radius     = 2
-    knockback_friction= 0.6
-
-    def __init__(self, x, y):
-        super().__init__(x, y)
-
-
-class ScoutEnemy(Enemy):
-    """
-    Enormous detection radius — spots you across the room.
-    Weak in a fight but will always find you first. ~3 shots.
-    """
-    name              = "scout_enemy"
-    speed             = 230
-    health            = 55
-    damage            = 10
-    detection_radius  = 1200    # biggest in the game
-    attack_range      = 4225    # 65 px
-    attack_cooldown   = 900
-    attack_windup_ms  = 550
-    knockback_strength= 8
-    color             = (60, 210, 220)   # cyan
-    xp_reward         = 18
-    width             = 38
-    height            = 38
-    wander_radius     = 5
-    knockback_friction= 0.75
-
-    def __init__(self, x, y):
-        super().__init__(x, y)
-
-class BruteEnemy(Enemy):
-    """
-    Slow, massive, and extremely tough.
-    Very long telegraph but massive damage and knockback. ~9 shots.
-    """
-    name              = "brute_enemy"
-    speed             = 180
-    health            = 180
-    damage            = 32
-    detection_radius  = 520
-    attack_range      = 6400    # 80 px
-    attack_cooldown   = 1500
-    attack_windup_ms  = 1000
-    knockback_strength= 28
-    color             = (200, 100, 40)   # dark orange-brown
-    xp_reward         = 45
-    width             = 58
-    height            = 58
-    wander_radius     = 3
-    knockback_friction= 0.5
-
-    def __init__(self, x, y):
-        super().__init__(x, y)
-
-
-class TankEnemy(Enemy):
-    """
-    Armoured behemoth — almost unkillable without sustained focus.
-    Moderate damage but incredible hp and reach. ~15 shots.
-    """
-    name              = "tank_enemy"
-    speed             = 170
-    health            = 300
-    damage            = 22
-    detection_radius  = 480
-    attack_range      = 7225    # 85 px
-    attack_cooldown   = 1800
-    attack_windup_ms  = 1300
-    knockback_strength= 32
-    color             = (120, 140, 160)  # steel blue-grey
-    xp_reward         = 60
-    width             = 64
-    height            = 64
-    wander_radius     = 2
-    knockback_friction= 0.4
-
-    def __init__(self, x, y):
-        super().__init__(x, y)
-
-# ---------------------------------------------------------------------------
-# Ranged enemies
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# RANGED FIENDER
+# ===========================================================================
+# Ranged fiender bruker gun-systemet i stedet for melee.
+# De holder avstand og skyter mot spilleren.
+#
+# Viktige ranged-spesifikke verdier:
+# preferred_range_px : Ideell avstand til spilleren mens de skyter
+# min_range_px       : Vil aldri gå nærmere enn dette
+# gun_class          : Hvilken pistol de bruker (se components/gun.py)
+# ===========================================================================
 
 class ShooterEnemy(RangedEnemy):
     """
-    Standard ranged enemy. Keeps its distance and peppers the player
-    with pistol fire. Repositions when LOS is broken.
-    Fragile — punish it before it can reload. ~4 shots to kill.
+    Sier seg selv egentlig.
     """
     name              = "shooter_enemy"
     gun_class          = EnemyPistol
@@ -180,9 +96,9 @@ class ShooterEnemy(RangedEnemy):
 
     speed              = 250
     health             = 75
-    detection_radius   = 750
-    knockback_strength = 0       # ranged — no melee knockback
-    color              = (180, 80, 220)   # violet
+    detection_radius   = 800
+    knockback_strength = 0
+    color              = (180, 80, 220)
     xp_reward          = 35
     width              = 36
     height             = 36
@@ -195,15 +111,13 @@ class ShooterEnemy(RangedEnemy):
 
 class MarksmanEnemy(RangedEnemy):
     """
-    Long-range threat equipped with a slow but punishing rifle.
-    Prefers to stay far back and take precise shots.
-    Tougher than ShooterEnemy — needs focus fire to bring down. ~6 shots.
+    Sniper. Lenger avstand, raskere skudd.
     """
     name              = "marksman_enemy"
     gun_class          = EnemyRifle
     preferred_range_px = 460
     min_range_px       = 200
-    reposition_interval = 600   # repositions faster to keep sightlines open
+    reposition_interval = 600
 
     speed              = 240
     health             = 120
@@ -220,7 +134,6 @@ class MarksmanEnemy(RangedEnemy):
         super().__init__(x, y)
 
     def draw(self, screen, camera):
-        """Draw with a subtle border to telegraph elite ranged threat."""
         super().draw(screen, camera)
         if self.state not in ("dead", "reload"):
             draw_rect = camera.apply(self.rect)

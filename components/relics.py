@@ -2,16 +2,15 @@ import pygame
 
 from core import constants
 
-
 class Relic:
     name        = "Relic"
     description = ""
     color       = (200, 200, 200)
 
-    def on_equip(self, player): pass   # called once when picked up
-    def on_kill(self, player):  pass   # called each time player kills an enemy
-    def on_hit(self, player):   pass   # called each time player takes damage
-    def on_dash(self, player):  pass   # called each time player starts a dash
+    def on_equip(self, player): pass
+    def on_kill(self, player):  pass
+    def on_hit(self, player):   pass
+    def on_dash(self, player):  pass 
 
 class Vampiric(Relic):
     name = "Vampiric"
@@ -32,12 +31,12 @@ class Adrenaline(Relic):
 
 class GlassCannon(Relic):
     name        = "Glass Cannon"
-    description = "+40% gun damage, -25 max HP."
+    description = "+40% gun damage, -35 max HP."
     color       = (255, 80, 80)
 
     def on_equip(self, player):
         player.gun.damage  = round(player.gun.damage * 1.4, 1)
-        player.max_health -= 25
+        player.max_health -= 35
         player.health      = min(player.health, player.max_health)
 
 class Reloader(Relic):

@@ -10,12 +10,11 @@ from components.gun import Pistol, Shotgun, MachineGun, SniperRifle
 
 _ALL_GUNS = [Pistol, Shotgun, MachineGun, SniperRifle]
 
-# TODO: change hardcode upgrade to percentage upgrade
 _STAT_UPGRADES = [
     {"label": "+20 Max HP",       "color": (220, 55,  55),  "apply": lambda p: (setattr(p, "max_health", p.max_health + 20), setattr(p, "health", min(p.health + 20, p.max_health + 20)))},
     {"label": "+2 Speed",         "color": (255, 220, 60),  "apply": lambda p: setattr(p, "speed", p.speed + 2)},
     {"label": "+15% Gun Damage",  "color": (100, 220, 255), "apply": lambda p: setattr(p.gun, "damage", round(p.gun.damage * 1.15, 1))},
-    {"label": "+200 Max Ammo",    "color": (180, 255, 120), "apply": lambda p: setattr(p.gun, "max_ammo", p.gun.max_ammo + 2)},
+    {"label": "+30% Max Ammo",    "color": (180, 255, 120), "apply": lambda p: setattr(p.gun, "max_ammo", round(p.gun.max_ammo * 1.3))},
 ]
 
 _CARD_W   = 200

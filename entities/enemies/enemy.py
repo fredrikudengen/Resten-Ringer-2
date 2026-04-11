@@ -20,7 +20,6 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         self.alive                 = True
         self.hit                   = False
         self.attack_cooldown_until = 0
-        self.attack_windup_until   = 0  
 
         # AI state machine
         self.state          = "idle"
@@ -81,24 +80,17 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         elif self.state == "chase":
             self.wander_goal_g = None
             if see_player:
-                if now >= self.attack_cooldown_until and dist2_to_player <= (self.attack_range):
-                    self.state = "attack"
-                    self.attack_windup_until = now + self.attack_windup_ms
-                else:
-                    self._move_towards(player_center, obstacles, dt_ms)
+                self._move_towards(player_center, obstacles, dt_ms)
+                if now >= self.attack_cooldown_until and self.rect.colliderect(player.rect):
+                    self._damage_player(player, self.damage)
+                    self.attack_cooldown_until = now + self.attack_cooldown
+                    self.apply_knockback(player.rect, 16)  # liten self-knockback
             else:
                 if self.last_seen_pos:
                     self.state = "search"
                     self.search_started = now
                 else:
                     self.state = "idle"
-                    
-        elif self.state == "attack":
-            if now >= self.attack_windup_until:
-                if dist2_to_player <= self.attack_range:
-                    self._damage_player(player, self.damage)
-                self.state = "chase"
-                self.attack_cooldown_until = now + self.attack_cooldown
 
         elif self.state == "search":
             if see_player:
@@ -183,7 +175,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         if player.is_invincible:
             return
 
-        player.health -= amount
+        player.health -= int(amount)
 
         for relic in player.relics:
             relic.on_hit(player)

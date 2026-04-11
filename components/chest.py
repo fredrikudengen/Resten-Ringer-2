@@ -1,5 +1,4 @@
 import pygame
-from core import constants
 
 class Chest:
     WIDTH  = 48

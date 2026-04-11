@@ -1,43 +1,62 @@
-from __future__ import annotations
-
 import random
 
 from .floor_map import FloorMap, RoomNode, DIRECTIONS
 
+# ===========================================================================
+# ETASJE-GENERATOR — Her kan du justere størrelse og form på etasjene
+# ===========================================================================
+#
+# Hvordan etasjer bygges:
+#   1. En "hovedsti" fra startrom til bossrom genereres først
+#   2. Sidegrener vokser ut fra hovedstien
+#   3. Romtyper tildeles etterpå (combat, reward, elite, boss)
+#
+# Tips: Øk MAX_TOTAL_ROOMS og BRANCH_CHANCE for større, mer labyrintiske etasjer.
+#       Senk MIN_MAIN_PATH for kortere vei til bossen.
+# ===========================================================================
 
-# ---- Floor generator variables ----
+# --- Hovedsti ---
+MIN_MAIN_PATH = 5  # Minimum antall rom på hovedstien (inkl. start + boss)
+MAX_MAIN_PATH = 7  # Maksimum antall rom på hovedstien
 
-MIN_MAIN_PATH     = 7      # minimum rooms on the main path (including start + boss)
-MAX_MAIN_PATH     = 10     # maximum main path length
-MIN_TOTAL_ROOMS   = 14     # discard and retry if fewer rooms than this
-MAX_TOTAL_ROOMS   = 22     # stop branching once we reach this count
-MAX_RETRIES       = 30     # give up after this many failed attempts
-DIRECTION_BIAS    = 0.45   # probability of continuing in same direction
-BRANCH_CHANCE     = 0.55   # base chance a main-path room spawns a branch
-BRANCH_DECAY      = 0.45   # multiply branch chance each level of sub-branching
-BRANCH_MAX_LENGTH = 4      # max rooms in a single branch
-BRANCH_MAX_DEPTH  = 2      # how many levels of sub-branching allowed
+# --- Total størrelse ---
+MIN_TOTAL_ROOMS = 10  # Kast etasjen og prøv igjen hvis færre rom enn dette
+MAX_TOTAL_ROOMS = 18  # Stopp å grene ut når vi når dette antallet rom
 
-# Room type weights for dead-end rooms (non-boss, non-start)
+MAX_RETRIES = 30  # Maks antall forsøk før vi gir opp (skal sjelden treffe)
+
+# --- Retningsbias ---
+# Høyere verdi = stien fortsetter oftere i samme retning → mer lineær følelse
+# Lavere verdi = stien svinger mer → mer labyrintisk
+DIRECTION_BIAS = 0.45
+
+# --- Grener ---
+# BRANCH_CHANCE: sannsynlighet for at et rom på hovedstien får en gren (0.0–1.0)
+# BRANCH_DECAY:  multipliseres med BRANCH_CHANCE for hver nivå av undergrener
+# BRANCH_MAX_LENGTH: maks rom i én gren
+# BRANCH_MAX_DEPTH:  maks nivåer av undergrener (2 = grener kan ha egne grener)
+BRANCH_CHANCE = 0.55
+BRANCH_DECAY = 0.45
+BRANCH_MAX_LENGTH = 4
+BRANCH_MAX_DEPTH = 2
+
+# --- Romtyper for blindveier ---
+# Blindveier (rom med kun én forbindelse) får en tilfeldig type fra denne listen.
+# Juster vektene for å endre hyppigheten av hver type.
+# "combat" = vanlig kamperom, "reward" = belønningsrom, "elite" = eliterom
 _DEADEND_WEIGHTS: list[tuple[str, float]] = [
-    ("combat",  0.45),
-    ("reward",  0.70),
-    ("elite",   0.25),
+    ("combat",  0.35),
+    ("reward",  0.30),
+    ("elite",   0.35),
 ]
 
 
 def generate_floor(floor_number: int = 1) -> FloorMap:
     """
-    Generate a full floor map.
+    Generer et komplett etasjekart.
 
-    Retries internally if the result is too small. Raises RuntimeError
-    if MAX_RETRIES is exhausted (shouldn't happen with reasonable params).
-
-    Parameters
-    ----------
-    floor_number : int
-        Current floor (1-based). Stored on the FloorMap for difficulty scaling.
-        Could influence generation params in the future.
+    Prøver på nytt internt hvis resultatet er for lite. Kaster RuntimeError
+    hvis MAX_RETRIES er nådd (skal ikke skje med fornuftige parametere).
     """
     for _ in range(MAX_RETRIES):
         floor_map = _try_generate(floor_number)
@@ -49,17 +68,12 @@ def generate_floor(floor_number: int = 1) -> FloorMap:
         f"FloorGenerator: failed to generate a valid floor after {MAX_RETRIES} retries"
     )
 
-
-# ---------------------------------------------------------------------------
-# Internal generation
-# ---------------------------------------------------------------------------
+# ----------- HELPERS ----------
 
 def _try_generate(floor_number: int) -> FloorMap | None:
-    """One generation attempt.  Returns None if the main path is too short."""
     floor_map = FloorMap(floor_number=floor_number)
     occupied: set[tuple[int, int]] = set()
 
-    # --- Main path ---
     path_length = random.randint(MIN_MAIN_PATH, MAX_MAIN_PATH)
     main_path = _grow_path(
         start=(0, 0),
@@ -69,21 +83,17 @@ def _try_generate(floor_number: int) -> FloorMap | None:
     if len(main_path) < MIN_MAIN_PATH:
         return None
 
-    # Create nodes for the main path
     for pos in main_path:
         floor_map.add_node(RoomNode(gx=pos[0], gy=pos[1], room_type="combat"))
     floor_map.start_pos = main_path[0]
     floor_map.boss_pos  = main_path[-1]
 
-    # Connect consecutive main-path rooms
     for i in range(len(main_path) - 1):
         a = floor_map.get_node(*main_path[i])
         b = floor_map.get_node(*main_path[i + 1])
         side = _side_between(main_path[i], main_path[i + 1])
         floor_map.connect(a, side, b)
 
-    # --- Branches ---
-    # Pick random rooms along the main path (skip start and boss) as branch roots
     branch_candidates = main_path[1:-1]
     random.shuffle(branch_candidates)
 
@@ -97,9 +107,7 @@ def _try_generate(floor_number: int) -> FloorMap | None:
                 occupied=occupied,
                 depth=0,
             )
-
     return floor_map
-
 
 def _grow_path(
     start: tuple[int, int],
@@ -107,11 +115,8 @@ def _grow_path(
     occupied: set[tuple[int, int]],
 ) -> list[tuple[int, int]]:
     """
-    Random walk that tries to reach *length* rooms.
-
-    Uses directional bias: the walk prefers to continue in the same
-    direction it was already going, giving the path a natural flow
-    without forcing a fixed axis.
+    Tilfeldig vandring som prøver å nå *length* rom.
+    Bruker retningsbias: vandringen foretrekker å fortsette i samme retning.
     """
     path = [start]
     occupied.add(start)
@@ -122,7 +127,6 @@ def _grow_path(
         current = path[-1]
         random.shuffle(sides)
 
-        # Build a weighted candidate list favouring prev_dir
         candidates: list[str] = []
         for s in sides:
             dx, dy = DIRECTIONS[s]
@@ -151,9 +155,6 @@ def _grow_branch(
     occupied: set[tuple[int, int]],
     depth: int,
 ):
-    """
-    Grow a branch off an existing room.  May recursively sub-branch.
-    """
     if depth > BRANCH_MAX_DEPTH:
         return
     if floor_map.room_count >= MAX_TOTAL_ROOMS:
@@ -203,20 +204,15 @@ def _grow_branch(
         if random.random() < sub_chance:
             _grow_branch(floor_map, pos, occupied, depth + 1)
 
-
-# ---------------------------------------------------------------------------
-# Room type assignment
-# ---------------------------------------------------------------------------
-
 def _assign_room_types(floor_map: FloorMap):
     """
-    Assign room types after generation.
+    Tilordner romtyper etter generering.
 
-    Rules:
-      - Start room → "start"
-      - Boss room  → "boss"
-      - Dead ends (1 connection, not start/boss) → weighted random (combat/reward/elite)
-      - Everything else → "combat"
+    Regler:
+      - Startrom  → "start"
+      - Bossrom   → "boss"
+      - Blindveier (1 forbindelse, ikke start/boss) → vektet tilfeldig
+      - Alt annet → "combat"
     """
     for pos, node in floor_map.nodes.items():
         if pos == floor_map.start_pos:
@@ -228,13 +224,7 @@ def _assign_room_types(floor_map: FloorMap):
         else:
             node.room_type = "combat"
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def _side_between(a: tuple[int, int], b: tuple[int, int]) -> str:
-    """Return the direction from a to b (must be adjacent)."""
     dx = b[0] - a[0]
     dy = b[1] - a[1]
     for side, (sx, sy) in DIRECTIONS.items():
@@ -242,20 +232,12 @@ def _side_between(a: tuple[int, int], b: tuple[int, int]) -> str:
             return side
     raise ValueError(f"Positions {a} and {b} are not adjacent")
 
-
 def _pick_biased(candidates: list[str], preferred: str | None) -> str:
-    """
-    Pick a direction from candidates, biased toward *preferred*.
-
-    If preferred is in the list and the random roll hits, use it.
-    Otherwise pick uniformly from the rest.
-    """
     if preferred and preferred in candidates and random.random() < DIRECTION_BIAS:
         return preferred
     return random.choice(candidates)
 
 
 def _weighted_choice(weights: list[tuple[str, float]]) -> str:
-    """Simple weighted random selection."""
     names, ws = zip(*weights)
     return random.choices(names, weights=ws, k=1)[0]
