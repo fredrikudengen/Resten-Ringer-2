@@ -14,7 +14,7 @@ Jeg er setter pris på tilbakemeldinger på balanse, fiendeatferd, kontroller og
 - Pygame: `pip install pygame`
 
 ### Kloning
-- git clone https://github.com/ditt-brukernavn/resten-ringer-2.git
+- git clone https://github.com/fredrikudengen/Resten-Ringer-2.git
 - cd /stien/til/Resten Ringer 2
 - pip install pygame
 - python main.py
