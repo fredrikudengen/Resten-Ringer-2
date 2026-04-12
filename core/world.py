@@ -23,7 +23,6 @@ class World:
     # =========== PUBLIC API ===========
 
     def update(self, dt_ms, player, obstacles):
-        """Update all entities and components."""
 
         # -- Enemies --
         for enemy in self.enemies[:]:
@@ -97,7 +96,6 @@ class World:
         player.hit = False
 
     def draw(self, screen: pygame.Surface, camera):
-        """Draw all entities and components."""
         if self.current_room is None:
             return
 
@@ -129,13 +127,11 @@ class World:
             p.draw(screen, camera)
 
     def add_bullets(self, bullets: list[Bullet]):
-        """Add a list of player bullets to the world (returned by gun.shoot())."""
         for b in bullets:
             b.source = 'player'   # tag so world knows these hit enemies, not the player
         self.bullets.extend(bullets)
 
     def clear(self):
-        """Remove all content from the world."""
         self.obstacles.clear()
         self.enemies.clear()
         self.powerups.clear()
@@ -169,7 +165,7 @@ class World:
         self.powerups.append(powerup)
         return powerup
 
-    # =========== HELPERS ===========
+    # ---------- HELPERS ----------
 
     def _spawn_hit_particles(self, x, y, n=5, color=constants.YELLOW):
         for _ in range(n):

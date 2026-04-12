@@ -13,8 +13,8 @@ _ALL_GUNS = [Pistol, Shotgun, MachineGun, SniperRifle]
 # TODO: change hardcode upgrade to percentage upgrade
 _STAT_UPGRADES = [
     {"label": "+20 Max HP",       "color": (220, 55,  55),  "apply": lambda p: (setattr(p, "max_health", p.max_health + 20), setattr(p, "health", min(p.health + 20, p.max_health + 20)))},
-    {"label": "+2 Speed",         "color": (255, 220, 60),  "apply": lambda p: setattr(p, "speed", p.speed + 2)},
-    {"label": "+15% Gun Damage",  "color": (100, 220, 255), "apply": lambda p: setattr(p.gun, "damage", round(p.gun.damage * 1.15, 1))},
+    {"label": "+2 Fart",         "color": (255, 220, 60),  "apply": lambda p: setattr(p, "speed", p.speed + 2)},
+    {"label": "+15% Våpen Skade",  "color": (100, 220, 255), "apply": lambda p: setattr(p.gun, "damage", round(p.gun.damage * 1.15, 1))},
     {"label": "+200 Max Ammo",    "color": (180, 255, 120), "apply": lambda p: setattr(p.gun, "max_ammo", p.gun.max_ammo + 2)},
 ]
 
@@ -44,28 +44,25 @@ class BossRewardState(BaseState):
         sm     = self._sm
         player = sm.player
 
-        # Pick one gun the player doesn't currently have
         other_guns = [g for g in _ALL_GUNS if not isinstance(player.gun, g)]
         gun_cls    = random.choice(other_guns)
         gun_offer  = {
-            "type":  "GUN",
+            "type":  "VÅPEN",
             "label": gun_cls.name,
-            "desc":  f"Replace your {player.gun.name}",
+            "desc":  f"Bytt ut {player.gun.name}",
             "color": (220, 220, 50),
             "apply": lambda p, g=gun_cls: setattr(p, "gun", g()),
         }
 
-        # Pick one stat upgrade
         stat        = random.choice(_STAT_UPGRADES)
         stat_offer  = {
             "type":  "UPGRADE",
             "label": stat["label"],
-            "desc":  "Permanent stat boost",
+            "desc":  "Permanent stat oppgradering",
             "color": stat["color"],
             "apply": stat["apply"],
         }
 
-        # Pick one relic the player doesn't already have
         owned       = {type(r) for r in player.relics}
         available   = [r for r in ALL_RELICS if r not in owned] or ALL_RELICS
         relic_cls   = random.choice(available)
@@ -79,7 +76,6 @@ class BossRewardState(BaseState):
 
         self._offers = [gun_offer, stat_offer, relic_offer]
 
-    # ------------------------------------------------------------------
 
     def handle_event(self, event: pygame.event.Event):
         if event.type == pygame.MOUSEMOTION:
@@ -91,10 +87,7 @@ class BossRewardState(BaseState):
                 self._offers[idx]["apply"](self._sm.player)
                 self._sm.transition(State.FLOOR_TRANSITION)
 
-    # ------------------------------------------------------------------
-
     def draw(self, surface: pygame.Surface):
-        # Draw the game world frozen behind the overlay
         sm = self._sm
         surface.fill((10, 10, 15))
         sm.world.draw(surface, sm.camera)
@@ -104,7 +97,6 @@ class BossRewardState(BaseState):
 
         sw, sh = surface.get_size()
 
-        # Title
         surface.blit(
             self._title_surf,
             (sw // 2 - self._title_surf.get_width() // 2, sh // 2 - 220),
@@ -125,24 +117,18 @@ class BossRewardState(BaseState):
             border_w     = 3 if selected else 1
             pygame.draw.rect(surface, border_color, rect, border_w, border_radius=12)
 
-            # Type badge
             badge = self._font_type.render(offer["type"], True, offer["color"])
             surface.blit(badge, (rect.centerx - badge.get_width() // 2, rect.y + 16))
 
-            # Colour swatch
             swatch = pygame.Rect(rect.centerx - 30, rect.y + 40, 60, 60)
             pygame.draw.rect(surface, offer["color"], swatch, border_radius=8)
 
-            # Name
             name_surf = self._font_name.render(offer["label"], True, C["text"])
             surface.blit(name_surf, (rect.centerx - name_surf.get_width() // 2, rect.y + 118))
 
-            # Description (wrapped)
             for j, line in enumerate(self._wrap(offer["desc"], 22)):
                 ls = self._font_desc.render(line, True, C["text_dim"])
                 surface.blit(ls, (rect.centerx - ls.get_width() // 2, rect.y + 150 + j * 20))
-
-    # ------------------------------------------------------------------
 
     def _card_at(self, pos) -> int | None:
         sw, sh  = self._sm.screen.get_size()

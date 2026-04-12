@@ -8,7 +8,7 @@ from .ui_helpers import Button, draw_panel, C
 CHARACTERS: list[dict] = [
     {
         'name':          'Fredrik',
-        'description':   "A reliable pistol and he's ready for every situation.",
+        'description':   "Med sin pålitelige pistol er han klar for enhver situasjon.",
         'color':         (100, 180, 255),
         'max_health':    100,
         'speed':         7,
@@ -19,7 +19,7 @@ CHARACTERS: list[dict] = [
     },
     {
         'name':          'Johanne',
-        'description':   "Lightning fast. Fragile but relentless.",
+        'description':   "Lynende rask. Ikke kom på kant med henne.",
         'color':         (180, 100, 255),
         'max_health':    80,
         'health':        'max_health',
@@ -31,7 +31,7 @@ CHARACTERS: list[dict] = [
     },
     {
         'name':          'Jonathan',
-        'description':   "Don't get too close or you'll get full of lead",
+        'description':   "Ikke kom for nærme, hvis ikke du vil spise bly.",
         'color':         (255, 160, 60),
         'max_health':    120,
         'health':        'max_health',
@@ -43,7 +43,7 @@ CHARACTERS: list[dict] = [
     },
     {
         'name':          'Leila',
-        'description':   "Precise and deadly. One shot is all she needs.",
+        'description':   "Presis og skarp, et skudd er alt hun trenger.",
         'color':         (80, 220, 160),
         'max_health':    80,
         'health':        'max_health',
@@ -73,7 +73,7 @@ class CharacterSelectState(BaseState):
         font_title      = pygame.font.SysFont('consolas', 52, bold=True)
         font_btn        = pygame.font.SysFont('consolas', 20, bold=True)
 
-        self._title_surf = font_title.render('SELECT CHARACTER', True, C['title'])
+        self._title_surf = font_title.render('VELG KARAKTER', True, C['title'])
 
         total_w = len(CHARACTERS) * _CARD_W + (len(CHARACTERS) - 1) * _CARD_GAP
         start_x = sw // 2 - total_w // 2
@@ -141,7 +141,6 @@ class CharacterSelectState(BaseState):
 
     @staticmethod
     def _wrap(text: str, max_chars: int) -> list[str]:
-        """Naive word-wrap by character count."""
         words = text.split()
         lines, line = [], ''
         for word in words:

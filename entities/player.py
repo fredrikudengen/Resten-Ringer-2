@@ -13,10 +13,6 @@ _GUN_MAP = {
 }
 
 class Player(Entity):
-    """
-    The player entity. Stats are seeded from the selected character,
-    with fallback defaults from constants.
-    """
 
     def __init__(self, selected_character: int = 0, hud=None):
         self.hit = False
@@ -77,19 +73,17 @@ class Player(Entity):
 
     @property
     def is_invincible(self):
-        """True when the player cannot take damage — covers dash iframes and post-hit iframes."""
         now = pygame.time.get_ticks()
         return self.is_dashing or now < self.hurt_invincible_until
 
     @property
     def xp_to_next(self) -> int:
-        """XP required for the next level. Scales progressively: 100, 150, 225, ..."""
+        """Skaleres: 100, 150, 225, ..."""
         return int(constants.XP_BASE * (constants.XP_SCALE ** (self.level - 1)))
 
     # ========== PUBLIC API ==========
 
     def draw(self, screen, camera):
-        """Draw the player, tinting based on current state."""
         draw_rect = camera.apply(self.rect)
         if self.is_dashing:
             color = constants.WHITE
@@ -100,10 +94,6 @@ class Player(Entity):
         pygame.draw.rect(screen, color, draw_rect)
 
     def shoot(self, target_pos: tuple[float, float]) -> list:
-        """
-        Fire the equipped gun toward target_pos.
-        Returns a list of Bullet objects to be added to the world.
-        """
         direction = pygame.math.Vector2(
             target_pos[0] - self.rect.centerx,
             target_pos[1] - self.rect.centery,
@@ -113,7 +103,6 @@ class Player(Entity):
         return self.gun.shoot(self.rect.center, direction)
 
     def gain_xp(self, amount: int):
-        """Award XP to the player, handling level-ups automatically."""
         if amount <= 0:
             return
         self.xp += amount
@@ -124,7 +113,6 @@ class Player(Entity):
     def apply_powerup(self, powerup):
         attr, pct = constants.BUFF_VALUES[powerup]
 
-        # Health powerup is a one-time heal, not a timed buff
         if powerup == 'HealthPowerup':
             heal = int(self.max_health * pct)
             self.health = min(self.health + heal, self.max_health)
@@ -133,7 +121,6 @@ class Player(Entity):
         if powerup in self.buff_timers:
             return
 
-        # Compute the actual boost from current stats
         if powerup == 'AttackPowerup':
             bonus = int(self.gun.damage * pct)
             self.gun.damage += bonus
@@ -142,7 +129,6 @@ class Player(Entity):
             bonus = int(base * pct)
             setattr(self, attr, base + bonus)
 
-        # Store both the timestamp AND the computed bonus
         self.buff_timers[powerup] = (pygame.time.get_ticks(), attr, bonus)
 
     def update_powerups(self):
@@ -156,7 +142,6 @@ class Player(Entity):
                 del self.buff_timers[name]
 
     def start_dash(self, direction: pygame.math.Vector2):
-        """Start a dash in the given direction."""
         now = pygame.time.get_ticks()
         if self.is_dashing or now < self.dash_cooldown_end:
             return
@@ -174,7 +159,6 @@ class Player(Entity):
         sound.play("dash")
 
     def update_dash(self, obstacles):
-        """Update dash movement. Call every frame."""
         now = pygame.time.get_ticks()
         if not self.is_dashing:
             return
@@ -210,10 +194,9 @@ class Player(Entity):
             self.speed -= 3
             self.adrenaline_until = 0
 
-    # ========== HELPERS ==========
+    # ---------- HELPERS ----------
 
     def _level_up(self):
-        """Handle one level-up: update stats and notify the HUD."""
         self.level += 1
 
         self.health     += constants.XP_HP_BONUS_PER_LEVEL

@@ -13,11 +13,11 @@ from .movement import MovementMixin
 # Bosser er sluttutfordringen på hver etasje. De har egne faser,
 # spesialangrep og visuell feedback.
 #
-# WardenBoss — "The Warden"
+# WardenBoss — "Vokteren"
 #   Fase 1 (100–50% HP): Sakte melee med lang windup + spawner SwarmEnemies
 #   Fase 2 (< 50% HP):   Raskere, spawner FastEnemies, kortere spawn-intervall
 #
-# --- Verdier du kan justere for å endre boss-følelsen ---
+# --- Verdier du kan justere for å endre følelsen ---
 # health              : Total HP (2000 er mye, så senk for raskere kamper)
 # attack_windup_ms    : Telegraph-tid i ms (lengre = lettere å dodge)
 # _LUNGE_SPEED        : Hastighet under lunge-angrep
@@ -28,7 +28,7 @@ from .movement import MovementMixin
 
 class WardenBoss(Enemy, MovementMixin):
     """
-    The Warden.
+    Vokteren..
     """
     name = "warden_boss"
     speed = 100
@@ -180,7 +180,7 @@ class WardenBoss(Enemy, MovementMixin):
         pygame.draw.rect(screen, (80, 70, 30), panel, 1)
 
         font = pygame.font.SysFont("Arial", 20, bold=True)
-        label = font.render("WARDEN", True, (255, 220, 80))
+        label = font.render("VOKTEREN", True, (255, 220, 80))
         screen.blit(label, (bar_x, bar_y - 30))
 
         pygame.draw.rect(screen, (30, 30, 35), (bar_x, bar_y, bar_w, bar_h))

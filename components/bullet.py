@@ -8,10 +8,8 @@ from core import constants
 
 class Bullet:
     """
-    A single projectile fired by a Gun.
-
-    All stats (damage, speed, radius, color, range) come from the
-    Gun that created it — Bullet itself is just a dumb moving rect.
+    Alle stats (damage, speed, radius, color, range) kommer fra
+    Gun som lagde skuddet. Bullet er bare en bevegende rect.
     """
     def __init__(
         self,

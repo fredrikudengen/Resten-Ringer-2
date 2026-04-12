@@ -19,14 +19,14 @@ class MainMenuState(BaseState):
         font_sub   = pygame.font.SysFont('consolas', 16)
 
         self._title    = font_title.render('Resten Ringer 2', True, C['title'])
-        self._subtitle = font_sub.render('bigger and better', True, C['text_dim'])
+        self._subtitle = font_sub.render('Klar for en runde til?', True, C['text_dim'])
 
         btn_w, btn_h = 240, 52
         cx = sw // 2 - btn_w // 2
 
-        self._btn_play = Button(pygame.Rect(cx, sh // 2 - 20,  btn_w, btn_h), 'PLAY',             font_btn)
-        self._btn_char = Button(pygame.Rect(cx, sh // 2 + 48,  btn_w, btn_h), 'SELECT CHARACTER', font_btn)
-        self._btn_quit = Button(pygame.Rect(cx, sh // 2 + 116, btn_w, btn_h), 'QUIT',             font_btn)
+        self._btn_play = Button(pygame.Rect(cx, sh // 2 - 20,  btn_w, btn_h), 'SPILL', font_btn)
+        self._btn_char = Button(pygame.Rect(cx, sh // 2 + 48,  btn_w, btn_h), 'VELG KARAKTER', font_btn)
+        self._btn_quit = Button(pygame.Rect(cx, sh // 2 + 116, btn_w, btn_h), 'AVSLUTT', font_btn)
 
         self._t = 0.0
 

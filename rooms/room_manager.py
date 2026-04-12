@@ -129,10 +129,7 @@ class RoomManager:
         self._visit_node(next_node, entry_side=side)
 
     def _visit_node(self, node: RoomNode, entry_side: str | None):
-        """
-        Enter a room node.  Instantiates the GridRoom on first visit,
-        then loads it into the world.
-        """
+
         if not node.visited:
             node.visited = True
             node.grid_room = self._instantiate_room(node)
@@ -141,9 +138,7 @@ class RoomManager:
         self._load_room(node, entry_side)
 
     def _instantiate_room(self, node: RoomNode):
-        """
-        Pick a compatible room template and build a GridRoom for this node.
-        """
+
         required = node.door_sides
 
         templates = self.registry.find_compatible(node.room_type, required)

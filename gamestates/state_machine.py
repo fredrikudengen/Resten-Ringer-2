@@ -14,26 +14,6 @@ from .room_reward import RoomRewardState
 
 
 class StateMachine:
-    """
-    Central state manager. Owns the current state and all shared game objects.
-
-    Shared game objects (populated by start_game()):
-        self.world        — World instance
-        self.player       — Player instance
-        self.room_manager — RoomManager instance
-        self.hud          — HUD instance
-        self.camera       — Camera instance
-
-    Usage in main.py:
-        sm = StateMachine(screen)
-        while sm.running:
-            dt = clock.tick(60)
-            for event in pygame.event.get():
-                sm.handle_event(event)
-            sm.update(dt)
-            sm.draw()
-            pygame.display.flip()
-    """
 
     def __init__(self, screen: pygame.Surface):
         self.screen             = screen
@@ -53,10 +33,6 @@ class StateMachine:
         # Menu states are safe to build immediately
         self._states[State.MAIN_MENU]        = MainMenuState(self)
         self._states[State.CHARACTER_SELECT] = CharacterSelectState(self)
-
-    # ------------------------------------------------------------------
-    # Public interface
-    # ------------------------------------------------------------------
 
     def handle_event(self, event: pygame.event.Event):
         if event.type == pygame.QUIT:
@@ -83,10 +59,7 @@ class StateMachine:
             state.on_enter()
 
     def start_game(self):
-        """
-        Initialise all game objects and switch to Playing.
-        Called both on a fresh start and on restart.
-        """
+
         from core.world          import World
         from entities.player     import Player
         from core.camera         import Camera

@@ -1,5 +1,3 @@
-"""Reusable UI primitives shared across all states."""
-
 from __future__ import annotations
 
 import pygame
@@ -24,7 +22,6 @@ C: dict[str, tuple] = {
 
 
 class Button:
-    """A simple clickable button with hover highlight."""
 
     def __init__(self, rect: pygame.Rect, label: str, font: pygame.font.Font):
         self.rect    = rect
@@ -33,7 +30,6 @@ class Button:
         self.hovered = False
 
     def handle_event(self, event: pygame.event.Event) -> bool:
-        """Returns True if this button was clicked this event."""
         if event.type == pygame.MOUSEMOTION:
             self.hovered = self.rect.collidepoint(event.pos)
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -57,14 +53,12 @@ class Button:
 
 
 def draw_overlay(surface: pygame.Surface):
-    """Semi-transparent dark overlay over the full screen."""
     overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
     overlay.fill(C['overlay'])
     surface.blit(overlay, (0, 0))
 
 
 def draw_panel(surface: pygame.Surface, rect: pygame.Rect, radius: int = 12):
-    """Dark translucent panel with a subtle border."""
     panel = pygame.Surface((rect.w, rect.h), pygame.SRCALPHA)
     panel.fill(C['panel'])
     surface.blit(panel, rect.topleft)

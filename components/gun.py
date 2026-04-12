@@ -9,23 +9,6 @@ from components.bullet import Bullet
 from core.sound_manager import sound
 
 class Gun:
-    """
-    Base class for all guns.
-
-    Subclasses override stats and can override shoot() for
-    special firing behaviour (e.g. spread shots, burst fire).
-
-    Attributes:
-        damage:        Damage per bullet
-        fire_rate_ms:  Minimum milliseconds between shots
-        bullet_speed:  Pixels per second
-        bullet_radius: Visual radius of each bullet
-        bullet_color:  RGB colour of each bullet
-        max_range:     Max pixels a bullet travels before dying
-        name:          Display name shown in HUD
-        max_ammo:      Magazine size. -1 = infinite (no ammo tracking)
-        reload_time_ms: How long a full reload takes in milliseconds
-    """
 
     damage:        float = 20.0
     fire_rate_ms:  int   = 400
@@ -36,18 +19,14 @@ class Gun:
     name:          str   = "Gun"
     team:          str   = "player"
 
-    # Ammo — set max_ammo > 0 in subclass to enable tracking
-    max_ammo:        int = -1 # -1 = infinite
+    max_ammo:        int = -1
     reload_time_ms:  int = 2000
     spread:          float = 0.0
 
     def __init__(self):
         self._last_shot_at: int        = 0
         self._reload_start: int | None = None
-        # Initialise current_ammo from class-level max_ammo
         self.current_ammo: int = self.max_ammo
-
-    # ========== Ammo / reload ==========
 
     @property
     def is_reloading(self) -> bool:
@@ -58,7 +37,6 @@ class Gun:
         return self.max_ammo < 0
 
     def start_reload(self):
-        """Begin reload if magazine is not already full and not already reloading."""
         if self.ammo_infinite:
             return
         if self._reload_start is None and self.current_ammo < self.max_ammo:
@@ -67,23 +45,16 @@ class Gun:
                 sound.play("reload")
 
     def update_reload(self):
-        """
-        Advance the reload timer. Must be called every frame
-        (from player update or enemy move).
-        """
         if self._reload_start is not None:
             if pygame.time.get_ticks() - self._reload_start >= self.reload_time_ms:
                 self.current_ammo  = self.max_ammo
                 self._reload_start = None
 
     def reload_progress(self) -> float:
-        """0.0 → 1.0 fraction of reload complete. 1.0 when not reloading."""
         if self._reload_start is None:
             return 1.0
         elapsed = pygame.time.get_ticks() - self._reload_start
         return min(elapsed / self.reload_time_ms, 1.0)
-
-    # ========== Shooting ==========
 
     def can_shoot(self) -> bool:
         if self.is_reloading:
@@ -93,10 +64,6 @@ class Gun:
         return pygame.time.get_ticks() - self._last_shot_at >= self.fire_rate_ms
 
     def shoot(self, origin: tuple[float, float], direction: Vector2) -> list[Bullet]:
-        """
-        Fire the gun. Returns a list of Bullet objects to add to the world.
-        Override in subclasses for special behaviour.
-        """
         if not self.can_shoot() or direction.length_squared() == 0:
             return []
 
@@ -106,14 +73,12 @@ class Gun:
         sound.play(f"{gun_name}/shoot")
         return self._fire(origin, direction)
 
-    # ========== Helpers ==========
+    # ---------- Helpers ----------
 
     def _fire(self, origin, direction):
-        """Override in subclasses to define bullet pattern."""
         return [self._make_bullet(origin, direction)]
 
     def _consume_ammo(self, n: int = 1):
-        """Decrement ammo and auto-start reload when empty."""
         if self.ammo_infinite:
             return
         self.current_ammo = max(0, self.current_ammo - n)
@@ -125,9 +90,6 @@ class Gun:
         origin:    tuple[float, float],
         direction: Vector2,
     ) -> Bullet:
-        """
-        Create a single bullet, optionally with angular spread (degrees).
-        """
         angle = math.radians(random.uniform(-self.spread / 2, self.spread / 2))
         direction = Vector2(
                 direction.x * math.cos(angle) - direction.y * math.sin(angle),
@@ -150,7 +112,6 @@ class Gun:
 # ========== Concrete gun types ==========
 
 class Pistol(Gun):
-    """Balanced starting weapon. Reliable single shot."""
     name           = "Pistol"
     damage         = 20.0
     fire_rate_ms   = 350
@@ -166,17 +127,13 @@ class Pistol(Gun):
 
 
 class Shotgun(Gun):
-    """
-    Fires a spread of pellets. High damage up close,
-    weak at range. Slow fire rate.
-    """
     name           = "Shotgun"
-    damage         = 12.0     # per pellet — 5 pellets = 60 total at point blank
+    damage         = 12.0     # per skudd, 5 skudd totalt
     fire_rate_ms   = 750
     bullet_speed   = 500.0
     bullet_radius  = 7
     bullet_color   = (255, 140, 40)
-    max_range      = 350.0    # short range intentionally
+    max_range      = 350.0
     pellets        = 5
     spread         = 20.0
     max_ammo       = 6
@@ -189,7 +146,6 @@ class Shotgun(Gun):
                 for _ in range(self.pellets)]
 
 class MachineGun(Gun):
-    """Fast firing, lower damage per bullet. High spread."""
     name           = "Machine Gun"
     damage         = 10.0
     fire_rate_ms   = 100
@@ -204,10 +160,6 @@ class MachineGun(Gun):
     knockback_strength = 1
 
 class SniperRifle(Gun):
-    """
-    Very high damage, very slow fire rate.
-    Bullet pierces the first enemy it hits.
-    """
     name           = "Sniper"
     damage         = 30.0
     fire_rate_ms   = 1200
@@ -225,18 +177,13 @@ class SniperRifle(Gun):
         b.piercing = True
         return [b]
 
-# ========== Enemy-only gun variants ==========
-# Weaker versions tuned for enemies — same bullet types but less damage
-# and slower fire rate so ranged enemies feel fair.
-
 class EnemyPistol(Gun):
-    """Standard ranged-enemy sidearm."""
     name           = "Enemy Pistol"
     damage         = 10.0
     fire_rate_ms   = 800
     bullet_speed   = 380.0
     bullet_radius  = 10
-    bullet_color   = (200, 80, 80) # reddish so player can read enemy shots
+    bullet_color   = (200, 80, 80)
     spread         = 4
     max_range      = 700.0
     max_ammo       = 8
@@ -245,7 +192,6 @@ class EnemyPistol(Gun):
     knockback_strength = 2
 
 class EnemyRifle(Gun):
-    """High-damage slow rifle for elite ranged enemies."""
     name           = "Enemy Rifle"
     damage         = 22.0
     fire_rate_ms   = 1400

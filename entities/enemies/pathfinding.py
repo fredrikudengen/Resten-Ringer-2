@@ -23,7 +23,6 @@ class PathfindingMixin:
             step_x = e2 >= dy
             step_y = e2 <= dx
 
-            # Diagonal step — check both intermediate neighbours first
             if step_x and step_y:
                 if room.is_blocked(x + x_steps, y):
                     return False

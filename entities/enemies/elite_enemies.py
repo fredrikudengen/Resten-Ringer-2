@@ -12,7 +12,7 @@ from .enemy import Enemy
 # --- Oversikt ---
 # ScoutEnemy      : Vet alltid hvor du er, så ingen detection radius
 # AssassinEnemy   : Rask melee + lunge-angrep med windup
-# SlowEnemy       : Treig men slår hardt, windup-angrep
+# SlowEnemy       : Treg men slår hardt, windup-angrep
 # BruteEnemy      : Stor, høy damage og lang rekkevidde
 # TankEnemy       : Mest helse, også mye damage
 #
@@ -189,7 +189,6 @@ class AssassinEnemy(Enemy):
 # Fienden stopper opp, venter (attack_windup_ms), og slår deretter.
 # Spilleren har tid til å dodge i vinduptiden..
 # ===========================================================================
-
 
 class WindupMeleeMixin:
     """Felles move()-logikk for fiender med windup-angrep."""

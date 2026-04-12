@@ -1,9 +1,9 @@
-# Resten Ringer 2 — Playtest-bygg
+# Resten Ringer 2 — Playtest-build
 
 Takk for at du tar deg tid til å teste spillet!
 
-Dette er en early build av et roguelike-spill laget i Python og Pygame.
-Jeg er på jakt etter tilbakemeldinger på balanse, fiendeatferd, kontroller og generell spillfølelse.
+Dette er et tidlig build av et roguelike-spill laget i Python og Pygame. Oppfølgeren til kult-klassikeren Resten Ringer.
+Jeg er setter pris på tilbakemeldinger på balanse, fiendeatferd, kontroller og generell spillfølelse.
 
 ---
 
@@ -72,7 +72,7 @@ Spesielle verdier for AssassinEnemy: `_LUNGE_SPEED`, `_LUNGE_COOLDOWN`, `_lunge_
 
 ---
 
-## Kjente begrensninger i dette bygget
+## Kjente begrensninger i dette buildet
 
 - Ingen lyd (kommer)
 - Ingen sprites — alle enheter er rektangler for nå
@@ -83,28 +83,21 @@ Spesielle verdier for AssassinEnemy: `_LUNGE_SPEED`, `_LUNGE_COOLDOWN`, `_lunge_
 
 ## Tilbakemelding jeg er ute etter
 
-Jeg setter stor pris på tilbakemeldinger på alt — men særlig:
+Jeg setter stor pris på tilbakemeldinger på alt, men da særlig:
 
 **Spillfølelse og balanse**
-- Føles kontrollene responsive? Er dash nyttig?
+- Føles kontrollene responsive?
 - Er noen fiender for lette / for vanskelige?
 - Er det noen punkter i spillet som føles kjedelige eller frustrerende?
 - Hvordan oppleves bossen? For lett, for vanskelig, eller akkurat passe?
 
 **Ideer til nye fiender**
-Har du ideer til fiender med interessante mekanikker? F.eks.:
-- En fiende som blokkerer skudd
-- En fiende som kloner seg
-- En fiende med et beskyttelsesaura rundt seg
+Har du ideer til fiender med interessante mekanikker?
 
 **Ideer til powerups og oppgraderinger**
 Spillet har noen grunnleggende powerups. Hva slags oppgraderinger hadde vært morsomme?
-- Temporære boosts (hastighet, skade, skjold)?
-- Permanente passive evner?
-- Spesialangrep for spilleren?
 
 **Ideer til sprites / visuell stil**
-
 
 ---
 

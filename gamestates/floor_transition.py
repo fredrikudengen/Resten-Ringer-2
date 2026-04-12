@@ -5,19 +5,11 @@ import pygame
 from .basestate import BaseState, State
 from .ui_helpers import C
 
-_DISPLAY_DURATION_MS = 1800   # how long the screen shows before gameplay starts
-_FADE_IN_MS          = 400    # text fade-in duration
-_FADE_OUT_MS         = 300    # text fade-out before transitioning
+_DISPLAY_DURATION_MS = 2300
+_FADE_IN_MS          = 500
+_FADE_OUT_MS         = 400
 
 class FloorTransitionState(BaseState):
-    """
-    Brief interstitial screen between floors.
-
-    On enter:
-      1. Generates the next floor (fast — same frame)
-      2. Shows "FLOOR N" with a short fade-in / fade-out
-      3. Transitions to PlayingState after the delay
-    """
 
     def __init__(self, sm):
         self._sm = sm
@@ -28,7 +20,6 @@ class FloorTransitionState(BaseState):
         self._font_sub   = pygame.font.SysFont("consolas", 18)
 
     def on_enter(self):
-        # Generate the next floor immediately
         self._sm.room_manager.advance_after_boss()
 
         self._entered_at = pygame.time.get_ticks()
@@ -52,7 +43,6 @@ class FloorTransitionState(BaseState):
 
         elapsed = pygame.time.get_ticks() - self._entered_at
 
-        # Compute alpha: fade in → hold → fade out
         if elapsed < _FADE_IN_MS:
             alpha = int(255 * elapsed / _FADE_IN_MS)
         elif elapsed > _DISPLAY_DURATION_MS - _FADE_OUT_MS:

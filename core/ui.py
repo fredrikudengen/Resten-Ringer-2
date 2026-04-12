@@ -50,10 +50,7 @@ _BUFF_LABELS = {
     "AttackPowerup": "ATK",
 }
 
-# Maks antall patroner som vises som enkeltikoner.
-# Har du flere enn dette vises de som tall i steden.
 _AMMO_ICON_LIMIT = 20
-
 
 def _draw_rounded_rect(surface, color, rect, radius=6):
     pygame.draw.rect(surface, color, rect, border_radius=radius)
@@ -85,17 +82,6 @@ def _draw_bar(
 
 
 class HUD:
-    """
-    Heads-Up Display for spillet.
-
-    Tegner:
-      - HP-bar med hjerteikon
-      - XP-bar + level-badge
-      - Ammo-widget (patronikoner eller reload-bar)
-      - Dash cooldown-ring
-      - Aktive buff-ikoner med tidsendrings-bar
-      - Level-up flash-animasjon
-    """
 
     PANEL_X    = 16
     PANEL_Y    = 12
@@ -146,10 +132,6 @@ class HUD:
         self._draw_dash_indicator(screen, player, now, sw)
         self._draw_buffs(screen, player, now, sh)
         self._draw_levelup_flash(screen, now, sw, sh)
-
-    # ------------------------------------------------------------------ #
-    #  HP / XP / AMMO panel
-    # ------------------------------------------------------------------ #
 
     def _draw_hp_xp_panel(self, screen, player, now):
         x = self.PANEL_X
@@ -206,7 +188,7 @@ class HUD:
         )
         cy += self.XP_BAR_H + self.BAR_GAP
 
-        # --- Level badge (øverst til høyre i panelet) ---
+        # --- Level ---
         lv_text = self._font_level.render(f"LV {player.level}", True, _C["text_level"])
         screen.blit(lv_text, (x + w - lv_text.get_width(), self.PANEL_Y))
 
@@ -215,13 +197,13 @@ class HUD:
 
     def _draw_ammo_row(self, screen, player, now, x, cy, w):
         """
-        Viser patronikoner (fylt = igjen, hul = brukt) eller
+        Viser patronikoner eller
         en animert reload-bar hvis spilleren lader om.
         Uendelig ammo viser bare våpennavnet + ∞-symbol.
         """
         gun = player.gun
 
-        # -- Gun name label --
+        # -- Våpen navn --
         gun_name = getattr(gun, 'name', 'Gun')
         name_surf = self._font_small.render(gun_name.upper(), True, _C["text_dim"])
         screen.blit(name_surf, (x, cy))
@@ -238,11 +220,10 @@ class HUD:
         max_ammo     = gun.max_ammo
         current_ammo = gun.current_ammo
 
-        # -- Reloading: animert blå fremgangsbar --
+        # -- Reloading: animert blå bar --
         if gun.is_reloading:
             progress = gun.reload_progress()
 
-            # Tekst som pulserer
             pulse      = (math.sin(now / 120) + 1) / 2   # 0 → 1
             pulse_alpha = int(160 + pulse * 95)
             rel_surf = self._font_small.render("[R]  RELOADING...", True, _C["reload_text"])
@@ -279,17 +260,13 @@ class HUD:
             irect = pygame.Rect(ix, row_y, icon_w, icon_h)
 
             if i < current_ammo:
-                # Fylt patron – solid farge med lys topp
                 pygame.draw.rect(screen, _C["ammo_full"],   irect, border_radius=2)
-                # Liten lysrefleks øverst
                 highlight = pygame.Rect(ix + 1, row_y + 1, icon_w - 2, 3)
                 pygame.draw.rect(screen, (255, 240, 160), highlight, border_radius=1)
             else:
-                # Tom patron – bare kontur
                 pygame.draw.rect(screen, _C["ammo_empty"],  irect, border_radius=2)
                 pygame.draw.rect(screen, _C["ammo_border"], irect, 1, border_radius=2)
 
-        # Tall-fallback ved siden av ikonene hvis lite plass
         total_icon_w = max_ammo * (icon_w + gap) - gap
         if total_icon_w + 32 <= w:
             num_surf = self._font_small.render(
@@ -298,13 +275,9 @@ class HUD:
             )
             screen.blit(num_surf, (x + total_icon_w + 6, row_y + (icon_h - num_surf.get_height()) // 2))
 
-    # ------------------------------------------------------------------ #
-    #  Dash indicator
-    # ------------------------------------------------------------------ #
-
     def _draw_dash_indicator(self, screen, player, now, screen_w):
         cx = screen_w - self.DASH_X_OFFSET - self.DASH_RADIUS
-        cy = screen.get_height() - self.DASH_Y - self.DASH_RADIUS  # bottom-right instead of top-right
+        cy = screen.get_height() - self.DASH_Y - self.DASH_RADIUS
         r = self.DASH_RADIUS
 
         total_cd = player.dash_cooldown
@@ -376,10 +349,6 @@ class HUD:
                 self._font_label.render(f"{secs_left:.1f}s", True, _C["text_dim"]),
                 (bx, by + self.BUFF_SIZE + 2)
             )
-
-    # ------------------------------------------------------------------ #
-    #  Level-up flash
-    # ------------------------------------------------------------------ #
 
     def _draw_levelup_flash(self, screen, now, sw, sh):
         if self._levelup_at is None:

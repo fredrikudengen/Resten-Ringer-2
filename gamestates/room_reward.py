@@ -12,8 +12,8 @@ _ALL_GUNS = [Pistol, Shotgun, MachineGun, SniperRifle]
 
 _STAT_UPGRADES = [
     {"label": "+20 Max HP",       "color": (220, 55,  55),  "apply": lambda p: (setattr(p, "max_health", p.max_health + 20), setattr(p, "health", min(p.health + 20, p.max_health + 20)))},
-    {"label": "+2 Speed",         "color": (255, 220, 60),  "apply": lambda p: setattr(p, "speed", p.speed + 2)},
-    {"label": "+15% Gun Damage",  "color": (100, 220, 255), "apply": lambda p: setattr(p.gun, "damage", round(p.gun.damage * 1.15, 1))},
+    {"label": "+2 Fart",         "color": (255, 220, 60),  "apply": lambda p: setattr(p, "speed", p.speed + 2)},
+    {"label": "+15% Våpen Skade",  "color": (100, 220, 255), "apply": lambda p: setattr(p.gun, "damage", round(p.gun.damage * 1.15, 1))},
     {"label": "+30% Max Ammo",    "color": (180, 255, 120), "apply": lambda p: setattr(p.gun, "max_ammo", round(p.gun.max_ammo * 1.3))},
 ]
 
@@ -46,9 +46,9 @@ class RoomRewardState(BaseState):
         other_guns = [g for g in _ALL_GUNS if not isinstance(player.gun, g)]
         gun_cls    = random.choice(other_guns)
         gun_offer  = {
-            "type":  "GUN",
+            "type":  "VÅPEN",
             "label": gun_cls.name,
-            "desc":  f"Replace your {player.gun.name}",
+            "desc":  f"Bytt ut {player.gun.name}",
             "color": (220, 220, 50),
             "apply": lambda p, g=gun_cls: setattr(p, "gun", g()),
         }
@@ -58,7 +58,7 @@ class RoomRewardState(BaseState):
         stat_offer  = {
             "type":  "UPGRADE",
             "label": stat["label"],
-            "desc":  "Permanent stat boost",
+            "desc":  "Permanent stat oppgradering",
             "color": stat["color"],
             "apply": stat["apply"],
         }
@@ -95,7 +95,6 @@ class RoomRewardState(BaseState):
     # ------------------------------------------------------------------
 
     def draw(self, surface: pygame.Surface):
-        # Draw the game world frozen behind the overlay
         sm = self._sm
         surface.fill((10, 10, 15))
         sm.world.draw(surface, sm.camera)
@@ -105,13 +104,11 @@ class RoomRewardState(BaseState):
 
         sw, sh = surface.get_size()
 
-        # Title
         surface.blit(
             self._title_surf,
             (sw // 2 - self._title_surf.get_width() // 2, sh // 2 - 220),
         )
 
-        # Cards
         total_w = len(self._offers) * _CARD_W + (len(self._offers) - 1) * _CARD_GAP
         start_x = sw // 2 - total_w // 2
         card_y  = sh // 2 - _CARD_H // 2
@@ -143,7 +140,7 @@ class RoomRewardState(BaseState):
                 ls = self._font_desc.render(line, True, C["text_dim"])
                 surface.blit(ls, (rect.centerx - ls.get_width() // 2, rect.y + 150 + j * 20))
 
-            esc_surf = self._font_type.render("Press ESC to reject reward", True, C["text_dim"])
+            esc_surf = self._font_type.render("Trykk ESC for å avlså", True, C["text_dim"])
             surface.blit(esc_surf, (sw // 2 - esc_surf.get_width() // 2, sh // 2 + _CARD_H // 2 + 20))
     # ------------------------------------------------------------------
 

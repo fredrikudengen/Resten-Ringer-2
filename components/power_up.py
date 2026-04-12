@@ -7,7 +7,6 @@ class BasePowerup:
         self.rect = pygame.Rect(x, y, self.size, self.size)
 
     def apply(self, player):
-        """Overridden by subclasses."""
         pass
 
     def draw(self, screen, camera):

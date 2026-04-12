@@ -13,16 +13,16 @@ class Relic:
     def on_dash(self, player):  pass 
 
 class Vampiric(Relic):
-    name = "Vampiric"
-    description = "Heal 2 HP on kill."
+    name = "Vampyrisk"
+    description = "Helbred 2 HP for hvert kill."
     color = constants.RED
 
     def on_kill(self, player):
         player.health = min(player.health + 2, player.max_health)
 
 class Adrenaline(Relic):
-    name        = "Adrenaline"
-    description = "Gain +3 speed for 2s on taking damage."
+    name        = "Adrenalin"
+    description = "Få +3 fart i 2s når du tar skade."
     color       = (255, 200, 50)
 
     def on_hit(self, player):
@@ -30,8 +30,8 @@ class Adrenaline(Relic):
         player.speed += 3
 
 class GlassCannon(Relic):
-    name        = "Glass Cannon"
-    description = "+40% gun damage, -35 max HP."
+    name        = "Glass Kanon"
+    description = "+40% våpen skade, -35 max HP."
     color       = (255, 80, 80)
 
     def on_equip(self, player):
@@ -41,7 +41,7 @@ class GlassCannon(Relic):
 
 class Reloader(Relic):
     name        = "Reloader"
-    description = "Dashing instantly reloads your gun."
+    description = "Å dashe reloader våpenet automatisk."
     color       = (100, 180, 255)
 
     def on_dash(self, player):

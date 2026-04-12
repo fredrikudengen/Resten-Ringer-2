@@ -3,14 +3,10 @@ from core import constants
 
 
 class Door:
-    """
-    Door that can be opened or closed.
-    When closed, its rect acts as a collision obstacle (managed by RoomManager).
-    """
 
     def __init__(self, x: int, y: int):
         self.rect     = pygame.Rect(x, y, constants.DOOR_WIDTH, constants.DOOR_HEIGHT)
-        self.trigger  = self.rect.inflate(constants.TILE_SIZE/4, constants.TILE_SIZE/4)  # trigger is bigger than the visual
+        self.trigger  = self.rect.inflate(constants.TILE_SIZE/4, constants.TILE_SIZE/4)
         self.is_open  = False
 
     def draw(self, screen, camera):

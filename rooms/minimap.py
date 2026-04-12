@@ -6,12 +6,12 @@ from .floor_map import FloorMap, RoomNode, DIRECTIONS
 
 
 # ---- Layout ----
-MINIMAP_MARGIN   = 16     # px from screen edge
-MINIMAP_PADDING  = 10     # px inside the panel border
-ROOM_SIZE        = 22     # px per room square
-ROOM_GAP         = 6      # px between rooms (door corridors live here)
-DOOR_THICKNESS   = 5      # px wide door line
-CELL             = ROOM_SIZE + ROOM_GAP   # total grid cell pitch
+MINIMAP_MARGIN   = 16     # px fra skjerm kant
+MINIMAP_PADDING  = 10     # px inni panelet
+ROOM_SIZE        = 22
+ROOM_GAP         = 6
+DOOR_THICKNESS   = 5
+CELL             = ROOM_SIZE + ROOM_GAP
 
 # ---- Colors ----
 _C = {
@@ -36,16 +36,6 @@ def _room_color(node: RoomNode, is_current: bool) -> tuple:
 
 
 class Minimap:
-    """
-    Draws a small map of visited rooms in the corner of the screen.
-
-    Usage
-    -----
-    minimap = Minimap()
-
-    # In PlayingState.draw():
-    minimap.draw(screen, room_manager.floor_map, room_manager.current_node)
-    """
 
     def __init__(self):
         self._font = None
@@ -64,7 +54,6 @@ class Minimap:
             if node.visited
         }
 
-        # Naborom til besøkte rom som er boss
         revealed_boss: set = set()
         for pos, node in visited.items():
             for side, neighbour_pos in node.connections.items():

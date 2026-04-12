@@ -16,22 +16,20 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
         now = pygame.time.get_ticks()
         
-        # Combat state
         self.alive                 = True
         self.hit                   = False
         self.attack_cooldown_until = 0
 
-        # AI state machine
         self.state          = "idle"
         self.last_seen_pos  = None  
         self.search_started = None  
 
-        # Micro-wander 
         self.wander_goal_g       = None
         self.wander_end          = False
         self.next_wander_at      = now + random.randint(1200, 2500)
         self.WANDER_INTERVAL_MS  = (1500, 2500) 
         self.wander_radius       = 4
+
     # ------------------------- PUBLIC API -------------------------
 
     def move(self, player, obstacles, room, dt_ms):
@@ -125,7 +123,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
         pygame.draw.rect(screen, color, draw_rect)
 
-    # ========== HELPERS ==========
+    # ---------- HELPERS ----------
         
     def _idle(self, room, obstacles, dt_ms, now):
         """Håndter idle state med micro-wander."""
@@ -154,7 +152,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
                 self.next_wander_at = now + wait
     
     def _search(self, obstacles, room, dt_ms, now):
-        """Håndter search state - gå til siste kjente posisjon."""
+        """Håndter search state. Gå mot siste kjente posisjon."""
         T = constants.TILE_SIZE
         goal_g = (self.last_seen_pos[0] // T, self.last_seen_pos[1] // T)
         next_tile_g = self._astar_next_step(room, goal_g, max_expansions=512)
@@ -190,11 +188,11 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
     def _pick_random_free_tile(self, room, center_g, radius):
         """
-        Chooses a random free tile from room.
+        Velg en tilfeldig fri tile.
 
         Args:
-            center_g: grid position to start from.
-            radius: radius to choose from, in tiles.
+            center_g: grid posisjon start
+            radius: radius i tiles
         """
         tries = 7
         cx, cy = center_g
