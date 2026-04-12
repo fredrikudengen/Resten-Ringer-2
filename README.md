@@ -43,7 +43,7 @@ Kontrollerer størrelsen og formen på etasjene:
 - **`MIN_MAIN_PATH` / `MAX_MAIN_PATH`** — Lengden på stien fra start til boss
 - **`MIN_TOTAL_ROOMS` / `MAX_TOTAL_ROOMS`** — Total størrelse på etasjen
 - **`BRANCH_CHANCE`** — Sannsynligheten for sidegrener (høyere = mer labyrintisk)
-- **`_DEADEND_WEIGHTS`** — Fordeling mellom combat-, reward- og elite-rom i blindveier
+- **`_DEADEND_WEIGHTS`** — Fordeling mellom combat-, reward- og elite-rom i blindrom/blindveier
 
 ### Vanlige fiender — `entities/enemies/enemy_types.py`
 - **`SwarmEnemy`** — Liten og rask, farlig i flokk
@@ -56,20 +56,20 @@ Justerbare verdier per fiende: `speed`, `health`, `damage`, `attack_cooldown`, `
 ### Elitefiender — `entities/enemies/elite_enemies.py`
 - **`ScoutEnemy`** — Vet alltid hvor du er, ingen deteksjonsradius
 - **`AssassinEnemy`** — Rask melee + lunge-angrep
-- **`SlowEnemy`** — Treg men slår hardt, windup-angrep
+- **`SlowEnemy`** — Treg men høy skade, windup-angrep
 - **`BruteEnemy`** — Stor og tøff, lang windup
-- **`TankEnemy`** — Nesten umulig å drepe uten vedvarende fokus
+- **`TankEnemy`** — Mest liv, høy skade
 
 Spesielle verdier for AssassinEnemy: `_LUNGE_SPEED`, `_LUNGE_COOLDOWN`, `_lunge_windup`
 
 ### Boss — `entities/enemies/boss_enemies.py`
-- **`WardenBoss`** — To-faset boss med lunge-angrep og minion-spawning
+- **`WardenBoss`** — To-phase boss med lunge-angrep og minion-spawning
 - Justerbare verdier: `health`, `attack_windup_ms`, `_LUNGE_SPEED`, `_PHASE1_SPAWN_INTERVAL`, `_MINION_CAP`
 
 ### Vanskelighetsgrad og progresjon — `entities/enemies/progression.py`
 - **`_THRESHOLDS`** — Hvor mange rom som ryddes mellom hvert progression level
 - **`ENEMY_POOL`** — Hvilke fiender som kan spawne på hvert level
-- **`scale_enemy()`** — HP- og skademultiplikatorer per level (se kommentarer i filen)
+- **`scale_enemy()`** — HP- og skade-multipliers per level (se kommentarer i filen)
 
 ---
 
