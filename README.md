@@ -13,10 +13,11 @@ Jeg er setter pris på tilbakemeldinger på balanse, fiendeatferd, kontroller og
 - Python 3.11 eller nyere
 - Pygame: `pip install pygame`
 
-### Start spillet
-```bash
-python main.py
-```
+### Kloning
+- git clone https://github.com/ditt-brukernavn/resten-ringer-2.git
+- cd /stien/til/Resten Ringer 2
+- pip install pygame
+- python main.py
 
 ---
 
@@ -103,8 +104,6 @@ Spillet har noen grunnleggende powerups. Hva slags oppgraderinger hadde vært mo
 
 ## Send tilbakemelding
 
-Du kan enten:
-- Åpne et **GitHub Issue** i dette repoet
-- Kontakte meg direkte
+- Åpne et **[GitHub Issue](https://github.com/fredrikudengen/Resten-Ringer-2/issues/new/choose)**
 
-Alle tilbakemeldinger hjelper, uansett hvor store eller små!
+Alle tilbakemeldinger hjelper!
