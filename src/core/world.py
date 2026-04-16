@@ -2,7 +2,7 @@ import pygame
 
 from components.power_up import BasePowerup, POWERUP_TYPES
 from core import constants
-from sound.sound_manager import sound
+from view.sound_manager import sound
 from entities import WardenBoss
 from entities import Enemy
 from components import Particle
