@@ -5,8 +5,8 @@ import random
 import pygame
 from pygame.math import Vector2
 
-from components.bullet import Bullet
-from core.sound_manager import sound
+from src.components.bullet import Bullet
+from src.sound.sound_manager import sound
 
 class Gun:
 
@@ -42,7 +42,7 @@ class Gun:
         if self._reload_start is None and self.current_ammo < self.max_ammo:
             self._reload_start = pygame.time.get_ticks()
             if self.team == "player":
-                sound.play("reload")
+                sound.play("weapons/reload")
 
     def update_reload(self):
         if self._reload_start is not None:

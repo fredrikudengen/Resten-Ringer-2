@@ -1,12 +1,12 @@
 import pygame
-from core import constants
+from src.core import constants
 
 
 class Door:
 
     def __init__(self, x: int, y: int):
         self.rect     = pygame.Rect(x, y, constants.DOOR_WIDTH, constants.DOOR_HEIGHT)
-        self.trigger  = self.rect.inflate(constants.TILE_SIZE/4, constants.TILE_SIZE/4)
+        self.trigger  = self.rect.inflate(constants.TILE_SIZE / 4, constants.TILE_SIZE / 4)
         self.is_open  = False
 
     def draw(self, screen, camera):

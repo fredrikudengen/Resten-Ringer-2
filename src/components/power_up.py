@@ -1,5 +1,6 @@
 import pygame
-from core import constants
+from src.core import constants
+
 
 class BasePowerup:
     def __init__(self, x, y):

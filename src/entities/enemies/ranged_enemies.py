@@ -9,7 +9,8 @@ from pygame.math import Vector2
 from core import constants
 from .enemy import Enemy
 
-from components.gun import EnemyPistol, EnemyRifle
+from components.gun import EnemyPistol
+
 
 # ---------------------------------------------------------------------------
 # Stat referanse

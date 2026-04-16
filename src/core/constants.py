@@ -1,9 +1,3 @@
-from entities import (
-    Enemy, FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy,
-    AssassinEnemy, BruteEnemy, SwarmEnemy, ShooterEnemy, MarksmanEnemy,
-    WardenBoss,
-)
-
 # colors
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
@@ -86,20 +80,6 @@ CHAR_TO_SPAWN: dict[str, str] = {
     'C': 'attack_powerup',
     'H': 'shield_powerup',
     'D': 'door'
-}
-
-# room manager
-TAG_TO_ENEMY: dict[str, type[Enemy]] = {
-    'fast_enemy': FastEnemy,
-    'slow_enemy': SlowEnemy,
-    'tank_enemy': TankEnemy,
-    'scout_enemy': ScoutEnemy,
-    'assassin_enemy': AssassinEnemy,
-    'brute_enemy': BruteEnemy,
-    'swarm_enemy': SwarmEnemy,
-    'shooter_enemy': ShooterEnemy,
-    'marksman_enemy': MarksmanEnemy,
-    'warden_boss': WardenBoss,
 }
 
 # hud

@@ -1,6 +1,7 @@
 import pygame
-from gamestates import StateMachine
-
+from src.gamestates import StateMachine
+import os
+print(os.getcwd())
 pygame.init()
 
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
