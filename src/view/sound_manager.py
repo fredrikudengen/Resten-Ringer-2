@@ -25,7 +25,7 @@ class SoundManager:
 
     def play(self, name: str, volume: float | None = None):
         """
-        Play a sound effect by name.
+        Play a view effect by name.
 
         Maps name → assets/sfx/{name}.ogg
         Throttled: same name won't replay within throttle_ms.
@@ -102,7 +102,7 @@ class SoundManager:
         self._initialized = True
 
     def _load(self, name: str) -> pygame.mixer.Sound | None:
-        """Load and cache a sound. Returns None if missing."""
+        """Load and cache a view. Returns None if missing."""
         if name in self._sounds:
             return self._sounds[name]
 

@@ -7,10 +7,10 @@ import pygame
 
 from entities import FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy, AssassinEnemy, BruteEnemy, SwarmEnemy, ShooterEnemy, \
     MarksmanEnemy, WardenBoss, Enemy
-from src.components.chest import Chest
-from src.core import constants
-from src.components import Door, ShieldPowerup, AttackPowerup, SpeedPowerup, HealthPowerup
-from sound.sound_manager import sound
+from components.chest import Chest
+from core import constants
+from components import Door, ShieldPowerup, AttackPowerup, SpeedPowerup, HealthPowerup
+from view.sound_manager import sound
 from .room_registry import RoomRegistry
 from .floor_generator import generate_floor
 from .floor_map import FloorMap, RoomNode

@@ -3,7 +3,7 @@ from src.core import constants
 from .entity import Entity
 from components.gun import Pistol, Shotgun, MachineGun, SniperRifle
 from gamestates.char_select import CHARACTERS
-from sound.sound_manager import sound
+from view.sound_manager import sound
 
 _GUN_MAP = {
     'Pistol':      Pistol,
