@@ -1,6 +1,7 @@
 import pygame
 from pygame.math import Vector2
 from src.core import constants
+from view.sprite import Sprite
 
 
 class Entity:
@@ -17,15 +18,21 @@ class Entity:
         self.rect = pygame.Rect(x, y, self.width, self.height)
         self.pos  = Vector2(self.rect.center)
         self.knockback_velocity    = pygame.math.Vector2(0, 0)
+        self.sprite = Sprite(frames={},
+                             base_size=(self.width, self.height),
+                             fallback_color=self.color)
 
     def draw(self, screen, camera):
         """
         Tegn entity. Override for custom tegning.
-        
+
         Args:
             screen: pygame Surface
             camera: Camera objekt med .apply(rect) metode
         """
+        draw_rect = camera.apply(self.rect)
+        self.sprite.draw(screen, draw_rect)
+
 
     def check_collision(self, obstacles):
         """
