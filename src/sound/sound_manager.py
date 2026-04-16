@@ -4,8 +4,9 @@ import pygame
 
 class SoundManager:
 
-    SFX_DIR            = os.path.join("assets", "sfx")
-    MUSIC_DIR          = os.path.join("assets", "music")
+    _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    SFX_DIR            = os.path.join(_PROJECT_ROOT, "assets", "sfx")
+    MUSIC_DIR          = os.path.join(_PROJECT_ROOT, "assets", "music")
     DEFAULT_THROTTLE_MS = 60
 
     def __init__(self):
