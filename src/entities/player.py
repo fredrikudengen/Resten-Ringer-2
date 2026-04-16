@@ -28,12 +28,12 @@ class Player(Entity):
         self.dash_cooldown = char.get('dash_cooldown')
         self.dash_speed = char.get('dash_speed')
         self.knockback_friction = 0.75
+        self.color = char.get('color', constants.PLAYER_COLOR)
 
         super().__init__(x=0, y=0)
 
         self.selected_character = selected_character
         self.char_name          = char['name']
-        self.color              = char.get('color', constants.PLAYER_COLOR)
         self.is_moving          = False
         self.total_kills       = 0
 
