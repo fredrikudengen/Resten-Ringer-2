@@ -1,7 +1,7 @@
 import random
 
 import pygame
-from core import constants
+from src.core import constants
 
 from ..entity import Entity
 from .pathfinding import PathfindingMixin
@@ -102,10 +102,6 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             return
 
     def draw(self, screen, camera):
-        """
-        Tegn fienden med fargekoding basert på state.
-        Subklasser kan override for custom tegning.
-        """
         draw_rect = camera.apply(self.rect)
 
         if self.state == "idle":

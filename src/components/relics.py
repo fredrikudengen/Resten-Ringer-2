@@ -2,6 +2,7 @@ import pygame
 
 from core import constants
 
+
 class Relic:
     name        = "Relic"
     description = ""

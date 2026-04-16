@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from .grid_room import GridRoom
-from rooms import room_data as data
+from src.rooms import room_data as data
 
 
 @dataclass

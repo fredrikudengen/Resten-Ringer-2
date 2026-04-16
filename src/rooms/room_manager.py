@@ -5,10 +5,12 @@ from dataclasses import dataclass
 
 import pygame
 
-from components.chest import Chest
-from core import constants
-from components import Door, ShieldPowerup, AttackPowerup, SpeedPowerup, HealthPowerup
-from core.sound_manager import sound
+from entities import FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy, AssassinEnemy, BruteEnemy, SwarmEnemy, ShooterEnemy, \
+    MarksmanEnemy, WardenBoss, Enemy
+from src.components.chest import Chest
+from src.core import constants
+from src.components import Door, ShieldPowerup, AttackPowerup, SpeedPowerup, HealthPowerup
+from sound.sound_manager import sound
 from .room_registry import RoomRegistry
 from .floor_generator import generate_floor
 from .floor_map import FloorMap, RoomNode
@@ -25,6 +27,19 @@ TAG_TO_POWERUP: dict[str, type] = {
     'AttackPowerup': AttackPowerup,
     'ShieldPowerup': ShieldPowerup,
     'HealthPowerup': HealthPowerup
+}
+
+TAG_TO_ENEMY: dict[str, type[Enemy]] = {
+    'fast_enemy': FastEnemy,
+    'slow_enemy': SlowEnemy,
+    'tank_enemy': TankEnemy,
+    'scout_enemy': ScoutEnemy,
+    'assassin_enemy': AssassinEnemy,
+    'brute_enemy': BruteEnemy,
+    'swarm_enemy': SwarmEnemy,
+    'shooter_enemy': ShooterEnemy,
+    'marksman_enemy': MarksmanEnemy,
+    'warden_boss': WardenBoss,
 }
 
 def choose_powerup():
@@ -68,7 +83,7 @@ class RoomManager:
         if not self._room_cleared:
             if len(self.world.enemies) == 0:
                 if self.current_room_type != "reward" or self.current_room_type == "start":
-                    sound.play("room_cleared")
+                    sound.play("ui/room_cleared")
                 self._room_cleared = True
                 if self.current_node is not None:
                     self.current_node.cleared = True
@@ -193,7 +208,7 @@ class RoomManager:
                 tag = room.spawns[gy][gx]
                 if not tag:
                     continue
-                if skip_enemies and tag in (*constants.TAG_TO_ENEMY, 'enemy', *TAG_TO_POWERUP, 'powerup'):
+                if skip_enemies and tag in (TAG_TO_ENEMY, 'enemy', *TAG_TO_POWERUP, 'powerup'):
                     room.spawns[gy][gx] = None
                     continue
                 x = gx * constants.TILE_SIZE
@@ -202,8 +217,8 @@ class RoomManager:
                 room.spawns[gy][gx] = None
 
     def _handle_tag(self, tag, x, y, gx, gy):
-        if tag in constants.TAG_TO_ENEMY:
-            enemy = self.world.add_enemy(x, y, enemy_type=constants.TAG_TO_ENEMY[tag])
+        if tag in TAG_TO_ENEMY:
+            enemy = self.world.add_enemy(x, y, enemy_type=TAG_TO_ENEMY[tag])
             scale_enemy(enemy, self.progression_level)
         if tag in TAG_TO_POWERUP:
             self.world.add_powerup(x, y, powerup_type=TAG_TO_POWERUP[tag])
@@ -217,7 +232,7 @@ class RoomManager:
 
     def _place_player(self, room, entry_side):
         if room.room_type == "start":
-            cx = (room.cols * constants.TILE_SIZE) // 2 - self.player.rect.width  // 2
+            cx = (room.cols * constants.TILE_SIZE) // 2 - self.player.rect.width // 2
             cy = (room.rows * constants.TILE_SIZE) // 2 - self.player.rect.height // 2
             self.player.rect.topleft = (cx, cy)
             return
@@ -282,3 +297,4 @@ class RoomManager:
         cx = (room.cols * constants.TILE_SIZE) // 2 - Chest.WIDTH // 2
         cy = (room.rows * constants.TILE_SIZE) // 2 - Chest.HEIGHT // 2
         self.chest = Chest(cx, cy)
+
