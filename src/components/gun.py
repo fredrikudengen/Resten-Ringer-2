@@ -145,6 +145,7 @@ class Shotgun(Gun):
         return [self._make_bullet(origin, direction)
                 for _ in range(self.pellets)]
 
+
 class MachineGun(Gun):
     name           = "Machine Gun"
     damage         = 10.0
