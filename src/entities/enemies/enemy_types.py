@@ -1,5 +1,6 @@
 import pygame
 
+from view.sprite import Sprite
 from .enemy import Enemy
 from .ranged_enemies import RangedEnemy
 from components.gun import EnemyPistol, EnemyRifle
@@ -49,6 +50,11 @@ class SwarmEnemy(Enemy):
 
     def __init__(self, x, y):
         super().__init__(x, y)
+        self.sprite = Sprite(
+            frames={"idle": "enemy_fast"},
+            base_size=(self.width, self.height),
+            fallback_color=self.color
+        )
 
 
 class FastEnemy(Enemy):
@@ -71,6 +77,11 @@ class FastEnemy(Enemy):
 
     def __init__(self, x, y):
         super().__init__(x, y)
+        self.sprite = Sprite(
+            frames={"idle": "enemy_test"},
+            base_size=(self.width, self.height),
+            fallback_color=self.color
+        )
 
 
 # ===========================================================================
@@ -107,6 +118,11 @@ class ShooterEnemy(RangedEnemy):
 
     def __init__(self, x, y):
         super().__init__(x, y)
+        self.sprite = Sprite(
+            frames={"idle": "enemy_shoot"},
+            base_size=(self.width, self.height),
+            fallback_color=self.color
+        )
 
 
 class MarksmanEnemy(RangedEnemy):
@@ -133,8 +149,14 @@ class MarksmanEnemy(RangedEnemy):
     def __init__(self, x, y):
         super().__init__(x, y)
 
+        self.sprite = Sprite(
+            frames={"idle": "enemy_sniper"},
+            base_size=(self.width, self.height),
+            fallback_color=self.color
+        )
+
     def draw(self, screen, camera):
         super().draw(screen, camera)
         if self.state not in ("dead", "reload"):
             draw_rect = camera.apply(self.rect)
-            pygame.draw.rect(screen, (255, 120, 120), draw_rect, 2)
+            self.sprite.draw(screen, draw_rect)
