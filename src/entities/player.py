@@ -37,6 +37,8 @@ class Player(Entity):
         self.color = char.get('color', constants.PLAYER_COLOR)
         self.aim_angle: float = 0.0
         self._shoulder_world: tuple[int, int] = (0, 0)
+        self._last_mouse_pos: tuple[int, int] = (0, 0)
+        self._idle_since: int = 0
 
         super().__init__(x=0, y=0)
 
@@ -45,10 +47,15 @@ class Player(Entity):
                 "side": "player/fredrik/side",
                 "up": "player/fredrik/up",
                 "down": "player/fredrik/down",
+                "idle_side": [f"player/fredrik/idle/side/{i}" for i in range(6)],
+                "idle_up": [f"player/fredrik/idle/up/{i}" for i in range(6)],
+                "idle_down": [f"player/fredrik/idle/down/{i}" for i in range(6)],
             },
             base_size=(self.width, self.height),
-            fallback_color=self.color
+            frame_durations={"idle_side": 400, "idle_up": 400, "idle_down": 400},
+            fallback_color=self.color,
         )
+
         self._arm_surface: pygame.Surface | None = None  # lastes lazily
 
         self.selected_character = selected_character
@@ -126,12 +133,29 @@ class Player(Entity):
 
         self.flip_x = dx < 0
 
-        if 45 < aim_angle < 135:
-            frame = "up"
-        elif -135 < aim_angle < -45:
-            frame = "down"
+        mouse_moved = (
+                abs(mouse_pos[0] - self._last_mouse_pos[0]) > 2 or
+                abs(mouse_pos[1] - self._last_mouse_pos[1]) > 2
+        )
+        self._last_mouse_pos = mouse_pos
+
+        now = pygame.time.get_ticks()
+
+        if not self.is_moving and not mouse_moved:
+            if self._idle_since == 0:
+                self._idle_since = now
+            is_idle = (now - self._idle_since) > 1000
         else:
-            frame = "side"
+            self._idle_since = 0
+            is_idle = False
+        prefix = "idle_" if is_idle else ""
+
+        if 45 < aim_angle < 135:
+            frame = prefix + "up"
+        elif -135 < aim_angle < -45:
+            frame = prefix + "down"
+        else:
+            frame = prefix + "side"
 
         scale = self.width / 32
         shoulder_offset_x = int(21 * scale) - self.width // 2
@@ -165,7 +189,7 @@ class Player(Entity):
         arm = self._arm_surface
         s = self.width / 32
         W, H = arm.get_size()
-        pivot_x = 0
+        pivot_x = 1
         pivot_y = int(5 * s)
 
         if flip_x:

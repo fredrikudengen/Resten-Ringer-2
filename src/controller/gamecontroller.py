@@ -48,7 +48,6 @@ def player_input(player, obstacles, camera):
 
     player.sync_pos_from_rect()
 
-
 def _collides(player, obstacles):
     for obs in obstacles:
         if player.rect.colliderect(obs):
