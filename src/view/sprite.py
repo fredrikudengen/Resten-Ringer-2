@@ -107,6 +107,9 @@ class Sprite:
 
         return frames[self._anim_index[state]]
 
+    def current_frame_index(self, state: str) -> int:
+        return self._anim_index.get(state, 0)
+
     # ------------------------------------------------------------------ #
     #  Surface-håndtering
     # ------------------------------------------------------------------ #
