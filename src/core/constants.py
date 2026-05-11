@@ -40,7 +40,7 @@ XP_DPS_BONUS_PER_LEVEL = 4
 # gameplay - door
 OPPOSITE = {"N": "S", "S": "N", "E": "W", "W": "E"}
 
-TILE_SIZE = 96
+TILE_SIZE = 112
 
 # terrain tiles
 TILE_FLOOR = 0

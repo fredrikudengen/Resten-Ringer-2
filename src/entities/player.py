@@ -25,6 +25,8 @@ class Player(Entity):
         self.hit_timer = None
         char = CHARACTERS[selected_character]
 
+        self.velocity = pygame.math.Vector2(0, 0)
+
         self.max_health = char.get('max_health')
         self.health     = self.max_health
         self.alive      = True
