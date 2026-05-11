@@ -2,6 +2,7 @@ import random
 
 import pygame
 
+from view.sprite import Sprite
 from .enemy import Enemy
 from .enemy_types import FastEnemy, SwarmEnemy
 from .movement import MovementMixin
@@ -69,6 +70,11 @@ class WardenBoss(Enemy, MovementMixin):
         self._lunge_start = pygame.Vector2()
         self._lunge_cooldown_until = 0
         self._daze_until = 0
+        self.sprite = Sprite(
+            frames={"idle": "enemy_boss"},
+            base_size=(self.width, self.height),
+            fallback_color=self.color
+        )
 
     def move(self, player, obstacles, room, dt_ms):
         now = pygame.time.get_ticks()
@@ -140,18 +146,18 @@ class WardenBoss(Enemy, MovementMixin):
     def draw(self, screen, camera):
         draw_rect = camera.apply(self.rect)
 
-        if self.state == "dead":
-            body_color = (80, 80, 80)
-        elif self.state == "lunge_windup":
-            pulse = (pygame.time.get_ticks() // 150) % 2 == 0
-            body_color = (255, 255, 255) if pulse else self.color
-        elif self._phase == 2:
-            pulse = (pygame.time.get_ticks() // 200) % 2 == 0
-            body_color = (255, 60, 20) if pulse else (255, 140, 20)
-        else:
-            body_color = self.color
+        # if self.state == "dead":
+        #     body_color = (80, 80, 80)
+        # elif self.state == "lunge_windup":
+        #     pulse = (pygame.time.get_ticks() // 150) % 2 == 0
+        #     body_color = (255, 255, 255) if pulse else self.color
+        # elif self._phase == 2:
+        #     pulse = (pygame.time.get_ticks() // 200) % 2 == 0
+        #     body_color = (255, 60, 20) if pulse else (255, 140, 20)
+        # else:
+        #     body_color = self.color
 
-        pygame.draw.rect(screen, body_color, draw_rect)
+        self.sprite.draw(screen, draw_rect)
         pygame.draw.rect(screen, (255, 255, 120), draw_rect, 4)
         self._draw_boss_hud(screen)
 

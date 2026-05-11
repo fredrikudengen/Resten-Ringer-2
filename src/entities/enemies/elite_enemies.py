@@ -1,5 +1,6 @@
 import pygame
 
+from view.sprite import Sprite
 from .enemy import Enemy
 
 # ===========================================================================
@@ -33,12 +34,17 @@ class ScoutEnemy(Enemy):
     knockback_strength = 8
     color              = (60, 210, 220)
     xp_reward          = 18
-    width              = 38
-    height             = 38
+    width              = 96
+    height             = 96
     knockback_friction = 0.75
 
     def __init__(self, x, y):
         super().__init__(x, y)
+        self.sprite = Sprite(
+            frames={"idle": "enemy_scout"},
+            base_size=(self.width, self.height),
+            fallback_color=self.color
+        )
 
     def move(self, player, obstacles, room, dt_ms):
         now = pygame.time.get_ticks()
@@ -77,8 +83,8 @@ class AssassinEnemy(Enemy):
     knockback_strength= 24
     color             = (200, 30, 60)    # crimson
     xp_reward         = 28
-    width             = 34
-    height            = 34
+    width             = 64
+    height            = 64
     wander_radius     = 4
     knockback_friction= 0.75
     _LUNGE_MAX_DIST   = 500
@@ -95,6 +101,11 @@ class AssassinEnemy(Enemy):
         self._lunge_direction = pygame.Vector2()
         self._lunge_start = pygame.Vector2()
         self._lunge_cooldown_until = 0
+        self.sprite = Sprite(
+            frames={"idle": "enemy_assass"},
+            base_size=(self.width, self.height),
+            fallback_color=self.color
+        )
 
     def move(self, player, obstacles, room, dt_ms):
         now = pygame.time.get_ticks()
@@ -275,14 +286,20 @@ class SlowEnemy(WindupMeleeMixin, Enemy):
     knockback_strength= 22
     color             = (140, 60, 200)   # dark purple
     xp_reward         = 22
-    width             = 52
-    height            = 52
+    width             = 112
+    height            = 112
     wander_radius     = 2
     knockback_friction= 0.6
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.attack_windup_until = 0
+        self.sprite = Sprite(
+            frames={"idle": "enemy_slow"},
+            base_size=(self.width, self.height),
+            fallback_color=self.color
+        )
+
 
 class BruteEnemy(WindupMeleeMixin, Enemy):
     """
@@ -299,14 +316,19 @@ class BruteEnemy(WindupMeleeMixin, Enemy):
     knockback_strength= 28
     color             = (200, 100, 40)   # dark orange-brown
     xp_reward         = 45
-    width             = 58
-    height            = 58
+    width             = 112
+    height            = 112
     wander_radius     = 3
     knockback_friction= 0.5
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.attack_windup_until = 0
+        self.sprite = Sprite(
+            frames={"idle": "enemy_brute"},
+            base_size=(self.width, self.height),
+            fallback_color=self.color
+        )
 
 class TankEnemy(WindupMeleeMixin, Enemy):
     """
@@ -323,11 +345,16 @@ class TankEnemy(WindupMeleeMixin, Enemy):
     knockback_strength= 32
     color             = (120, 140, 160)  # steel blue-grey
     xp_reward         = 60
-    width             = 64
-    height            = 64
+    width             = 128
+    height            = 128
     wander_radius     = 2
     knockback_friction= 0.4
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.attack_windup_until = 0
+        self.sprite = Sprite(
+            frames={"idle": "enemy_tank"},
+            base_size=(self.width, self.height),
+            fallback_color=self.color
+        )

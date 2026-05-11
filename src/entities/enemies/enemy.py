@@ -104,20 +104,20 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
     def draw(self, screen, camera):
         draw_rect = camera.apply(self.rect)
 
-        if self.state == "idle":
-            color = self.color
-        elif self.state == "chase":
-            color = tuple(min(c + 40, 255) for c in self.color) 
-        elif self.state == "search":
-            color = tuple(max(c - 40, 0) for c in self.color)
-        elif self.state == "attack":
-            color = (255, 255, 255)
-        elif self.state == "dead":
-            color = (100, 100, 100)
-        else:
-            color = self.color
+        # if self.state == "idle":
+        #     color = self.color
+        # elif self.state == "chase":
+        #     color = tuple(min(c + 40, 255) for c in self.color)
+        # elif self.state == "search":
+        #     color = tuple(max(c - 40, 0) for c in self.color)
+        # elif self.state == "attack":
+        #     color = (255, 255, 255)
+        # elif self.state == "dead":
+        #     color = (100, 100, 100)
+        # else:
+        #     color = self.color
 
-        pygame.draw.rect(screen, color, draw_rect)
+        self.sprite.draw(screen, draw_rect)
 
     # ---------- HELPERS ----------
         

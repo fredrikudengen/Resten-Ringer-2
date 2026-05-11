@@ -7,6 +7,7 @@ import pygame
 from pygame.math import Vector2
 
 from core import constants
+from view.sprite import Sprite
 from .enemy import Enemy
 
 from components.gun import EnemyPistol
