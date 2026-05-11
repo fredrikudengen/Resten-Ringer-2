@@ -12,7 +12,7 @@ CHARACTERS: list[dict] = [
         'color':         (100, 180, 255),
         'max_health':    100,
         'speed':         7,
-        'size':          (64, 64),
+        'size':          (96, 96),
         'gun':           'Pistol',
         'dash_cooldown': 1300,
         'dash_speed':    8,

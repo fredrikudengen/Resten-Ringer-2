@@ -1,5 +1,9 @@
+import math
+
 import pygame
 from src.core import constants
+from view.asset_manager import assets
+from view.sprite import Sprite
 from .entity import Entity
 from components.gun import Pistol, Shotgun, MachineGun, SniperRifle
 from gamestates.char_select import CHARACTERS
@@ -15,6 +19,7 @@ _GUN_MAP = {
 class Player(Entity):
 
     def __init__(self, selected_character: int = 0, hud=None):
+
         self.hit = False
         self.hit_timer = None
         char = CHARACTERS[selected_character]
@@ -32,12 +37,23 @@ class Player(Entity):
 
         super().__init__(x=0, y=0)
 
+        self.sprite = Sprite(
+            frames={
+                "side": "player/fredrik/side",
+                "up": "player/fredrik/up",
+                "down": "player/fredrik/down",
+            },
+            base_size=(self.width, self.height),
+            fallback_color=self.color
+        )
+        self._arm_surface: pygame.Surface | None = None  # lastes lazily
+
         self.selected_character = selected_character
         self.char_name          = char['name']
         self.is_moving          = False
         self.total_kills       = 0
 
-        # Gun — resolved from string name via _GUN_MAP
+        # Gun resolved from string name via _GUN_MAP
         gun_key    = char.get('gun', 'Shotgun')
         gun_class  = _GUN_MAP.get(gun_key, Shotgun)
         self.gun   = gun_class()
@@ -85,13 +101,64 @@ class Player(Entity):
 
     def draw(self, screen, camera):
         draw_rect = camera.apply(self.rect)
-        if self.is_dashing:
-            color = constants.WHITE
-        elif self.is_invincible:
-            color = constants.BLUE
+        mouse_pos = pygame.mouse.get_pos()
+
+        dx = mouse_pos[0] - draw_rect.centerx
+        dy = mouse_pos[1] - draw_rect.centery
+        aim_angle = math.degrees(math.atan2(-dy, dx))  # CCW fra høyre, standard math
+
+        flip_x = dx < 0
+
+        if 45 < aim_angle < 135:
+            frame = "up"
+        elif -135 < aim_angle < -45:
+            frame = "down"
         else:
-            color = self.color
-        pygame.draw.rect(screen, color, draw_rect)
+            frame = "side"
+
+        scale = self.width / 32
+        shoulder_offset_x = int(21 * scale) - self.width // 2
+        shoulder_offset_y = int(17 * scale) - self.height // 2
+        if flip_x:
+            shoulder_offset_x = -shoulder_offset_x
+
+        shoulder = (
+            draw_rect.centerx + shoulder_offset_x,
+            draw_rect.centery + shoulder_offset_y,
+        )
+
+        self.sprite.draw(screen, draw_rect, frame=frame, flip_x=flip_x)
+        self._draw_arm(screen, shoulder, aim_angle, flip_x)
+
+    def _draw_arm(self, screen, shoulder_pos, angle, flip_x):
+        if self._arm_surface is None:
+            raw = assets.get("player/fredrik/arm")
+            if raw is None:
+                return
+            s = self.width / 32
+            self._arm_surface = pygame.transform.scale(
+                raw, (int(raw.get_width() * s), int(raw.get_height() * s))
+            )
+
+        arm = self._arm_surface
+        s = self.width / 32
+        W, H = arm.get_size()
+        pivot_x = 0
+        pivot_y = int(5 * s)
+
+        if flip_x:
+            arm = pygame.transform.flip(arm, False, True)
+            pivot_y = H - pivot_y  # speil pivot_y etter vertikal flip
+        rotated = pygame.transform.rotate(arm, angle)
+
+        pivot_offset = pygame.math.Vector2(pivot_x - W / 2, pivot_y - H / 2)
+        rotated_offset = pivot_offset.rotate(-angle)
+
+        center = (
+            shoulder_pos[0] - rotated_offset.x,
+            shoulder_pos[1] - rotated_offset.y,
+        )
+        screen.blit(rotated, rotated.get_rect(center=center))
 
     def shoot(self, target_pos: tuple[float, float]) -> list:
         direction = pygame.math.Vector2(
