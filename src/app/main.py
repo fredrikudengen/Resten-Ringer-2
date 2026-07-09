@@ -1,5 +1,4 @@
 import pygame
-from src.gamestates import StateMachine
 import os
 import sys
 
@@ -8,6 +7,9 @@ _src_dir = os.path.join(_project_root, "src")
 for _path in (_project_root, _src_dir):
     if _path not in sys.path:
         sys.path.insert(0, _path)
+
+from src.gamestates import StateMachine
+
 
 pygame.init()
 
