@@ -39,27 +39,10 @@ class Player(Entity):
         self.color = char.get('color', constants.PLAYER_COLOR)
         self.aim_angle: float = 0.0
         self._shoulder_world: tuple[int, int] = (0, 0)
+        self._last_mouse_pos: tuple[int, int] = (0, 0)
+        self._idle_since: int = 0
 
         super().__init__(x=0, y=0)
-
-        self.sprite = Sprite(
-            frames={
-                "side": "player/fredrik/side",
-                "up": "player/fredrik/up",
-                "down": "player/fredrik/down",
-                "idle_side": [f"player/fredrik/idle/side/{i}" for i in range(6)],
-                "idle_up": [f"player/fredrik/idle/up/{i}" for i in range(6)],
-                "idle_down": [f"player/fredrik/idle/down/{i}" for i in range(6)],
-                "walk_side": [f"player/fredrik/walk/side/{i}" for i in range(4)],
-                "walk_up": [f"player/fredrik/walk/up/{i}" for i in range(4)],
-                "walk_down": [f"player/fredrik/walk/down/{i}" for i in range(4)],
-            },
-            base_size=(self.width, self.height),
-            frame_durations={"idle_side": 400, "idle_up": 400, "idle_down": 400,
-                             "walk_side": 120, "walk_up": 120, "walk_down": 120},
-            fallback_color=self.color,
-        )
-        self._arm_surface: pygame.Surface | None = None  # lastes lazily
 
         self.sprite = Sprite(
             frames={
@@ -149,62 +132,6 @@ class Player(Entity):
     def draw(self, screen, camera):
         draw_rect = camera.apply(self.rect)
         mouse_pos = pygame.mouse.get_pos()
-        dx = mouse_pos[0] - draw_rect.centerx
-        dy = mouse_pos[1] - draw_rect.centery
-        aim_angle = math.degrees(math.atan2(-dy, dx))  # CCW fra høyre, standard math
-
-        flip_x = dx < 0
-
-        if 45 < aim_angle < 135:
-            frame = "up"
-        elif -135 < aim_angle < -45:
-            frame = "down"
-        else:
-            frame = "side"
-
-        scale = self.width / 32
-        shoulder_offset_x = int(21 * scale) - self.width // 2
-        shoulder_offset_y = int(17 * scale) - self.height // 2
-        if flip_x:
-            shoulder_offset_x = -shoulder_offset_x
-
-        shoulder = (
-            draw_rect.centerx + shoulder_offset_x,
-            draw_rect.centery + shoulder_offset_y,
-        )
-
-        self.sprite.draw(screen, draw_rect, frame=frame, flip_x=flip_x)
-        self._draw_arm(screen, shoulder, aim_angle, flip_x)
-
-    def _draw_arm(self, screen, shoulder_pos, angle, flip_x):
-        if self._arm_surface is None:
-            raw = assets.get("player/fredrik/arm")
-            if raw is None:
-                return
-            s = self.width / 32
-            self._arm_surface = pygame.transform.scale(
-                raw, (int(raw.get_width() * s), int(raw.get_height() * s))
-            )
-
-        arm = self._arm_surface
-        s = self.width / 32
-        W, H = arm.get_size()
-        pivot_x = 0
-        pivot_y = int(5 * s)
-
-        if flip_x:
-            arm = pygame.transform.flip(arm, False, True)
-            pivot_y = H - pivot_y  # speil pivot_y etter vertikal flip
-        rotated = pygame.transform.rotate(arm, angle)
-
-        pivot_offset = pygame.math.Vector2(pivot_x - W / 2, pivot_y - H / 2)
-        rotated_offset = pivot_offset.rotate(-angle)
-
-        center = (
-            shoulder_pos[0] - rotated_offset.x,
-            shoulder_pos[1] - rotated_offset.y,
-        )
-        screen.blit(rotated, rotated.get_rect(center=center))
 
         dx = mouse_pos[0] - draw_rect.centerx
         dy = mouse_pos[1] - draw_rect.centery
@@ -212,12 +139,39 @@ class Player(Entity):
 
         self.flip_x = dx < 0
 
-        if 45 < aim_angle < 135:
-            frame = "up"
-        elif -135 < aim_angle < -45:
-            frame = "down"
+        mouse_moved = (
+                abs(mouse_pos[0] - self._last_mouse_pos[0]) > 2 or
+                abs(mouse_pos[1] - self._last_mouse_pos[1]) > 2
+        )
+        self._last_mouse_pos = mouse_pos
+
+        now = pygame.time.get_ticks()
+
+        if not self.is_moving and not mouse_moved:
+            if self._idle_since == 0:
+                self._idle_since = now
+            is_idle = (now - self._idle_since) > 1000
         else:
-            frame = "side"
+            self._idle_since = 0
+            is_idle = False
+
+        if self.is_moving:
+            prefix = "walk_"
+        elif is_idle:
+            prefix = "idle_"
+        else:
+            prefix = ""
+
+        if 45 < aim_angle < 135:
+            frame = prefix + "up"
+        elif -135 < aim_angle < -45:
+            frame = prefix + "down"
+        else:
+            frame = prefix + "side"
+
+        WALK_BOUNCE = [0, -4, 0, -4]
+        walk_frame = self.sprite.current_frame_index(frame) if self.is_moving else 0
+        y_offset = WALK_BOUNCE[walk_frame % 4] if self.is_moving else 0
 
         scale = self.width / 32
         shoulder_offset_x = int(21 * scale) - self.width // 2
@@ -235,8 +189,8 @@ class Player(Entity):
             draw_rect.centery + shoulder_offset_y,
         )
 
-        self.sprite.draw(screen, draw_rect, frame=frame, flip_x=self.flip_x)
-        self._draw_arm(screen, shoulder, aim_angle, self.flip_x)
+        self.sprite.draw(screen, draw_rect, frame=frame, flip_x=self.flip_x, y_offset=y_offset)
+        self._draw_arm(screen, (shoulder[0], shoulder[1] + y_offset), aim_angle, self.flip_x)
 
     def _draw_arm(self, screen, shoulder_pos, angle, flip_x):
         if self._arm_surface is None:
@@ -251,8 +205,7 @@ class Player(Entity):
         arm = self._arm_surface
         s = self.width / 32
         W, H = arm.get_size()
-
-        pivot_x = 0
+        pivot_x = 1
         pivot_y = int(5 * s)
 
         if flip_x:
@@ -332,7 +285,7 @@ class Player(Entity):
         self.dash_end_time     = now + self._dash_duration
         self.dash_cooldown_end = now + self.dash_cooldown
 
-        sound.play("self.char_name/dash")
+        sound.play(f"{self.char_name}/dash")
 
     def update_dash(self, obstacles):
         now = pygame.time.get_ticks()
