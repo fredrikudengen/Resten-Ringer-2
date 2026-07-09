@@ -285,7 +285,7 @@ class Player(Entity):
         self.dash_end_time     = now + self._dash_duration
         self.dash_cooldown_end = now + self.dash_cooldown
 
-        sound.play(f"self.char_name/dash")
+        sound.play(f"{self.char_name}/dash")
 
     def update_dash(self, obstacles):
         now = pygame.time.get_ticks()
@@ -326,6 +326,7 @@ class Player(Entity):
     # ---------- HELPERS ----------
 
     def _level_up(self):
+        sound.play("ui/level_up")
         self.level += 1
 
         self.health     += constants.XP_HP_BONUS_PER_LEVEL

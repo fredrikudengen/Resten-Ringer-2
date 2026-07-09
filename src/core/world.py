@@ -29,6 +29,7 @@ class World:
 
             enemy.move(player, self.obstacles, self.current_room, dt_ms)
             enemy.apply_separation(self.enemies, obstacles)
+            enemy.apply_player_separation(player, obstacles)
 
             pending = getattr(enemy, 'pending_bullets', None)
             if pending:

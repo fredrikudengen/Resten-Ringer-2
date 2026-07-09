@@ -118,3 +118,38 @@ class MovementMixin:
             if self.check_collision(obstacles):
                 self.pos.y -= pushy * strength
                 self._sync_rect_from_pos()
+
+    def apply_player_separation(self, player, obstacles):
+        """Myk dytting av fienden bort fra spilleren – kun aktiv under "chase". Spilleren påvirkes ikke."""
+        if self.state != "chase":
+            return
+
+        strength = 0.08
+        radius = (self.width + self.height) / 4 + (player.width + player.height) / 4 + 12
+        r2 = float(radius * radius)
+
+        dx = self.pos.x - player.rect.centerx
+        dy = self.pos.y - player.rect.centery
+        dist2 = dx * dx + dy * dy
+        if not (0 < dist2 < r2):
+            return
+
+        weight = 1.0 - (dist2 / r2)
+        pushx = dx * weight
+        pushy = dy * weight
+
+        # X-akse
+        if pushx:
+            self.pos.x += pushx * strength
+            self._sync_rect_from_pos()
+            if self.check_collision(obstacles):
+                self.pos.x -= pushx * strength
+                self._sync_rect_from_pos()
+
+        # Y-akse
+        if pushy:
+            self.pos.y += pushy * strength
+            self._sync_rect_from_pos()
+            if self.check_collision(obstacles):
+                self.pos.y -= pushy * strength
+                self._sync_rect_from_pos()
