@@ -39,8 +39,11 @@ class Player(Entity):
         self.color = char.get('color', constants.PLAYER_COLOR)
         self.aim_angle: float = 0.0
         self._shoulder_world: tuple[int, int] = (0, 0)
+<<<<<<< HEAD
         self._last_mouse_pos: tuple[int, int] = (0, 0)
         self._idle_since: int = 0
+=======
+>>>>>>> d2fd476fac7dbc55168b05f3303894c43b334ca1
 
         super().__init__(x=0, y=0)
 
@@ -49,6 +52,7 @@ class Player(Entity):
                 "side": "player/fredrik/side",
                 "up": "player/fredrik/up",
                 "down": "player/fredrik/down",
+<<<<<<< HEAD
                 "idle_side": [f"player/fredrik/idle/side/{i}" for i in range(6)],
                 "idle_up": [f"player/fredrik/idle/up/{i}" for i in range(6)],
                 "idle_down": [f"player/fredrik/idle/down/{i}" for i in range(6)],
@@ -62,6 +66,12 @@ class Player(Entity):
             fallback_color=self.color,
         )
 
+=======
+            },
+            base_size=(self.width, self.height),
+            fallback_color=self.color
+        )
+>>>>>>> d2fd476fac7dbc55168b05f3303894c43b334ca1
         self._arm_surface: pygame.Surface | None = None  # lastes lazily
 
         self.selected_character = selected_character
@@ -139,6 +149,7 @@ class Player(Entity):
 
         self.flip_x = dx < 0
 
+<<<<<<< HEAD
         mouse_moved = (
                 abs(mouse_pos[0] - self._last_mouse_pos[0]) > 2 or
                 abs(mouse_pos[1] - self._last_mouse_pos[1]) > 2
@@ -172,6 +183,14 @@ class Player(Entity):
         WALK_BOUNCE = [0, -4, 0, -4]
         walk_frame = self.sprite.current_frame_index(frame) if self.is_moving else 0
         y_offset = WALK_BOUNCE[walk_frame % 4] if self.is_moving else 0
+=======
+        if 45 < aim_angle < 135:
+            frame = "up"
+        elif -135 < aim_angle < -45:
+            frame = "down"
+        else:
+            frame = "side"
+>>>>>>> d2fd476fac7dbc55168b05f3303894c43b334ca1
 
         scale = self.width / 32
         shoulder_offset_x = int(21 * scale) - self.width // 2
@@ -189,8 +208,13 @@ class Player(Entity):
             draw_rect.centery + shoulder_offset_y,
         )
 
+<<<<<<< HEAD
         self.sprite.draw(screen, draw_rect, frame=frame, flip_x=self.flip_x, y_offset=y_offset)
         self._draw_arm(screen, (shoulder[0], shoulder[1] + y_offset), aim_angle, self.flip_x)
+=======
+        self.sprite.draw(screen, draw_rect, frame=frame, flip_x=self.flip_x)
+        self._draw_arm(screen, shoulder, aim_angle, self.flip_x)
+>>>>>>> d2fd476fac7dbc55168b05f3303894c43b334ca1
 
     def _draw_arm(self, screen, shoulder_pos, angle, flip_x):
         if self._arm_surface is None:
@@ -205,7 +229,11 @@ class Player(Entity):
         arm = self._arm_surface
         s = self.width / 32
         W, H = arm.get_size()
+<<<<<<< HEAD
         pivot_x = 1
+=======
+        pivot_x = 0
+>>>>>>> d2fd476fac7dbc55168b05f3303894c43b334ca1
         pivot_y = int(5 * s)
 
         if flip_x:
