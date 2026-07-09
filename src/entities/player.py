@@ -4,6 +4,8 @@ import pygame
 from src.core import constants
 from view.asset_manager import assets
 from view.sprite import Sprite
+from view.asset_manager import assets
+from view.sprite import Sprite
 from .entity import Entity
 from components.gun import Pistol, Shotgun, MachineGun, SniperRifle
 from gamestates.char_select import CHARACTERS
@@ -19,7 +21,6 @@ _GUN_MAP = {
 class Player(Entity):
 
     def __init__(self, selected_character: int = 0, hud=None):
-
         self.hit = False
         self.hit_timer = None
         char = CHARACTERS[selected_character]
@@ -34,8 +35,21 @@ class Player(Entity):
         self.dash_speed = char.get('dash_speed')
         self.knockback_friction = 0.75
         self.color = char.get('color', constants.PLAYER_COLOR)
+        self.aim_angle: float = 0.0
+        self._shoulder_world: tuple[int, int] = (0, 0)
 
         super().__init__(x=0, y=0)
+
+        self.sprite = Sprite(
+            frames={
+                "side": "player/fredrik/side",
+                "up": "player/fredrik/up",
+                "down": "player/fredrik/down",
+            },
+            base_size=(self.width, self.height),
+            fallback_color=self.color
+        )
+        self._arm_surface: pygame.Surface | None = None  # lastes lazily
 
         self.sprite = Sprite(
             frames={
@@ -97,6 +111,20 @@ class Player(Entity):
         """Skaleres: 100, 150, 225, ..."""
         return int(constants.XP_BASE * (constants.XP_SCALE ** (self.level - 1)))
 
+    @property
+    def muzzle_pos(self) -> tuple[int, int]:
+        s = self.width / 32
+        # Offset fra pivot (0,5) til munning (14,1) i sprite-space: (14, -4)
+        # Negativ y fordi munningen er 4px OVER pivot
+        y_off = 4 * s if not self.flip_x else -4 * s
+        offset = pygame.math.Vector2(14 * s, y_off)
+
+        rotated = offset.rotate(self.aim_angle)
+
+        mx = self._shoulder_world[0] + rotated.x
+        my = self._shoulder_world[1] - rotated.y  # screen y er invertert
+        return (int(mx), int(my))
+
     # ========== PUBLIC API ==========
 
     def draw(self, screen, camera):
@@ -107,28 +135,27 @@ class Player(Entity):
         dy = mouse_pos[1] - draw_rect.centery
         aim_angle = math.degrees(math.atan2(-dy, dx))  # CCW fra høyre, standard math
 
-        flip_x = dx < 0
+        self.flip_x = dx < 0
 
         if 45 < aim_angle < 135:
-            frame = "up"
+            self.frame = "up"
+        elif -135 < aim_angle < -45:
+            self.frame = "down"
+        mouse_pos = pygame.mouse.get_pos()
+
+        dx = mouse_pos[0] - draw_rect.centerx
+        dy = mouse_pos[1] - draw_rect.centery
+        aim_angle = math.degrees(math.atan2(-dy, dx))  # CCW fra høyre, standard math
+
+        self.flip_x = dx < 0
+
+        if 45 < aim_angle < 135:
+            self.frame = "up"
         elif -135 < aim_angle < -45:
             frame = "down"
         else:
-            frame = "side"
-
-        scale = self.width / 32
-        shoulder_offset_x = int(21 * scale) - self.width // 2
-        shoulder_offset_y = int(17 * scale) - self.height // 2
-        if flip_x:
-            shoulder_offset_x = -shoulder_offset_x
-
-        shoulder = (
-            draw_rect.centerx + shoulder_offset_x,
-            draw_rect.centery + shoulder_offset_y,
-        )
-
-        self.sprite.draw(screen, draw_rect, frame=frame, flip_x=flip_x)
-        self._draw_arm(screen, shoulder, aim_angle, flip_x)
+            color = self.color
+        pygame.draw.rect(screen, color, draw_rect)
 
     def _draw_arm(self, screen, shoulder_pos, angle, flip_x):
         if self._arm_surface is None:
@@ -160,14 +187,14 @@ class Player(Entity):
         )
         screen.blit(rotated, rotated.get_rect(center=center))
 
-    def shoot(self, target_pos: tuple[float, float]) -> list:
+    def shoot(self, target_pos):
         direction = pygame.math.Vector2(
-            target_pos[0] - self.rect.centerx,
-            target_pos[1] - self.rect.centery,
+            target_pos[0] - self.muzzle_pos[0],
+            target_pos[1] - self.muzzle_pos[1],
         )
         if direction.length_squared() == 0:
             return []
-        return self.gun.shoot(self.rect.center, direction)
+        return self.gun.shoot(self.muzzle_pos, direction)
 
     def gain_xp(self, amount: int):
         if amount <= 0:
@@ -223,7 +250,7 @@ class Player(Entity):
         self.dash_end_time     = now + self._dash_duration
         self.dash_cooldown_end = now + self.dash_cooldown
 
-        sound.play(f"self.char_name/dash")
+        sound.play("self.char_name/dash")
 
     def update_dash(self, obstacles):
         now = pygame.time.get_ticks()
