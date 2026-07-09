@@ -70,7 +70,7 @@ class Gun:
         self._last_shot_at = pygame.time.get_ticks()
         self._consume_ammo(1)
         gun_name = self.name.lower().replace(" ", "_")
-        sound.play(f"{gun_name}/shoot")
+        sound.play(f"weapons/{gun_name}/shoot")
         return self._fire(origin, direction)
 
     # ---------- Helpers ----------
