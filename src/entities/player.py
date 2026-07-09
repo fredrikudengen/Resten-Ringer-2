@@ -60,9 +60,9 @@ class Player(Entity):
             frame_durations={"idle_side": 400, "idle_up": 400, "idle_down": 400},
             fallback_color=self.color,
             gait={
-                "walk_side": {"cycle_ms": 480, "bounce": 4, "sway": 2},
-                "walk_up":   {"cycle_ms": 480, "bounce": 4, "sway": 2},
-                "walk_down": {"cycle_ms": 480, "bounce": 4, "sway": 2},
+                "walk_side": {"cycle_ms": 480, "bounce": 6, "sway": -4, "lean": 3},
+                "walk_up":   {"cycle_ms": 480, "bounce": 6, "sway": -4, "lean": 3},
+                "walk_down": {"cycle_ms": 480, "bounce": 6, "sway": -4, "lean": 3},
             },
         )
 

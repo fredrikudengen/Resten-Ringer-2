@@ -53,7 +53,7 @@ class Sprite:
         alpha: int = 255,
         y_offset: int = 0,
     ) -> tuple[int, int]:
-        path, x_offset, y_offset = self._resolve_frame(frame, flip_x, y_offset)
+        path, x_offset, y_offset, angle = self._resolve_frame(frame, flip_x, y_offset, angle)
 
         base = self._get_surface(path, flip_x) if path else None
 
@@ -72,15 +72,16 @@ class Sprite:
         return x_offset, y_offset
 
     def _resolve_frame(
-        self, frame: str, flip_x: bool, y_offset: int
-    ) -> tuple[str | None, int, int]:
+        self, frame: str, flip_x: bool, y_offset: int, angle: float
+    ) -> tuple[str | None, int, int, float]:
         if frame in self._gait:
-            path, sway_x, bounce_y = self._gait_frame(frame)
+            path, sway_x, bounce_y, lean_angle = self._gait_frame(frame)
             if flip_x:
                 sway_x = -sway_x
-            return path, sway_x, bounce_y
+                lean_angle = -lean_angle
+            return path, sway_x, bounce_y, lean_angle
 
-        return self._current_path(frame), 0, y_offset
+        return self._current_path(frame), 0, y_offset, angle
 
     @staticmethod
     def _apply_transforms(base, scale, angle, tint, alpha) -> pygame.Surface:
@@ -139,12 +140,12 @@ class Sprite:
     def current_frame_index(self, state: str) -> int:
         return self._anim_index.get(state, 0)
 
-    def _gait_frame(self, state: str) -> tuple[str | None, int, int]:
+    def _gait_frame(self, state: str) -> tuple[str | None, int, int, float]:
         cfg = self._gait[state]
         frames = self._animations[state]  # må ha nøyaktig 2 elementer
 
         now = pygame.time.get_ticks()
-        if self._last_frame_name != state and state not in self._gait_phase_start:
+        if self._last_frame_name != state:
             self._gait_phase_start[state] = now
 
         cycle_ms = cfg["cycle_ms"]
@@ -153,11 +154,12 @@ class Sprite:
 
         bounce_y = -cfg["bounce"] * abs(math.sin(theta))
         sway_x = cfg["sway"] * math.cos(theta)
+        lean_angle = cfg.get("lean", 0) * math.cos(theta)
 
         idx = 0 if math.cos(theta) >= 0 else 1
         self._anim_index[state] = idx
 
-        return frames[idx], round(sway_x), round(bounce_y)
+        return frames[idx], round(sway_x), round(bounce_y), lean_angle
 
     # ------------------------------------------------------------------ #
     #  Surface-håndtering
