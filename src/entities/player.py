@@ -52,14 +52,18 @@ class Player(Entity):
                 "idle_side": [f"player/fredrik/idle/side/{i}" for i in range(6)],
                 "idle_up": [f"player/fredrik/idle/up/{i}" for i in range(6)],
                 "idle_down": [f"player/fredrik/idle/down/{i}" for i in range(6)],
-                "walk_side": [f"player/fredrik/walk/side/{i}" for i in range(4)],
-                "walk_up": [f"player/fredrik/walk/up/{i}" for i in range(4)],
-                "walk_down": [f"player/fredrik/walk/down/{i}" for i in range(4)],
+                "walk_side": [f"player/fredrik/walk/side/{i}" for i in range(2)],
+                "walk_up": [f"player/fredrik/walk/up/{i}" for i in range(2)],
+                "walk_down": [f"player/fredrik/walk/down/{i}" for i in range(2)],
             },
             base_size=(self.width, self.height),
-            frame_durations={"idle_side": 400, "idle_up": 400, "idle_down": 400,
-                             "walk_side": 120, "walk_up": 120, "walk_down": 120},
+            frame_durations={"idle_side": 400, "idle_up": 400, "idle_down": 400},
             fallback_color=self.color,
+            gait={
+                "walk_side": {"cycle_ms": 480, "bounce": 4, "sway": 2},
+                "walk_up":   {"cycle_ms": 480, "bounce": 4, "sway": 2},
+                "walk_down": {"cycle_ms": 480, "bounce": 4, "sway": 2},
+            },
         )
 
         self._arm_surface: pygame.Surface | None = None  # lastes lazily
@@ -169,10 +173,6 @@ class Player(Entity):
         else:
             frame = prefix + "side"
 
-        WALK_BOUNCE = [0, -4, 0, -4]
-        walk_frame = self.sprite.current_frame_index(frame) if self.is_moving else 0
-        y_offset = WALK_BOUNCE[walk_frame % 4] if self.is_moving else 0
-
         scale = self.width / 32
         shoulder_offset_x = int(21 * scale) - self.width // 2
         shoulder_offset_y = (int(17 * scale) - self.height // 2)
@@ -189,8 +189,8 @@ class Player(Entity):
             draw_rect.centery + shoulder_offset_y,
         )
 
-        self.sprite.draw(screen, draw_rect, frame=frame, flip_x=self.flip_x, y_offset=y_offset)
-        self._draw_arm(screen, (shoulder[0], shoulder[1] + y_offset), aim_angle, self.flip_x)
+        x_offset, y_offset = self.sprite.draw(screen, draw_rect, frame=frame, flip_x=self.flip_x)
+        self._draw_arm(screen, (shoulder[0] + x_offset, shoulder[1] + y_offset), aim_angle, self.flip_x)
 
     def _draw_arm(self, screen, shoulder_pos, angle, flip_x):
         if self._arm_surface is None:
