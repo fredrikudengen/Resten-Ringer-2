@@ -84,39 +84,52 @@ class MovementMixin:
                         return True
             return False
 
+    def _separation_push(self, target_x, target_y, radius, strength):
+        """Regner ut push-vektor bort fra (target_x, target_y).
+
+        Maks styrke ved dist=0, null ved dist>=radius. Fallback-retning
+        Vector2(1, 0) når self.pos er nøyaktig på target (samme mønster
+        som apply_knockback i entity.py).
+        """
+        direction = Vector2(self.pos.x - target_x, self.pos.y - target_y)
+        dist = direction.length()
+        if dist >= radius:
+            return 0.0, 0.0
+        if dist > 0:
+            direction = direction.normalize()
+        else:
+            direction = Vector2(1, 0)
+
+        magnitude = (radius - dist) * strength
+        return direction.x * magnitude, direction.y * magnitude
+
     def apply_separation(self, others, obstacles):
         """Myk dytting bort fra andre fiender – respekterer vegger."""
         strength = 0.08
         radius = 64
-        self_x, self_y = self.pos.x, self.pos.y
         pushx = pushy = 0.0
-        r2 = float(radius * radius)
 
         for other in others:
             if other is self or not other.alive:
                 continue
-            dx = self_x - other.pos.x
-            dy = self_y - other.pos.y
-            dist2 = dx * dx + dy * dy
-            if 0 < dist2 < r2:
-                weight = 1.0 - (dist2 / r2)
-                pushx += dx * weight
-                pushy += dy * weight
+            ox, oy = self._separation_push(other.pos.x, other.pos.y, radius, strength)
+            pushx += ox
+            pushy += oy
 
         # X-akse
         if pushx:
-            self.pos.x += pushx * strength
+            self.pos.x += pushx
             self._sync_rect_from_pos()
             if self.check_collision(obstacles):
-                self.pos.x -= pushx * strength
+                self.pos.x -= pushx
                 self._sync_rect_from_pos()
 
         # Y-akse
         if pushy:
-            self.pos.y += pushy * strength
+            self.pos.y += pushy
             self._sync_rect_from_pos()
             if self.check_collision(obstacles):
-                self.pos.y -= pushy * strength
+                self.pos.y -= pushy
                 self._sync_rect_from_pos()
 
     def apply_player_separation(self, player, obstacles):
@@ -125,31 +138,22 @@ class MovementMixin:
             return
 
         strength = 0.08
-        radius = (self.width + self.height) / 4 + (player.width + player.height) / 4 + 12
-        r2 = float(radius * radius)
+        radius = (self.width + self.height) / 4 + (player.width + player.height) / 4 + 24
 
-        dx = self.pos.x - player.rect.centerx
-        dy = self.pos.y - player.rect.centery
-        dist2 = dx * dx + dy * dy
-        if not (0 < dist2 < r2):
-            return
-
-        weight = 1.0 - (dist2 / r2)
-        pushx = dx * weight
-        pushy = dy * weight
+        pushx, pushy = self._separation_push(player.rect.centerx, player.rect.centery, radius, strength)
 
         # X-akse
         if pushx:
-            self.pos.x += pushx * strength
+            self.pos.x += pushx
             self._sync_rect_from_pos()
             if self.check_collision(obstacles):
-                self.pos.x -= pushx * strength
+                self.pos.x -= pushx
                 self._sync_rect_from_pos()
 
         # Y-akse
         if pushy:
-            self.pos.y += pushy * strength
+            self.pos.y += pushy
             self._sync_rect_from_pos()
             if self.check_collision(obstacles):
-                self.pos.y -= pushy * strength
+                self.pos.y -= pushy
                 self._sync_rect_from_pos()
