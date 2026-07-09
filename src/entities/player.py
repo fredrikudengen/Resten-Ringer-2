@@ -21,6 +21,7 @@ _GUN_MAP = {
 class Player(Entity):
 
     def __init__(self, selected_character: int = 0, hud=None):
+
         self.hit = False
         self.hit_timer = None
         char = CHARACTERS[selected_character]
@@ -135,27 +136,58 @@ class Player(Entity):
         dy = mouse_pos[1] - draw_rect.centery
         aim_angle = math.degrees(math.atan2(-dy, dx))  # CCW fra høyre, standard math
 
-        self.flip_x = dx < 0
+        flip_x = dx < 0
 
         if 45 < aim_angle < 135:
-            self.frame = "up"
-        elif -135 < aim_angle < -45:
-            self.frame = "down"
-        mouse_pos = pygame.mouse.get_pos()
-
-        dx = mouse_pos[0] - draw_rect.centerx
-        dy = mouse_pos[1] - draw_rect.centery
-        aim_angle = math.degrees(math.atan2(-dy, dx))  # CCW fra høyre, standard math
-
-        self.flip_x = dx < 0
-
-        if 45 < aim_angle < 135:
-            self.frame = "up"
+            frame = "up"
         elif -135 < aim_angle < -45:
             frame = "down"
         else:
-            color = self.color
-        pygame.draw.rect(screen, color, draw_rect)
+            frame = "side"
+
+        scale = self.width / 32
+        shoulder_offset_x = int(21 * scale) - self.width // 2
+        shoulder_offset_y = int(17 * scale) - self.height // 2
+        if flip_x:
+            shoulder_offset_x = -shoulder_offset_x
+
+        shoulder = (
+            draw_rect.centerx + shoulder_offset_x,
+            draw_rect.centery + shoulder_offset_y,
+        )
+
+        self.sprite.draw(screen, draw_rect, frame=frame, flip_x=flip_x)
+        self._draw_arm(screen, shoulder, aim_angle, flip_x)
+
+    def _draw_arm(self, screen, shoulder_pos, angle, flip_x):
+        if self._arm_surface is None:
+            raw = assets.get("player/fredrik/arm")
+            if raw is None:
+                return
+            s = self.width / 32
+            self._arm_surface = pygame.transform.scale(
+                raw, (int(raw.get_width() * s), int(raw.get_height() * s))
+            )
+
+        arm = self._arm_surface
+        s = self.width / 32
+        W, H = arm.get_size()
+        pivot_x = 0
+        pivot_y = int(5 * s)
+
+        if flip_x:
+            arm = pygame.transform.flip(arm, False, True)
+            pivot_y = H - pivot_y  # speil pivot_y etter vertikal flip
+        rotated = pygame.transform.rotate(arm, angle)
+
+        pivot_offset = pygame.math.Vector2(pivot_x - W / 2, pivot_y - H / 2)
+        rotated_offset = pivot_offset.rotate(-angle)
+
+        center = (
+            shoulder_pos[0] - rotated_offset.x,
+            shoulder_pos[1] - rotated_offset.y,
+        )
+        screen.blit(rotated, rotated.get_rect(center=center))
 
     def _draw_arm(self, screen, shoulder_pos, angle, flip_x):
         if self._arm_surface is None:
