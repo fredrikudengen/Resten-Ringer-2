@@ -82,6 +82,11 @@ CHAR_TO_SPAWN: dict[str, str] = {
     'D': 'door'
 }
 
+# floor music
+FLOOR_MUSIC: dict[int, str] = {
+    1: "kjeller",
+}
+
 # hud
 HUD_COLORS: dict[str, tuple] = {
     'panel': (15, 15, 20, 200),

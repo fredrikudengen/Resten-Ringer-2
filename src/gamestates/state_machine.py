@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import pygame
 
+from src.core.constants import FLOOR_MUSIC
+from src.view.sound_manager import sound
+
 from .basestate import BaseState, State
 from .boss_reward import BossRewardState
 from .floor_transition import FloorTransitionState
@@ -52,6 +55,11 @@ class StateMachine:
         if state:
             state.draw(self.screen)
 
+    def play_music_for_floor(self, floor_number: int):
+        track = FLOOR_MUSIC.get(floor_number)
+        if track:
+            sound.play_music(track)
+
     def transition(self, new_state: State):
         self._current = new_state
         state = self._states.get(new_state)
@@ -71,6 +79,7 @@ class StateMachine:
         self.hud          = HUD()
         self.player       = Player(selected_character=self.selected_character, hud=self.hud)
         self.room_manager = RoomManager(self.world, self.player, self.camera)
+        self.play_music_for_floor(self.room_manager.floor_map.floor_number)
 
         playing          = PlayingState(self)
         game_over        = GameOverState(self)

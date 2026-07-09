@@ -25,6 +25,8 @@ class FloorTransitionState(BaseState):
         self._entered_at = pygame.time.get_ticks()
 
         floor_num = self._sm.room_manager.floor_map.floor_number
+        self._sm.play_music_for_floor(floor_num)
+
         self._title_surf = self._font_floor.render(
             f"FLOOR {floor_num}", True, C["title"]
         )

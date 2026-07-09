@@ -16,7 +16,7 @@ class SoundManager:
         self._initialized  = False
 
         self._throttle_ms  = self.DEFAULT_THROTTLE_MS
-        self._sfx_volume   = 0.7
+        self._sfx_volume   = 0.1
         self._music_volume = 0.5
 
     # ------------------------------------------------------------------ #
