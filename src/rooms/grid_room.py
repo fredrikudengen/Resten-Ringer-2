@@ -2,7 +2,7 @@ import copy
 
 import pygame
 
-from src.core import constants
+from core import constants
 
 
 class GridRoom:

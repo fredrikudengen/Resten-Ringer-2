@@ -1,6 +1,6 @@
 import pygame
-from src.core import constants
-from src.view.tileset import tileset
+from core import constants
+from view.tileset import tileset
 
 
 class Door:

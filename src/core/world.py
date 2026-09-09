@@ -199,6 +199,6 @@ class World:
 
     def _resolve_powerup_type(self, type_name: str):
         if type_name in POWERUP_TYPES:
-            return POWERUP_TYPES
+            return POWERUP_TYPES[type_name]
         print(f"Warning: unknown powerup type '{type_name}', falling back to Powerup")
         return POWERUP_TYPES["Powerup"]

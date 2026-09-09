@@ -1,5 +1,5 @@
 import random
-from src.entities import (
+from entities import (
     FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy,
     AssassinEnemy, BruteEnemy, SwarmEnemy, ShooterEnemy, MarksmanEnemy
 )

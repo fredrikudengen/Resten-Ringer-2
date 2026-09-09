@@ -4,56 +4,7 @@ import pygame
 
 from .basestate import BaseState, State
 from .ui_helpers import Button, draw_panel, C
-
-CHARACTERS: list[dict] = [
-    {
-        'name':          'Fredrik',
-        'description':   "Med sin pålitelige pistol er han klar for enhver situasjon.",
-        'color':         (100, 180, 255),
-        'max_health':    100,
-        'speed':         7,
-        'size':          (96, 96),
-        'gun':           'Pistol',
-        'dash_cooldown': 1300,
-        'dash_speed':    8,
-    },
-    {
-        'name':          'Johanne',
-        'description':   "Lynende rask. Ikke kom på kant med henne.",
-        'color':         (180, 100, 255),
-        'max_health':    80,
-        'health':        'max_health',
-        'speed':         9,
-        'size':          (56, 56),
-        'dash_speed':    10,
-        'gun':           'MachineGun',
-        'dash_cooldown': 1000,
-    },
-    {
-        'name':          'Jonathan',
-        'description':   "Ikke kom for nærme, hvis ikke du vil spise bly.",
-        'color':         (255, 160, 60),
-        'max_health':    120,
-        'health':        'max_health',
-        'speed':         6,
-        'size':          (80, 80),
-        'dash_speed':    9,
-        'gun':           'Shotgun',
-        'dash_cooldown': 1800,
-    },
-    {
-        'name':          'Leila',
-        'description':   "Presis og skarp, et skudd er alt hun trenger.",
-        'color':         (80, 220, 160),
-        'max_health':    80,
-        'health':        'max_health',
-        'dash_speed':    8,
-        'speed':         7,
-        'size':          (48, 48),
-        'gun':           'SniperRifle',
-        'dash_cooldown': 1600,
-    },
-]
+from character_data import CHARACTERS
 
 _CARD_W = 200
 _CARD_H = 340

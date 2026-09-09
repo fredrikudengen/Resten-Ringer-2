@@ -1,7 +1,7 @@
 import random
 
 import pygame
-from src.core import constants
+from core import constants
 
 from ..entity import Entity
 from .pathfinding import PathfindingMixin
