@@ -178,6 +178,8 @@ class RangedEnemy(Enemy):
         if self.state == "reload":
             self._draw_reload_bar(screen, draw_rect)
 
+        self._draw_healthbar(screen, camera)
+
     # =========================================================
     # PRIVATE HELPERS
     # =========================================================
