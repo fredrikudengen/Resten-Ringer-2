@@ -111,26 +111,31 @@ class Entity:
         dx, dy = a1 - b1, a2 - b2
         return dx * dx + dy * dy
 
-    def update_knockback(self, obstacles):
+    def update_knockback(self, obstacles, dt_ms=1000.0 / 60.0):
         """Apply knockback velocity with friction. Call every frame."""
         if self.knockback_velocity.length_squared() < 0.5:
             self.knockback_velocity.update(0, 0)
             return
 
-        old_x = self.rect.x
-        self.rect.x += int(self.knockback_velocity.x)
+        scale = dt_ms / (1000.0 / 60.0)
+
+        old_x = self.pos.x
+        self.pos.x += self.knockback_velocity.x * scale
+        self._sync_rect_from_pos()
         if any(self.rect.colliderect(obs) for obs in obstacles):
-            self.rect.x = old_x
+            self.pos.x = old_x
+            self._sync_rect_from_pos()
             self.knockback_velocity.x = 0
 
-        old_y = self.rect.y
-        self.rect.y += int(self.knockback_velocity.y)
+        old_y = self.pos.y
+        self.pos.y += self.knockback_velocity.y * scale
+        self._sync_rect_from_pos()
         if any(self.rect.colliderect(obs) for obs in obstacles):
-            self.rect.y = old_y
+            self.pos.y = old_y
+            self._sync_rect_from_pos()
             self.knockback_velocity.y = 0
 
-        self.sync_pos_from_rect()
-        self.knockback_velocity *= self.knockback_friction
+        self.knockback_velocity *= self.knockback_friction ** scale
 
     def apply_knockback(self, source_rect, strength):
         direction = pygame.math.Vector2(

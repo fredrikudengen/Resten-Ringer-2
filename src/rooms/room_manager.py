@@ -112,11 +112,18 @@ class RoomManager:
                     self._go_to_next_room(side)
                     break
 
-    def draw(self, screen):
+    def draw_doors(self, screen):
         for d in self.doors:
             d.door.draw(screen, self.camera)
+
+    def draw_chest(self, screen):
         if self.chest:
             self.chest.draw(screen, self.camera)
+
+    def draw(self, screen):
+        """Convenience for states that don't need to interleave with entities."""
+        self.draw_doors(screen)
+        self.draw_chest(screen)
 
     def advance_after_boss(self):
         """Called by BossRewardState after the player picks a reward."""
@@ -213,10 +220,10 @@ class RoomManager:
                     continue
                 x = gx * constants.TILE_SIZE
                 y = gy * constants.TILE_SIZE
-                self._handle_tag(tag, x, y, gx, gy)
+                self._handle_tag(tag, x, y, gx, gy, room)
                 room.spawns[gy][gx] = None
 
-    def _handle_tag(self, tag, x, y, gx, gy):
+    def _handle_tag(self, tag, x, y, gx, gy, room):
         if tag in TAG_TO_ENEMY:
             enemy = self.world.add_enemy(x, y, enemy_type=TAG_TO_ENEMY[tag])
             scale_enemy(enemy, self.progression_level)
@@ -228,13 +235,15 @@ class RoomManager:
         elif tag == 'powerup':
             self.world.add_powerup(x, y, powerup_type=choose_powerup())
         elif tag == 'door':
-            self.doors.append(DoorEntry(door=Door(x, y), grid_pos=(gx, gy)))
+            side = self._door_side(room, gx, gy)
+            self.doors.append(DoorEntry(door=Door(x, y, side=side), grid_pos=(gx, gy)))
 
     def _place_player(self, room, entry_side):
         if room.room_type == "start":
             cx = (room.cols * constants.TILE_SIZE) // 2 - self.player.rect.width // 2
             cy = (room.rows * constants.TILE_SIZE) // 2 - self.player.rect.height // 2
             self.player.rect.topleft = (cx, cy)
+            self.player.sync_pos_from_rect()
             return
 
         spawn_side = constants.OPPOSITE.get(entry_side) if entry_side else None
@@ -242,6 +251,7 @@ class RoomManager:
             self.player.rect.topleft = self._pick_spawn_near_door(room, spawn_side)
         else:
             self.player.rect.topleft = (constants.TILE_SIZE * 2, constants.TILE_SIZE * 2)
+        self.player.sync_pos_from_rect()
 
     # ========== HELPERS ==========
 

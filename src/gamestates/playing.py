@@ -38,7 +38,7 @@ class PlayingState(BaseState):
     def update(self, dt: int):
         sm = self._sm
 
-        player_input(sm.player, sm.world.obstacles, sm.camera)
+        player_input(sm.player, sm.world.obstacles, sm.camera, dt)
         sm.camera.update(sm.player.rect)
         sm.world.update(dt, sm.player, sm.world.obstacles)
         sm.room_manager.update(sm.player)
@@ -76,9 +76,11 @@ class PlayingState(BaseState):
 
     def draw(self, surface: pygame.Surface):
         sm = self._sm
-        surface.fill(constants.TILE_FLOOR_COLOR)
-        sm.world.draw(surface, sm.camera)
-        sm.room_manager.draw(surface)
+        surface.fill(constants.COLOR_BACKDROP)
+        sm.world.draw_terrain(surface, sm.camera)
+        sm.room_manager.draw_doors(surface)
+        sm.world.draw_entities(surface, sm.camera)
+        sm.room_manager.draw_chest(surface)
         sm.player.draw(surface, sm.camera)
         sm.hud.draw(surface, sm.player)
         self._minimap.draw(

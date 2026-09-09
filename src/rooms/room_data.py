@@ -2,10 +2,23 @@ from pathlib import Path
 
 _MAPS = Path(__file__).parent / "maps"
 
+def _read_map(path: Path) -> list[str]:
+    """Leser en kartfil og fjerner tomme linjer på slutten.
+
+    En etterfølgende blank linje ville ellers telt som en ekstra rad, slik at
+    GridRoom._tile_side ikke lenger kjenner igjen nederste rad som "S" – og
+    dørene der blir stille gjort om til vegg.
+    """
+    lines = path.read_text().splitlines()
+    while lines and not lines[-1].strip():
+        lines.pop()
+    return lines
+
+
 def load_category(folder: str) -> list[list[str]]:
     """Laster alle .txt-filer i en mappe, sortert etter navn."""
     return [
-        p.read_text().splitlines()
+        _read_map(p)
         for p in sorted((_MAPS / folder).glob("*.txt"))
     ]
 

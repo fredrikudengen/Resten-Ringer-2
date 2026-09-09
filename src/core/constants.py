@@ -44,15 +44,31 @@ TILE_SIZE = 112
 
 # terrain tiles
 TILE_FLOOR = 0
-TILE_FLOOR_COLOR = (25, 25, 25)
+# Må matche gulvfargen som er bakt inn i tile-teksturene (resurrect-64),
+# ellers får man harde skjøter mot vegg-/hjørne-/dørtiles.
+TILE_FLOOR_COLOR = (90, 105, 136)
 
 TILE_WALL = 1
 TILE_WALL_COLOR = (80, 80, 80)
 
+TILE_VOID = 2  # ',' i kartfilene: utenfor rommet, tegnes ikke
+
+# bakgrunn utenfor rommet
+COLOR_BACKDROP = (24, 20, 37)
+
 CHAR_TO_TILE: dict[str, int] = {
     '.': TILE_FLOOR,
     '#': TILE_WALL,
+    ',': TILE_VOID,
 }
+
+# wall tiles – navn i assets/tiles/. Flere navn = varianter, valgt
+# deterministisk ut fra tile-posisjon slik at de ikke flimrer.
+TILE_ART_HORIZONTAL    = ("wall_horizontal", "wall_horizontal2")
+TILE_ART_VERTICAL_LEFT = ("wall_vertical_left_1", "wall_vertical_left_2")
+TILE_ART_VERTICAL_RIGHT = ("wall_vertical_right_1", "wall_vertical_right_2")
+TILE_ART_CORNER_TL     = ("wall_corner_top_left",)
+TILE_ART_CORNER_TR     = ("wall_corner_top_right",)
 
 # door
 DOOR_WIDTH = TILE_SIZE
@@ -61,6 +77,14 @@ DOOR_HEIGHT = TILE_SIZE
 COLOR_DOOR_CLOSED = (150, 50, 50)
 COLOR_DOOR_OPEN = (50, 150, 50)
 COLOR_DOOR_OUTLINE = (0, 0, 0)
+
+# door-tiles per side (N/S deler samme horisontale dør)
+DOOR_ART: dict[str, str] = {
+    "N": "door_horizontal",
+    "S": "door_horizontal",
+    "W": "door_vertical_left",
+    "E": "door_vertical_right",
+}
 
 # grid room
 CHAR_TO_SPAWN: dict[str, str] = {

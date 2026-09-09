@@ -23,6 +23,11 @@ class Camera:
     def apply(self, rect):
         return rect.move(-(self.offset + self._shake_offset))
 
+    def visible_rect(self) -> pygame.Rect:
+        """Synlig del av verden i verdenskoordinater – brukes til tile-culling."""
+        total = self.offset + self._shake_offset
+        return pygame.Rect(int(total.x), int(total.y), self.sw, self.sh)
+
     def screen_to_world(self, x, y):
         return pygame.Vector2(
             x + self.offset.x,
