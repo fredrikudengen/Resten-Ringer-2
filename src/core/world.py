@@ -3,6 +3,7 @@ import pygame
 from components.power_up import BasePowerup, POWERUP_TYPES
 from core import constants
 from view.sound_manager import sound
+from view.tileset import tileset
 from entities import WardenBoss
 from entities import Enemy
 from components import Particle
@@ -97,24 +98,42 @@ class World:
         player.hit = False
 
     def draw(self, screen: pygame.Surface, camera):
+        self.draw_terrain(screen, camera)
+        self.draw_entities(screen, camera)
+
+    def draw_terrain(self, screen: pygame.Surface, camera):
+        """Tegner gulv og vegg-tiles, kun de som er innenfor kameraet."""
         if self.current_room is None:
             return
 
         room = self.current_room
-        for gy in range(room.rows):
-            for gx in range(room.cols):
-                rect = pygame.Rect(
-                    gx * constants.TILE_SIZE,
-                    gy * constants.TILE_SIZE,
-                    constants.TILE_SIZE,
-                    constants.TILE_SIZE,
-                )
-                dr = camera.apply(rect)
-                if room.terrain[gy][gx] == constants.TILE_WALL:
+        size = constants.TILE_SIZE
+        view = camera.visible_rect()
+
+        x0 = max(0, view.left // size)
+        y0 = max(0, view.top // size)
+        x1 = min(room.cols, view.right // size + 1)
+        y1 = min(room.rows, view.bottom // size + 1)
+
+        for gy in range(y0, y1):
+            for gx in range(x0, x1):
+                tile = room.terrain[gy][gx]
+                if tile == constants.TILE_VOID:
+                    continue
+
+                dr = camera.apply(pygame.Rect(gx * size, gy * size, size, size))
+
+                if tile != constants.TILE_WALL:
+                    pygame.draw.rect(screen, constants.TILE_FLOOR_COLOR, dr)
+                    continue
+
+                texture = tileset.get(room.tile_art[gy][gx])
+                if texture is None:
                     pygame.draw.rect(screen, constants.TILE_WALL_COLOR, dr)
                 else:
-                    pygame.draw.rect(screen, constants.TILE_FLOOR_COLOR, dr)
+                    screen.blit(texture, dr)
 
+    def draw_entities(self, screen: pygame.Surface, camera):
         for pu in self.powerups:
             pu.draw(screen, camera)
 

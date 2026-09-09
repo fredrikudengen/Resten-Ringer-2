@@ -2,11 +2,15 @@ import math
 
 import pygame
 
-def player_input(player, obstacles, camera):
+REF_FRAME_MS = 1000.0 / 60.0  # existing speed/friction constants are tuned per-frame at 60fps
+
+def player_input(player, obstacles, camera, dt_ms):
     keys = pygame.key.get_pressed()
     mouse_pos_screen = pygame.mouse.get_pos()
     mouse_pos_world = camera.screen_to_world(*mouse_pos_screen)
     player.is_moving = False
+
+    scale = dt_ms / REF_FRAME_MS
 
     dx = (keys[pygame.K_d] - keys[pygame.K_a])
     dy = (keys[pygame.K_s] - keys[pygame.K_w])
@@ -16,23 +20,27 @@ def player_input(player, obstacles, camera):
         player.velocity.x = dx / length * player.speed
         player.velocity.y = dy / length * player.speed
     else:
-        player.velocity *= 0.80
+        player.velocity *= 0.80 ** scale
         if player.velocity.length() < 0.5:
             player.velocity = pygame.math.Vector2(0, 0)
 
     player.is_moving = player.velocity.length() > 0.5
 
     if player.velocity.length() > 0:
-        old_x = player.rect.x
-        player.rect.x += round(player.velocity.x)
+        old_x = player.pos.x
+        player.pos.x += player.velocity.x * scale
+        player._sync_rect_from_pos()
         if _collides(player, obstacles):
-            player.rect.x = old_x
+            player.pos.x = old_x
+            player._sync_rect_from_pos()
             player.velocity.x = 0
 
-        old_y = player.rect.y
-        player.rect.y += round(player.velocity.y)
+        old_y = player.pos.y
+        player.pos.y += player.velocity.y * scale
+        player._sync_rect_from_pos()
         if _collides(player, obstacles):
-            player.rect.y = old_y
+            player.pos.y = old_y
+            player._sync_rect_from_pos()
             player.velocity.y = 0
 
     # --- dash ---
@@ -50,11 +58,9 @@ def player_input(player, obstacles, camera):
             )
         player.start_dash(dash_dir)
 
-    player.update_knockback(obstacles)
-    player.update_dash(obstacles)
+    player.update_knockback(obstacles, dt_ms)
+    player.update_dash(obstacles, dt_ms)
     player.update_powerups()
-
-    player.sync_pos_from_rect()
 
 def _collides(player, obstacles):
     for obs in obstacles:

@@ -287,7 +287,7 @@ class Player(Entity):
 
         sound.play(f"{self.char_name}/dash")
 
-    def update_dash(self, obstacles):
+    def update_dash(self, obstacles, dt_ms=1000.0 / 60.0):
         now = pygame.time.get_ticks()
         if not self.is_dashing:
             return
@@ -295,22 +295,25 @@ class Player(Entity):
             self.is_dashing = False
             return
 
-        dx = int(self.dash_direction.x * self.dash_speed)
-        dy = int(self.dash_direction.y * self.dash_speed)
+        scale = dt_ms / (1000.0 / 60.0)
+        dx = self.dash_direction.x * self.dash_speed * scale
+        dy = self.dash_direction.y * self.dash_speed * scale
 
-        old_x = self.rect.x
-        self.rect.x += dx
+        old_x = self.pos.x
+        self.pos.x += dx
+        self._sync_rect_from_pos()
         if any(self.rect.colliderect(obs) for obs in obstacles):
-            self.rect.x = old_x
+            self.pos.x = old_x
+            self._sync_rect_from_pos()
             self.is_dashing = False
 
-        old_y = self.rect.y
-        self.rect.y += dy
+        old_y = self.pos.y
+        self.pos.y += dy
+        self._sync_rect_from_pos()
         if any(self.rect.colliderect(obs) for obs in obstacles):
-            self.rect.y = old_y
+            self.pos.y = old_y
+            self._sync_rect_from_pos()
             self.is_dashing = False
-
-        self.sync_pos_from_rect()
 
     def add_relic(self, relic_class):
         relic = relic_class()

@@ -54,6 +54,76 @@ class GridRoom:
 
         self._original_spawns = copy.deepcopy(self.spawns)
 
+        # Må kjøres etter at ubrukte dører er gjort om til vegg over,
+        # ellers ville autotileren sett dem som gulv.
+        self.tile_art: list[list[str | None]] = self._build_tile_art()
+
+    # ------------------------------------------------------------------ #
+    #  Autotiling
+    # ------------------------------------------------------------------ #
+
+    def _build_tile_art(self) -> list[list[str | None]]:
+        """Velger teksturnavn for hver vegg-tile. None for gulv og void."""
+        return [
+            [
+                self._wall_art(x, y) if self.terrain[y][x] == constants.TILE_WALL
+                else None
+                for x in range(self.cols)
+            ]
+            for y in range(self.rows)
+        ]
+
+    def _is_floor(self, gx: int, gy: int) -> bool:
+        """Gulv = innenfor rommet og verken vegg eller void. Utenfor teller ikke."""
+        if not (0 <= gx < self.cols and 0 <= gy < self.rows):
+            return False
+        return self.terrain[gy][gx] == constants.TILE_FLOOR
+
+    def _is_wall(self, gx: int, gy: int) -> bool:
+        if not (0 <= gx < self.cols and 0 <= gy < self.rows):
+            return False
+        return self.terrain[gy][gx] == constants.TILE_WALL
+
+    def _wall_art(self, gx: int, gy: int) -> str:
+        n = self._is_floor(gx, gy - 1)
+        e = self._is_floor(gx + 1, gy)
+        s = self._is_floor(gx, gy + 1)
+        w = self._is_floor(gx - 1, gy)
+        se = self._is_floor(gx + 1, gy + 1)
+        sw = self._is_floor(gx - 1, gy + 1)
+
+        # Løper veggen loddrett eller vannrett gjennom denne ruta?
+        vrun = self._is_wall(gx, gy - 1) or self._is_wall(gx, gy + 1)
+        hrun = self._is_wall(gx - 1, gy) or self._is_wall(gx + 1, gy)
+
+        if se and not s and not e:
+            variants = constants.TILE_ART_CORNER_TL
+        elif sw and not s and not w:
+            variants = constants.TILE_ART_CORNER_TR
+        elif vrun and e and not w:
+            variants = constants.TILE_ART_VERTICAL_LEFT
+        elif vrun and w and not e:
+            variants = constants.TILE_ART_VERTICAL_RIGHT
+        elif s:
+            variants = constants.TILE_ART_HORIZONTAL
+        elif not hrun and e and not w:
+            variants = constants.TILE_ART_VERTICAL_LEFT
+        elif not hrun and w and not e:
+            variants = constants.TILE_ART_VERTICAL_RIGHT
+        else:
+            # Bunnhjørner og innelukkede tiles: vanlig horisontal vegg.
+            variants = constants.TILE_ART_HORIZONTAL
+
+        return self._pick_variant(variants, gx, gy)
+
+    @staticmethod
+    def _pick_variant(variants: tuple[str, ...], gx: int, gy: int) -> str:
+        if len(variants) == 1:
+            return variants[0]
+        # Deterministisk ut fra posisjon, slik at varianten er stabil
+        # mellom frames og når man kommer tilbake til rommet.
+        return variants[(gx * 73856093 ^ gy * 19349663) % len(variants)]
+
     def _tile_side(self, gx: int, gy: int) -> str | None:
         if gx == 0:             return "W"
         if gx == self.cols - 1: return "E"
@@ -64,7 +134,7 @@ class GridRoom:
     def is_blocked(self, gx: int, gy: int) -> bool:
         if not (0 <= gx < self.cols and 0 <= gy < self.rows):
             return True
-        return self.terrain[gy][gx] == constants.TILE_WALL
+        return self.terrain[gy][gx] != constants.TILE_FLOOR
 
     def tile_rect(self, gx: int, gy: int) -> pygame.Rect:
         return pygame.Rect(
