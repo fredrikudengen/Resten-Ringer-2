@@ -3,7 +3,7 @@ from __future__ import annotations
 import pygame
 from pygame.math import Vector2
 
-from src.core import constants
+from core import constants
 
 
 class Bullet:

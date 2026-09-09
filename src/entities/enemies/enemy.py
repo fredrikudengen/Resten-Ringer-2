@@ -1,7 +1,7 @@
 import random
 
 import pygame
-from src.core import constants
+from core import constants
 
 from ..entity import Entity
 from .pathfinding import PathfindingMixin
@@ -12,7 +12,9 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
     def __init__(self, x, y):
 
-        super().__init__(x, y)       
+        super().__init__(x, y)
+
+        self.max_health = self.health
 
         now = pygame.time.get_ticks()
         
@@ -118,6 +120,34 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         #     color = self.color
 
         self.sprite.draw(screen, draw_rect)
+        self._draw_healthbar(screen, camera)
+
+    def _draw_healthbar(self, screen, camera):
+        """Liten helsebar over fienden. Skjult ved full helse."""
+        if not self.alive or self.health <= 0 or self.health >= self.max_health:
+            return
+
+        ratio = max(0.0, min(1.0, self.health / self.max_health))
+
+        draw_rect = camera.apply(self.rect)
+        border = 2
+        bar_w  = draw_rect.width
+        bar_h  = 8
+        bar_x  = draw_rect.x
+        bar_y  = draw_rect.top - bar_h - 8
+
+        outer = pygame.Rect(bar_x, bar_y, bar_w, bar_h)
+        inner = outer.inflate(-border * 2, -border * 2)
+
+        filled_w  = int(inner.width * ratio)
+        red_rect  = pygame.Rect(inner.x, inner.y, filled_w, inner.height)
+        grey_rect = pygame.Rect(inner.x + filled_w, inner.y, inner.width - filled_w, inner.height)
+
+        if red_rect.width > 0:
+            pygame.draw.rect(screen, (200, 40, 40), red_rect)
+        if grey_rect.width > 0:
+            pygame.draw.rect(screen, (110, 110, 110), grey_rect)
+        pygame.draw.rect(screen, (255, 255, 255), outer, border)
 
     # ---------- HELPERS ----------
         

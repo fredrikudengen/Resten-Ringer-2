@@ -159,6 +159,7 @@ class WardenBoss(Enemy, MovementMixin):
 
         self.sprite.draw(screen, draw_rect)
         pygame.draw.rect(screen, (255, 255, 120), draw_rect, 4)
+        self._draw_healthbar(screen, camera)
         self._draw_boss_hud(screen)
 
     def _draw_boss_hud(self, screen):
