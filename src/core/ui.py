@@ -1,6 +1,6 @@
 import pygame
 import math
-from src.core import constants
+from core import constants
 
 _C = {
     "panel":       (15,  15,  20,  200),
