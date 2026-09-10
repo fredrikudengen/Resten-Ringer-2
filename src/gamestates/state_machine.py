@@ -58,7 +58,7 @@ class StateMachine:
     def play_music_for_floor(self, floor_number: int):
         track = FLOOR_MUSIC.get(floor_number)
         if track:
-            sound.play_music(track)
+            sound.play_music_with_intro(track)
 
     def transition(self, new_state: State):
         self._current = new_state

@@ -9,6 +9,7 @@ for _path in (_project_root, _src_dir):
         sys.path.insert(0, _path)
 
 from src.gamestates import StateMachine
+from src.view.sound_manager import sound
 
 
 pygame.init()
@@ -39,6 +40,7 @@ while sm.running:
         sm.handle_event(event)
 
     sm.update(dt)
+    sound.update()
     sm.draw()
     pygame.display.flip()
 
