@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pygame
 
-from .floor_map import FloorMap, RoomNode, DIRECTIONS
+from src.rooms.floor_map import FloorMap, RoomNode, DIRECTIONS
 
 
 # ---- Layout ----

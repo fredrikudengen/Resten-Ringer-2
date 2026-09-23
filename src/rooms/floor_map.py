@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .grid_room import GridRoom
+from src.rooms.grid_room import GridRoom
 
 
 DIRECTIONS: dict[str, tuple[int, int]] = {

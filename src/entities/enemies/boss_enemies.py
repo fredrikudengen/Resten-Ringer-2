@@ -2,10 +2,10 @@ import random
 
 import pygame
 
-from view.sprite import Sprite
-from .enemy import Enemy
-from .enemy_types import FastEnemy, SwarmEnemy
-from .movement import MovementMixin
+from src.view.sprite import Sprite
+from src.entities.enemies.enemy import Enemy
+from src.entities.enemies.enemy_types import FastEnemy, SwarmEnemy
+from src.entities.enemies.movement import MovementMixin
 
 # ===========================================================================
 # BOSSER — boss_enemies.py

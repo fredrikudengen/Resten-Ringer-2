@@ -1,6 +1,6 @@
 import random
 
-from .floor_map import FloorMap, RoomNode, DIRECTIONS
+from src.rooms.floor_map import FloorMap, RoomNode, DIRECTIONS
 
 # ===========================================================================
 # ETASJE-GENERATOR — Her kan du justere størrelse og form på etasjene

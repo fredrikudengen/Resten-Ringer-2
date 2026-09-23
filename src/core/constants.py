@@ -64,11 +64,14 @@ CHAR_TO_TILE: dict[str, int] = {
 
 # wall tiles – navn i assets/tiles/. Flere navn = varianter, valgt
 # deterministisk ut fra tile-posisjon slik at de ikke flimrer.
-TILE_ART_HORIZONTAL    = ("wall_horizontal", "wall_horizontal2")
+TILE_ART_HORIZONTAL    = ("wall_horizontal_1", "wall_horizontal_2")
 TILE_ART_VERTICAL_LEFT = ("wall_vertical_left_1", "wall_vertical_left_2")
 TILE_ART_VERTICAL_RIGHT = ("wall_vertical_right_1", "wall_vertical_right_2")
-TILE_ART_CORNER_TL     = ("wall_corner_top_left",)
-TILE_ART_CORNER_TR     = ("wall_corner_top_right",)
+# Corners come in one variant per side (left/right); the same art is reused
+# for both the top and bottom corner of that side by flipping it vertically
+# (see GridRoom._wall_art / TileSet.get's "|flipv" suffix).
+TILE_ART_CORNER_LEFT   = ("wall_corner_left",)
+TILE_ART_CORNER_RIGHT  = ("wall_corner_right",)
 
 # door
 DOOR_WIDTH = TILE_SIZE

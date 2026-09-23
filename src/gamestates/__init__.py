@@ -1,4 +1,4 @@
-from .basestate import State, BaseState
-from .state_machine import StateMachine
+from src.gamestates.basestate import State, BaseState
+from src.gamestates.state_machine import StateMachine
 
 __all__ = ['State', 'BaseState', 'StateMachine']

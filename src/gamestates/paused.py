@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pygame
 
-from .basestate import BaseState, State
-from .ui_helpers import Button, draw_overlay, draw_panel, C
+from src.gamestates.basestate import BaseState, State
+from src.gamestates.ui_helpers import Button, draw_overlay, draw_panel, C
 
 
 class PausedState(BaseState):

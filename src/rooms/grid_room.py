@@ -2,7 +2,7 @@ import copy
 
 import pygame
 
-from core import constants
+from src.core import constants
 
 
 class GridRoom:
@@ -97,9 +97,9 @@ class GridRoom:
         hrun = self._is_wall(gx - 1, gy) or self._is_wall(gx + 1, gy)
 
         if se and not s and not e:
-            variants = constants.TILE_ART_CORNER_TL
+            variants = constants.TILE_ART_CORNER_LEFT
         elif sw and not s and not w:
-            variants = constants.TILE_ART_CORNER_TR
+            variants = constants.TILE_ART_CORNER_RIGHT
         elif vrun and e and not w:
             variants = constants.TILE_ART_VERTICAL_LEFT
         elif vrun and w and not e:

@@ -1,14 +1,14 @@
 import pygame
 
-from components.power_up import BasePowerup, POWERUP_TYPES
-from core import constants
-from view.sound_manager import sound
-from view.tileset import tileset
-from entities import WardenBoss
-from entities import Enemy
-from components import Particle
-from components.bullet import Bullet
-from entities import ENEMY_TYPES
+from src.components.power_up import BasePowerup, POWERUP_TYPES
+from src.core import constants
+from src.view.sound_manager import sound
+from src.view.tileset import tileset
+from src.entities import WardenBoss
+from src.entities import Enemy
+from src.components import Particle
+from src.components.bullet import Bullet
+from src.entities import ENEMY_TYPES
 
 
 class World:

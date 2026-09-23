@@ -4,7 +4,7 @@ CHARACTERS: list[dict] = [
         'description':   "Med sin pålitelige pistol er han klar for enhver situasjon.",
         'color':         (100, 180, 255),
         'max_health':    100,
-        'speed':         7,
+        'speed':         9,
         'size':          (96, 96),
         'gun':           'Pistol',
         'dash_cooldown': 1300,

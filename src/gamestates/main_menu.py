@@ -3,8 +3,8 @@ from __future__ import annotations
 import math
 import pygame
 
-from .basestate import BaseState, State
-from .ui_helpers import Button, C
+from src.gamestates.basestate import BaseState, State
+from src.gamestates.ui_helpers import Button, C
 
 
 class MainMenuState(BaseState):

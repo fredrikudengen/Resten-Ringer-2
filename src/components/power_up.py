@@ -1,7 +1,7 @@
 import pygame
-from core import constants
-from view.sprite import Sprite
-from view.tileset import tileset
+from src.core import constants
+from src.view.sprite import Sprite
+from src.view.tileset import tileset
 
 ICON_SIZE = 64
 

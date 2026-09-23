@@ -6,11 +6,11 @@ import random
 import pygame
 from pygame.math import Vector2
 
-from core import constants
-from view.sprite import Sprite
-from .enemy import Enemy
+from src.core import constants
+from src.view.sprite import Sprite
+from src.entities.enemies.enemy import Enemy
 
-from components.gun import EnemyPistol
+from src.components.gun import EnemyPistol
 
 
 # ---------------------------------------------------------------------------

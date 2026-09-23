@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pygame
 
-from .basestate import BaseState, State
-from .ui_helpers import C
+from src.gamestates.basestate import BaseState, State
+from src.gamestates.ui_helpers import C
 
 _DISPLAY_DURATION_MS = 2300
 _FADE_IN_MS          = 500

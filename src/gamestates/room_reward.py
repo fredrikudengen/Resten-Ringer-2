@@ -3,10 +3,10 @@ from __future__ import annotations
 import random
 import pygame
 
-from .basestate import BaseState, State
-from .ui_helpers import draw_overlay, draw_panel, C
-from components.relics import ALL_RELICS
-from components.gun import Pistol, Shotgun, MachineGun, SniperRifle
+from src.gamestates.basestate import BaseState, State
+from src.gamestates.ui_helpers import draw_overlay, draw_panel, C
+from src.components.relics import ALL_RELICS
+from src.components.gun import Pistol, Shotgun, MachineGun, SniperRifle
 
 _ALL_GUNS = [Pistol, Shotgun, MachineGun, SniperRifle]
 

@@ -1,13 +1,13 @@
 import math
 
 import pygame
-from core import constants
-from view.asset_manager import assets
-from view.sprite import Sprite
-from .entity import Entity
-from components.gun import Pistol, Shotgun, MachineGun, SniperRifle
-from character_data import CHARACTERS
-from view.sound_manager import sound
+from src.core import constants
+from src.view.asset_manager import assets
+from src.view.sprite import Sprite
+from src.entities.entity import Entity
+from src.components.gun import Pistol, Shotgun, MachineGun, SniperRifle
+from src.character_data import CHARACTERS
+from src.view.sound_manager import sound
 
 _GUN_MAP = {
     'Pistol':      Pistol,

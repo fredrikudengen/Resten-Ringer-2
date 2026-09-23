@@ -5,16 +5,16 @@ from dataclasses import dataclass
 
 import pygame
 
-from entities import FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy, AssassinEnemy, BruteEnemy, SwarmEnemy, ShooterEnemy, \
+from src.entities import FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy, AssassinEnemy, BruteEnemy, SwarmEnemy, ShooterEnemy, \
     MarksmanEnemy, WardenBoss, Enemy
-from components.chest import Chest
-from core import constants
-from components import Door, ShieldPowerup, AttackPowerup, SpeedPowerup, HealthPowerup
-from view.sound_manager import sound
-from .room_registry import RoomRegistry
-from .floor_generator import generate_floor
-from .floor_map import FloorMap, RoomNode
-from .progression import level_from_rooms_cleared, choose_enemy, scale_enemy
+from src.components.chest import Chest
+from src.core import constants
+from src.components import Door, ShieldPowerup, AttackPowerup, SpeedPowerup, HealthPowerup
+from src.view.sound_manager import sound
+from src.rooms.room_registry import RoomRegistry
+from src.rooms.floor_generator import generate_floor
+from src.rooms.floor_map import FloorMap, RoomNode
+from src.rooms.progression import level_from_rooms_cleared, choose_enemy, scale_enemy
 
 
 @dataclass
