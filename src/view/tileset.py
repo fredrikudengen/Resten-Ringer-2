@@ -1,7 +1,7 @@
 import pygame
 
-from core import constants
-from .asset_manager import assets
+from src.core import constants
+from src.view.asset_manager import assets
 
 
 class TileSet:

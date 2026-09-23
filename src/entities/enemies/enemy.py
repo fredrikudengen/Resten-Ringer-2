@@ -1,11 +1,11 @@
 import random
 
 import pygame
-from core import constants
+from src.core import constants
 
-from ..entity import Entity
-from .pathfinding import PathfindingMixin
-from .movement import MovementMixin
+from src.entities.entity import Entity
+from src.entities.enemies.pathfinding import PathfindingMixin
+from src.entities.enemies.movement import MovementMixin
 
 
 class Enemy(PathfindingMixin, MovementMixin, Entity):

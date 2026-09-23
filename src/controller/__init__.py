@@ -1,1 +1,1 @@
-from .gamecontroller import *
+from src.controller.gamecontroller import *

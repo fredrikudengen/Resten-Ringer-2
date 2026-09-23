@@ -1,14 +1,14 @@
-from .enemy import Enemy
+from src.entities.enemies.enemy import Enemy
 
-from .boss_enemies import WardenBoss
-from .elite_enemies import (
+from src.entities.enemies.boss_enemies import WardenBoss
+from src.entities.enemies.elite_enemies import (
     ScoutEnemy,
     AssassinEnemy,
     SlowEnemy,
     BruteEnemy,
     TankEnemy
 )
-from .enemy_types import (
+from src.entities.enemies.enemy_types import (
     FastEnemy,
     SwarmEnemy,
     ShooterEnemy,

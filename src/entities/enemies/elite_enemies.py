@@ -1,7 +1,7 @@
 import pygame
 
-from view.sprite import Sprite
-from .enemy import Enemy
+from src.view.sprite import Sprite
+from src.entities.enemies.enemy import Enemy
 
 # ===========================================================================
 # ELITE FIENDER — elite_enemies.py

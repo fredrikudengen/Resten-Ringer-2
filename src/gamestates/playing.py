@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pygame
 
-from .basestate import BaseState, State
-from core import constants
-from controller import player_input
-from rooms.minimap import Minimap
+from src.gamestates.basestate import BaseState, State
+from src.core import constants
+from src.controller import player_input
+from src.rooms.minimap import Minimap
 
 
 class PlayingState(BaseState):

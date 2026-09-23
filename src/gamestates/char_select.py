@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pygame
 
-from .basestate import BaseState, State
-from .ui_helpers import Button, draw_panel, C
-from character_data import CHARACTERS
+from src.gamestates.basestate import BaseState, State
+from src.gamestates.ui_helpers import Button, draw_panel, C
+from src.character_data import CHARACTERS
 
 _CARD_W = 200
 _CARD_H = 340

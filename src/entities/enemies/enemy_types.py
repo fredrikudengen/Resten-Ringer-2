@@ -1,9 +1,9 @@
 import pygame
 
-from view.sprite import Sprite
-from .enemy import Enemy
-from .ranged_enemies import RangedEnemy
-from components.gun import EnemyPistol, EnemyRifle
+from src.view.sprite import Sprite
+from src.entities.enemies.enemy import Enemy
+from src.entities.enemies.ranged_enemies import RangedEnemy
+from src.components.gun import EnemyPistol, EnemyRifle
 
 # ===========================================================================
 # VANLIGE FIENDER — enemy_types.py

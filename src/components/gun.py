@@ -5,8 +5,8 @@ import random
 import pygame
 from pygame.math import Vector2
 
-from components.bullet import Bullet
-from view.sound_manager import sound
+from src.components.bullet import Bullet
+from src.view.sound_manager import sound
 
 class Gun:
 

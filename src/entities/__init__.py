@@ -1,6 +1,6 @@
-from .player import Player
-from .entity import Entity
-from .enemies import (Enemy, FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy, AssassinEnemy, BruteEnemy,
+from src.entities.player import Player
+from src.entities.entity import Entity
+from src.entities.enemies import (Enemy, FastEnemy, SlowEnemy, TankEnemy, ScoutEnemy, AssassinEnemy, BruteEnemy,
                       SwarmEnemy, ShooterEnemy, MarksmanEnemy, WardenBoss)
 
 __all__ = [

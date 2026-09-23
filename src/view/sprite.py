@@ -4,7 +4,7 @@ import math
 
 import pygame
 
-from .asset_manager import assets
+from src.view.asset_manager import assets
 
 
 class Sprite:

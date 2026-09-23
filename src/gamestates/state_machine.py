@@ -5,15 +5,15 @@ import pygame
 from src.core.constants import FLOOR_MUSIC
 from src.view.sound_manager import sound
 
-from .basestate import BaseState, State
-from .boss_reward import BossRewardState
-from .floor_transition import FloorTransitionState
-from .main_menu import MainMenuState
-from .char_select import CharacterSelectState
-from .playing import PlayingState
-from .paused import PausedState
-from .game_over import GameOverState
-from .room_reward import RoomRewardState
+from src.gamestates.basestate import BaseState, State
+from src.gamestates.boss_reward import BossRewardState
+from src.gamestates.floor_transition import FloorTransitionState
+from src.gamestates.main_menu import MainMenuState
+from src.gamestates.char_select import CharacterSelectState
+from src.gamestates.playing import PlayingState
+from src.gamestates.paused import PausedState
+from src.gamestates.game_over import GameOverState
+from src.gamestates.room_reward import RoomRewardState
 
 
 class StateMachine:
