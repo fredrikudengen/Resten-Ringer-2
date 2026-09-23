@@ -2,14 +2,6 @@ from pathlib import Path
 
 _MAPS = Path(__file__).parent / "maps"
 
-import os
-_MAPS = Path(__file__).parent / "maps"
-print("DEBUG __file__:", __file__)
-print("DEBUG _MAPS:", _MAPS)
-print("DEBUG _MAPS.resolve():", _MAPS.resolve())
-print("DEBUG cwd:", os.getcwd())
-print("DEBUG start folder exists:", (_MAPS / "start").is_dir())
-
 def _read_map(path: Path) -> list[str]:
     """Leser en kartfil og fjerner tomme linjer på slutten.
 

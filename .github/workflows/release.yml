@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.3'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller==6.22.3
+      - name: Build with PyInstaller
+        run: pyinstaller resten-ringer.spec --noconfirm
+      - name: Rename output (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: mv dist/main dist/resten-ringer-linux
+
+      - name: Rename output (macOS)
+        if: matrix.os == 'macos-latest'
+        run: mv dist/main dist/resten-ringer-mac
+
+      - name: Rename output (Windows)
+        if: matrix.os == 'windows-latest'
+        run: mv dist/main.exe dist/resten-ringer-windows.exe
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/resten-ringer-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
