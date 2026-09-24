@@ -78,7 +78,7 @@ class FastEnemy(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.sprite = Sprite(
-            frames={"idle": "enemy_test"},
+            frames={"idle": "enemy_swarm"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
