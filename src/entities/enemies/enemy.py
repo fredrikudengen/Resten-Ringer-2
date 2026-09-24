@@ -1,8 +1,8 @@
 import random
 
 import pygame
-from src.core import constants, debug
 
+from src.core import constants, debug
 from src.entities.entity import Entity
 from src.entities.enemies.pathfinding import PathfindingMixin
 from src.entities.enemies.movement import MovementMixin

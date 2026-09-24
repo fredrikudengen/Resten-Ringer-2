@@ -9,7 +9,6 @@ from pygame.math import Vector2
 from src.core import constants, debug
 from src.view.sprite import Sprite
 from src.entities.enemies.enemy import Enemy
-
 from src.components.gun import EnemyPistol
 
 
