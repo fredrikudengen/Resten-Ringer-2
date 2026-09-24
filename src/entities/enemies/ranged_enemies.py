@@ -6,10 +6,9 @@ import random
 import pygame
 from pygame.math import Vector2
 
-from src.core import constants
+from src.core import constants, debug
 from src.view.sprite import Sprite
 from src.entities.enemies.enemy import Enemy
-
 from src.components.gun import EnemyPistol
 
 
@@ -177,6 +176,15 @@ class RangedEnemy(Enemy):
         # Draw reload progress bar above enemy
         if self.state == "reload":
             self._draw_reload_bar(screen, draw_rect)
+
+        if self.state in ("idle", "walk") and self.wander_goal_g is not None:
+            debug.draw_tile(screen, camera, self.wander_goal_g)
+
+        if self._debug_los is not None:
+            debug.draw_line(screen, camera, self.rect.center, self._debug_los)
+
+        debug.draw_circle(screen, camera, self.rect.center, self.detection_radius)
+        debug.draw_label(screen, camera, (self.rect.centerx, self.rect.top - 20), self.state)
 
         self._draw_healthbar(screen, camera)
 

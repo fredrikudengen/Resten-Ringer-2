@@ -23,6 +23,9 @@ class Camera:
     def apply(self, rect):
         return rect.move(-(self.offset + self._shake_offset))
 
+    def apply_point(self, pos):
+        return pygame.Vector2(pos) - self.offset - self._shake_offset
+
     def visible_rect(self) -> pygame.Rect:
         """Synlig del av verden i verdenskoordinater – brukes til tile-culling."""
         total = self.offset + self._shake_offset
