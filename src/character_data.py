@@ -1,7 +1,7 @@
 CHARACTERS: list[dict] = [
     {
         'name':          'Fredrik',
-        'description':   "Med sin pålitelige pistol er han klar for enhver situasjon.",
+        'description':   "Lorem ipsum",
         'color':         (100, 180, 255),
         'max_health':    100,
         'speed':         9,
@@ -12,7 +12,7 @@ CHARACTERS: list[dict] = [
     },
     {
         'name':          'Johanne',
-        'description':   "Lynende rask. Ikke kom på kant med henne.",
+        'description':   "Lorem ipsum",
         'color':         (180, 100, 255),
         'max_health':    80,
         'health':        'max_health',
@@ -24,7 +24,7 @@ CHARACTERS: list[dict] = [
     },
     {
         'name':          'Jonathan',
-        'description':   "Ikke kom for nærme, hvis ikke du vil spise bly.",
+        'description':   "Lorem ipsum",
         'color':         (255, 160, 60),
         'max_health':    120,
         'health':        'max_health',
@@ -36,7 +36,7 @@ CHARACTERS: list[dict] = [
     },
     {
         'name':          'Leila',
-        'description':   "Presis og skarp, et skudd er alt hun trenger.",
+        'description':   "Lorem ipsum",
         'color':         (80, 220, 160),
         'max_health':    80,
         'health':        'max_health',

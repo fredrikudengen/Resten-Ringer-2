@@ -3,7 +3,7 @@ from __future__ import annotations
 import pygame
 
 from src.gamestates.basestate import BaseState, State
-from src.core import constants
+from src.core import constants, debug
 from src.controller import player_input
 from src.rooms.minimap import Minimap
 
@@ -28,6 +28,8 @@ class PlayingState(BaseState):
                 self._sm.transition(State.PAUSED)
             if event.key == pygame.K_r:
                 self._reload_requested = True
+            if event.key == pygame.K_p:
+                debug.toggle()
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 self._mouse_held = True
