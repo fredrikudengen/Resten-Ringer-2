@@ -21,6 +21,7 @@ class PlayingState(BaseState):
         self._reload_requested = False
         self._mouse_held = False
         self._minimap = Minimap()
+        self._last_dt = 0
 
     def handle_event(self, event: pygame.event.Event):
         if event.type == pygame.KEYDOWN:
@@ -39,6 +40,7 @@ class PlayingState(BaseState):
 
     def update(self, dt: int):
         sm = self._sm
+        self._last_dt = dt
 
         player_input(sm.player, sm.world.obstacles, sm.camera, dt)
         sm.camera.update(sm.player.rect)
@@ -85,6 +87,12 @@ class PlayingState(BaseState):
         sm.room_manager.draw_chest(surface)
         sm.player.draw(surface, sm.camera)
         debug.draw_hitbox(surface, sm.camera, sm.player.rect)
+        fps = 1000 / self._last_dt if self._last_dt else 0
+        debug.draw_overlay(surface, [
+            f"FPS: {fps:.0f}",
+            f"pos: {int(sm.player.pos.x)}, {int(sm.player.pos.y)}",
+            f"grid: {sm.player._grid_pos()}",
+        ])
         sm.hud.draw(surface, sm.player)
         self._minimap.draw(
             surface, sm.room_manager.floor_map, sm.room_manager.current_node

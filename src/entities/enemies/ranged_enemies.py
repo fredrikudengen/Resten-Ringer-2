@@ -185,6 +185,7 @@ class RangedEnemy(Enemy):
             debug.draw_line(screen, camera, self.rect.center, self._debug_los)
 
         debug.draw_circle(screen, camera, self.rect.center, self.detection_radius)
+        debug.draw_label(screen, camera, (self.rect.centerx, self.rect.top - 20), self.state)
 
         self._draw_healthbar(screen, camera)
 

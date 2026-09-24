@@ -132,6 +132,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             debug.draw_line(screen, camera, self.rect.center, self._debug_los)
 
         debug.draw_circle(screen, camera, self.rect.center, self.detection_radius)
+        debug.draw_label(screen, camera, (self.rect.centerx, self.rect.top - 20), self.state)
 
     def _draw_healthbar(self, screen, camera):
         """Liten helsebar over fienden. Skjult ved full helse."""
