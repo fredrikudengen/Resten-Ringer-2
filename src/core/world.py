@@ -1,6 +1,7 @@
 import pygame
 
 from src.components.power_up import BasePowerup, POWERUP_TYPES
+
 from src.core import constants, debug
 from src.view.sound_manager import sound
 from src.view.tileset import tileset

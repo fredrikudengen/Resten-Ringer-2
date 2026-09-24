@@ -43,8 +43,8 @@ class SwarmEnemy(Enemy):
     knockback_strength= 6
     color             = (120, 220, 80)   # lime-green
     xp_reward         = 8
-    width             = 32
-    height            = 32
+    width             = 64
+    height            = 64
     wander_radius     = 6
     knockback_friction= 0.95
 
@@ -70,15 +70,15 @@ class FastEnemy(Enemy):
     knockback_strength= 10
     color             = (255, 120, 30)   # bright orange
     xp_reward         = 15
-    width             = 40
-    height            = 40
+    width             = 64
+    height            = 64
     wander_radius     = 5
     knockback_friction= 0.9
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.sprite = Sprite(
-            frames={"idle": "enemy_test"},
+            frames={"idle": "enemy_swarm"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
