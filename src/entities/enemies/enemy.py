@@ -1,7 +1,7 @@
 import random
 
 import pygame
-from src.core import constants
+from src.core import constants, debug
 
 from src.entities.entity import Entity
 from src.entities.enemies.pathfinding import PathfindingMixin
@@ -121,6 +121,9 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
         self.sprite.draw(screen, draw_rect)
         self._draw_healthbar(screen, camera)
+
+        if self.state in ("idle", "walk") and self.wander_goal_g is not None:
+            debug.draw_tile(screen, camera, self.wander_goal_g)
 
     def _draw_healthbar(self, screen, camera):
         """Liten helsebar over fienden. Skjult ved full helse."""
