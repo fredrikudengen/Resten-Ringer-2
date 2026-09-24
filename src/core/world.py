@@ -1,7 +1,8 @@
 import pygame
 
 from src.components.power_up import BasePowerup, POWERUP_TYPES
-from src.core import constants
+
+from src.core import constants, debug
 from src.view.sound_manager import sound
 from src.view.tileset import tileset
 from src.entities import WardenBoss
@@ -136,12 +137,15 @@ class World:
     def draw_entities(self, screen: pygame.Surface, camera):
         for pu in self.powerups:
             pu.draw(screen, camera)
+            debug.draw_hitbox(screen, camera, pu.rect)
 
         for enemy in self.enemies:
             enemy.draw(screen, camera)
+            debug.draw_hitbox(screen, camera, enemy.rect)
 
         for bullet in self.bullets:
             bullet.draw(screen, camera)
+            debug.draw_hitbox(screen, camera, bullet.rect)
 
         for p in self.particles:
             p.draw(screen, camera)

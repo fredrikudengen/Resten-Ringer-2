@@ -77,7 +77,7 @@ class AssassinEnemy(Enemy):
     speed             = 400
     health            = 65
     damage            = 35
-    detection_radius  = 900
+    detection_radius  = 800
     attack_range      = 4900    # 70 px
     attack_cooldown   = 1100
     knockback_strength= 24
@@ -279,7 +279,7 @@ class SlowEnemy(WindupMeleeMixin, Enemy):
     speed             = 280
     health            = 90
     damage            = 26
-    detection_radius  = 700
+    detection_radius  = 600
     attack_range      = 6500    # 75 px
     attack_cooldown   = 1300
     attack_windup_ms  = 300
@@ -309,7 +309,7 @@ class BruteEnemy(WindupMeleeMixin, Enemy):
     speed             = 330
     health            = 160
     damage            = 34
-    detection_radius  = 800
+    detection_radius  = 700
     attack_range      = 6400    # 80 px
     attack_cooldown   = 1500
     attack_windup_ms  = 500
