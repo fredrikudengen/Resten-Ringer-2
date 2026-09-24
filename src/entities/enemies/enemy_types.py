@@ -38,7 +38,7 @@ class SwarmEnemy(Enemy):
     speed             = 400
     health            = 40
     damage            = 8
-    detection_radius  = 1000
+    detection_radius  = 700
     attack_cooldown   = 500
     knockback_strength= 6
     color             = (120, 220, 80)   # lime-green
@@ -65,7 +65,7 @@ class FastEnemy(Enemy):
     speed             = 440
     health            = 45
     damage            = 12
-    detection_radius  = 1000
+    detection_radius  = 700
     attack_cooldown   = 650
     knockback_strength= 10
     color             = (255, 120, 30)   # bright orange

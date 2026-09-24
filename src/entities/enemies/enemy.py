@@ -23,8 +23,9 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         self.attack_cooldown_until = 0
 
         self.state          = "idle"
-        self.last_seen_pos  = None  
-        self.search_started = None  
+        self.last_seen_pos  = None
+        self.search_started = None
+        self._debug_los     = None
 
         self.wander_goal_g       = None
         self.wander_end          = False
@@ -62,9 +63,11 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         enemy_center  = self.rect.center
         see_player    = False
         
+        self._debug_los = None
         dist2_to_player = self._dist2(*player_center, *enemy_center)
-        if dist2_to_player <= self.detection_radius * self.detection_radius: 
-            if self._has_los(room, *self._grid_pos(), *player._grid_pos()):                
+        if dist2_to_player <= self.detection_radius * self.detection_radius:
+            self._debug_los = player_center
+            if self._has_los(room, *self._grid_pos(), *player._grid_pos()):
                 see_player          = True
                 self.last_seen_pos  = player_center
                 self.search_started = None
@@ -124,6 +127,11 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
         if self.state in ("idle", "walk") and self.wander_goal_g is not None:
             debug.draw_tile(screen, camera, self.wander_goal_g)
+
+        if self._debug_los is not None:
+            debug.draw_line(screen, camera, self.rect.center, self._debug_los)
+
+        debug.draw_circle(screen, camera, self.rect.center, self.detection_radius)
 
     def _draw_healthbar(self, screen, camera):
         """Liten helsebar over fienden. Skjult ved full helse."""

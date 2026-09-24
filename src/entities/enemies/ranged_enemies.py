@@ -181,6 +181,11 @@ class RangedEnemy(Enemy):
         if self.state in ("idle", "walk") and self.wander_goal_g is not None:
             debug.draw_tile(screen, camera, self.wander_goal_g)
 
+        if self._debug_los is not None:
+            debug.draw_line(screen, camera, self.rect.center, self._debug_los)
+
+        debug.draw_circle(screen, camera, self.rect.center, self.detection_radius)
+
         self._draw_healthbar(screen, camera)
 
     # =========================================================
