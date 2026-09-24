@@ -84,6 +84,7 @@ class PlayingState(BaseState):
         sm.world.draw_entities(surface, sm.camera)
         sm.room_manager.draw_chest(surface)
         sm.player.draw(surface, sm.camera)
+        debug.draw_hitbox(surface, sm.camera, sm.player.rect)
         sm.hud.draw(surface, sm.player)
         self._minimap.draw(
             surface, sm.room_manager.floor_map, sm.room_manager.current_node
