@@ -1,5 +1,6 @@
 import pygame
 
+from src.core import constants
 from src.view.sprite import Sprite
 from src.entities.enemies.enemy import Enemy
 
@@ -32,6 +33,7 @@ class ScoutEnemy(Enemy):
     attack_range       = 4225
     attack_cooldown    = 900
     knockback_strength = 8
+    detection_radius   = None  # ser alltid spilleren, uansett avstand
     color              = (60, 210, 220)
     xp_reward          = 18
     width              = 96
@@ -43,10 +45,11 @@ class ScoutEnemy(Enemy):
         self.sprite = Sprite(
             frames={
                 "idle": "enemy/scout/idle/idle",
-                "walk": [f"enemy/scout/walk/{i}" for i in range(4)],
+                "walk": [f"enemy/scout/walk/{i}" for i in range(2)],
             },
             base_size=(self.width, self.height),
-            fallback_color=self.color
+            fallback_color=self.color,
+            gait={"walk": {"cycle_ms": 400, "bounce": 14, "sway": 2, "lean": 3}},
         )
 
     def move(self, player, obstacles, room, dt_ms):
@@ -65,7 +68,15 @@ class ScoutEnemy(Enemy):
         player_center = player.rect.center
 
         self.update_knockback(obstacles)
-        self._move_towards(player_center, obstacles, dt_ms)
+
+        T = constants.TILE_SIZE
+        goal_g = (player_center[0] // T, player_center[1] // T)
+        next_tile_g = self._astar_next_step(room, goal_g, max_expansions=512)
+        if next_tile_g:
+            target_px = self._center_of_tile(*next_tile_g)
+            self._move_towards(target_px, obstacles, dt_ms)
+        else:
+            self._move_towards(player_center, obstacles, dt_ms)
 
         if now >= self.attack_cooldown_until and self.rect.colliderect(player.rect):
             self._damage_player(player, self.damage)
@@ -76,11 +87,11 @@ class ScoutEnemy(Enemy):
         if abs(dx) > 1e-3:
             self.facing_left = dx < 0
 
-    def draw(self, screen, camera):
-        super().draw(screen, camera)
-        if self.state != "dead":
-            draw_rect = camera.apply(self.rect)
-            self.sprite.draw(screen, draw_rect, frame="walk", flip_x=self.facing_left)
+    def _sprite_frame(self) -> str:
+        return "idle" if self.state == "dead" else "walk"
+
+    def _is_moving(self) -> bool:
+        return self.state != "dead"
 
 
 class AssassinEnemy(Enemy):
