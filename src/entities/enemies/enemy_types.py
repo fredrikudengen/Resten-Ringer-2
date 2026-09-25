@@ -126,6 +126,12 @@ class ShooterEnemy(RangedEnemy):
             fallback_color=self.color
         )
 
+    def draw(self, screen, camera):
+        super().draw(screen, camera)
+        if self.state not in ("dead", "reload"):
+            draw_rect = camera.apply(self.rect)
+            self.sprite.draw(screen, draw_rect, flip_x=self.facing_left)
+
 
 class MarksmanEnemy(RangedEnemy):
     """
