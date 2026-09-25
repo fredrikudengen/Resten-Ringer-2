@@ -10,6 +10,8 @@ from src.entities.enemies.movement import MovementMixin
 
 class Enemy(PathfindingMixin, MovementMixin, Entity):
 
+    detection_radius = 0  # px; None = alltid oppdaget (se ScoutEnemy)
+
     def __init__(self, x, y):
 
         super().__init__(x, y)
@@ -113,6 +115,14 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         if abs(dx) > 1e-3:
             self.facing_left = dx < 0
 
+    def _sprite_frame(self) -> str:
+        return "idle"
+
+    def _is_moving(self) -> bool:
+        return self.state == "chase" or self.state == "search" or (
+            self.state == "idle" and self.wander_goal_g is not None
+        )
+
     def draw(self, screen, camera):
         draw_rect = camera.apply(self.rect)
 
@@ -129,10 +139,10 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         # else:
         #     color = self.color
 
-        is_moving = self.state == "chase" or self.state == "search" or (
-            self.state == "idle" and self.wander_goal_g is not None
+        self.sprite.draw(
+            screen, draw_rect, frame=self._sprite_frame(),
+            flip_x=self.facing_left, moving=self._is_moving()
         )
-        self.sprite.draw(screen, draw_rect, flip_x=self.facing_left, moving=is_moving)
         self._draw_healthbar(screen, camera)
 
         if self.state in ("idle", "walk") and self.wander_goal_g is not None:
@@ -141,7 +151,8 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         if self._debug_los is not None:
             debug.draw_line(screen, camera, self.rect.center, self._debug_los)
 
-        debug.draw_circle(screen, camera, self.rect.center, self.detection_radius)
+        if self.detection_radius is not None:
+            debug.draw_circle(screen, camera, self.rect.center, self.detection_radius)
         debug.draw_label(screen, camera, (self.rect.centerx, self.rect.top - 20), self.state)
 
     def _draw_healthbar(self, screen, camera):
