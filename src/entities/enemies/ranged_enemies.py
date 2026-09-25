@@ -66,6 +66,7 @@ class RangedEnemy(Enemy):
     def move(self, player, obstacles, room, dt_ms: int):
         """Full AI update — replaces Enemy.move() for ranged enemies."""
         now = pygame.time.get_ticks()
+        prev_x = self.pos.x
 
         # Always tick gun reload
         self.gun.update_reload()
@@ -147,6 +148,10 @@ class RangedEnemy(Enemy):
 
         elif self.state == "dead":
             return
+
+        dx = self.pos.x - prev_x
+        if abs(dx) > 1e-3:
+            self.facing_left = dx < 0
 
     # =========================================================
     # DRAW — extra colour coding for new states

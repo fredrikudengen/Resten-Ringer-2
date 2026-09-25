@@ -30,8 +30,10 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         self.wander_goal_g       = None
         self.wander_end          = False
         self.next_wander_at      = now + random.randint(1200, 2500)
-        self.WANDER_INTERVAL_MS  = (1500, 2500) 
+        self.WANDER_INTERVAL_MS  = (1500, 2500)
         self.wander_radius       = 4
+
+        self.facing_left         = False
 
     # ------------------------- PUBLIC API -------------------------
 
@@ -46,6 +48,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             dt_ms: millisekunder siden forrige frame
         """
         now = pygame.time.get_ticks()
+        prev_x = self.pos.x
 
         if self.health <= 0:
             self.alive         = False
@@ -106,6 +109,10 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         elif self.state == "dead":
             return
 
+        dx = self.pos.x - prev_x
+        if abs(dx) > 1e-3:
+            self.facing_left = dx < 0
+
     def draw(self, screen, camera):
         draw_rect = camera.apply(self.rect)
 
@@ -122,7 +129,10 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         # else:
         #     color = self.color
 
-        self.sprite.draw(screen, draw_rect)
+        is_moving = self.state == "chase" or self.state == "search" or (
+            self.state == "idle" and self.wander_goal_g is not None
+        )
+        self.sprite.draw(screen, draw_rect, flip_x=self.facing_left, moving=is_moving)
         self._draw_healthbar(screen, camera)
 
         if self.state in ("idle", "walk") and self.wander_goal_g is not None:

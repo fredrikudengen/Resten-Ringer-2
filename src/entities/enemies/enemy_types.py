@@ -51,9 +51,10 @@ class SwarmEnemy(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.sprite = Sprite(
-            frames={"idle": "enemy_fast"},
+            frames={"idle": ["enemy_fast", "enemy_fast"]},
             base_size=(self.width, self.height),
-            fallback_color=self.color
+            fallback_color=self.color,
+            gait={"idle": {"cycle_ms": 400, "bounce": 14, "sway": 2, "lean": 3}}
         )
 
 
@@ -78,9 +79,10 @@ class FastEnemy(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.sprite = Sprite(
-            frames={"idle": "enemy_swarm"},
+            frames={"idle": ["enemy_swarm", "enemy_swarm"]},
             base_size=(self.width, self.height),
-            fallback_color=self.color
+            fallback_color=self.color,
+            gait={"idle": {"cycle_ms": 500, "bounce": 14, "sway": 2, "lean": 3}}
         )
 
 
@@ -159,4 +161,4 @@ class MarksmanEnemy(RangedEnemy):
         super().draw(screen, camera)
         if self.state not in ("dead", "reload"):
             draw_rect = camera.apply(self.rect)
-            self.sprite.draw(screen, draw_rect)
+            self.sprite.draw(screen, draw_rect, flip_x=self.facing_left)
