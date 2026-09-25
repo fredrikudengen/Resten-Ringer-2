@@ -71,7 +71,7 @@ class WardenBoss(Enemy, MovementMixin):
         self._lunge_cooldown_until = 0
         self._daze_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy_boss"},
+            frames={"idle": "enemy/warden/enemy_warden"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
