@@ -51,7 +51,7 @@ class SwarmEnemy(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.sprite = Sprite(
-            frames={"idle": ["enemy_fast", "enemy_fast"]},
+            frames={"idle": ["enemy/fast/enemy_fast", "enemy/fast/enemy_fast"]},
             base_size=(self.width, self.height),
             fallback_color=self.color,
             gait={"idle": {"cycle_ms": 400, "bounce": 14, "sway": 2, "lean": 3}}
@@ -79,7 +79,7 @@ class FastEnemy(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.sprite = Sprite(
-            frames={"idle": ["enemy_swarm", "enemy_swarm"]},
+            frames={"idle": ["enemy/swarm/enemy_swarm", "enemy/swarm/enemy_swarm"]},
             base_size=(self.width, self.height),
             fallback_color=self.color,
             gait={"idle": {"cycle_ms": 500, "bounce": 14, "sway": 2, "lean": 3}}
@@ -121,7 +121,7 @@ class ShooterEnemy(RangedEnemy):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.sprite = Sprite(
-            frames={"idle": "enemy_shoot"},
+            frames={"idle": "enemy/shooter/enemy_shoot"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -158,7 +158,7 @@ class MarksmanEnemy(RangedEnemy):
         super().__init__(x, y)
 
         self.sprite = Sprite(
-            frames={"idle": "enemy_sniper"},
+            frames={"idle": "enemy/sniper/enemy_sniper"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )

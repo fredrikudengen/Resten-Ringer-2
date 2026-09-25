@@ -41,13 +41,17 @@ class ScoutEnemy(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.sprite = Sprite(
-            frames={"idle": "enemy_scout"},
+            frames={
+                "idle": "enemy/scout/idle/idle",
+                "walk": [f"enemy/scout/walk/{i}" for i in range(4)],
+            },
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
 
     def move(self, player, obstacles, room, dt_ms):
         now = pygame.time.get_ticks()
+        prev_x = self.pos.x
 
         if self.health <= 0:
             self.alive = False
@@ -67,6 +71,16 @@ class ScoutEnemy(Enemy):
             self._damage_player(player, self.damage)
             self.attack_cooldown_until = now + self.attack_cooldown
             self.apply_knockback(player.rect, 4)
+
+        dx = self.pos.x - prev_x
+        if abs(dx) > 1e-3:
+            self.facing_left = dx < 0
+
+    def draw(self, screen, camera):
+        super().draw(screen, camera)
+        if self.state != "dead":
+            draw_rect = camera.apply(self.rect)
+            self.sprite.draw(screen, draw_rect, frame="walk", flip_x=self.facing_left)
 
 
 class AssassinEnemy(Enemy):
@@ -102,7 +116,7 @@ class AssassinEnemy(Enemy):
         self._lunge_start = pygame.Vector2()
         self._lunge_cooldown_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy_assass"},
+            frames={"idle": "enemy/assassin/enemy_assassin"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -295,7 +309,7 @@ class SlowEnemy(WindupMeleeMixin, Enemy):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy_slow"},
+            frames={"idle": "enemy/slow/enemy_slow"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -325,7 +339,7 @@ class BruteEnemy(WindupMeleeMixin, Enemy):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy_brute"},
+            frames={"idle": "enemy/brute/enemy_brute"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -354,7 +368,7 @@ class TankEnemy(WindupMeleeMixin, Enemy):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy_tank"},
+            frames={"idle": "enemy/tank/enemy_tank"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
