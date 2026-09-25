@@ -52,8 +52,9 @@ class Sprite:
         angle: float = 0.0,
         alpha: int = 255,
         y_offset: int = 0,
+        moving: bool = True,
     ) -> tuple[int, int]:
-        path, x_offset, y_offset, angle = self._resolve_frame(frame, flip_x, y_offset, angle)
+        path, x_offset, y_offset, angle = self._resolve_frame(frame, flip_x, y_offset, angle, moving)
 
         base = self._get_surface(path, flip_x) if path else None
 
@@ -72,9 +73,9 @@ class Sprite:
         return x_offset, y_offset
 
     def _resolve_frame(
-        self, frame: str, flip_x: bool, y_offset: int, angle: float
+        self, frame: str, flip_x: bool, y_offset: int, angle: float, moving: bool = True
     ) -> tuple[str | None, int, int, float]:
-        if frame in self._gait:
+        if moving and frame in self._gait:
             path, sway_x, bounce_y, lean_angle = self._gait_frame(frame)
             if flip_x:
                 sway_x = -sway_x
@@ -145,7 +146,7 @@ class Sprite:
         frames = self._animations[state]  # må ha nøyaktig 2 elementer
 
         now = pygame.time.get_ticks()
-        if self._last_frame_name != state:
+        if self._last_frame_name != state or state not in self._gait_phase_start:
             self._gait_phase_start[state] = now
 
         cycle_ms = cfg["cycle_ms"]
