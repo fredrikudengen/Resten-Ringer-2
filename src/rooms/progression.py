@@ -31,9 +31,9 @@ _THRESHOLDS = [2, 4, 6, 8, 10, 12, 14, 16, 18]
 # Ideer til nye fiender? Legg dem inn her og i enemy_types.py / elite_enemies.py!
 # ---------------------------------------------------------------------------
 ENEMY_POOL = {
-    1:  [SwarmEnemy, SwarmEnemy, FastEnemy],
+    1:  [SwarmEnemy, SwarmEnemy, FastEnemy, ScoutEnemy, ScoutEnemy],
     2:  [SwarmEnemy, FastEnemy, FastEnemy],
-    3:  [FastEnemy, FastEnemy, SlowEnemy],
+    3:  [FastEnemy, FastEnemy, SlowEnemy, ScoutEnemy],
     4:  [FastEnemy, SlowEnemy, ScoutEnemy, ShooterEnemy],
     5:  [FastEnemy, SlowEnemy, ScoutEnemy, AssassinEnemy, ShooterEnemy],
     6:  [FastEnemy, SlowEnemy, AssassinEnemy, TankEnemy, ShooterEnemy, MarksmanEnemy],
