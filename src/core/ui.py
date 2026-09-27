@@ -158,12 +158,9 @@ class HUD:
         screen.blit(hp_label, (x, cy))
         cy += self.LABEL_SIZE + 4
 
-        shield_bonus = 0
-        if 'ShieldPowerup' in player.buff_timers:
-            shield_bonus = player.buff_timers['ShieldPowerup'][2]
-        normal_health = player.health - shield_bonus
+        shield = player.shield
 
-        hp_pct = normal_health / max(1, player.max_health)
+        hp_pct = player.health / max(1, player.max_health)
         if hp_pct <= 0.15:
             hp_color, flicker = _C["hp_low"],  True
         elif hp_pct <= 0.30:
@@ -172,19 +169,19 @@ class HUD:
             hp_color, flicker = _C["hp_full"], False
 
         hp_rect = pygame.Rect(x, cy, w, self.HP_BAR_H)
-        if shield_bonus > 0:
-            bar_max = max(player.max_health, player.health)
+        if shield > 0:
+            bar_max = player.max_health + shield
             _draw_rounded_rect(screen, _C["bar_bg"], hp_rect, 5)
 
             color = hp_color
             if flicker and (pygame.time.get_ticks() // 120) % 2 == 0:
                 color = _C["hp_crit"]
 
-            red_w = int(w * (normal_health / bar_max))
+            red_w = int(w * (player.health / bar_max))
             if red_w > 0:
                 _draw_rounded_rect(screen, color, pygame.Rect(x, cy, red_w, self.HP_BAR_H), 5)
 
-            blue_w = int(w * (shield_bonus / bar_max))
+            blue_w = int(w * (shield / bar_max))
             if blue_w > 0:
                 _draw_rounded_rect(screen, _C["ShieldPowerup"], pygame.Rect(x + red_w, cy, blue_w, self.HP_BAR_H), 5)
 

@@ -88,6 +88,7 @@ class Player(Entity):
 
         # Buffs
         self.buff_timers: dict[str, int] = {}
+        self.shield: int = 0
         self.relics: list = []
         self.adrenaline_until: int = 0
 
@@ -247,7 +248,15 @@ class Player(Entity):
             self.health = min(self.health + heal, self.max_health)
             return
 
+        if powerup == 'ShieldPowerup':
+            grant = int(self.max_health * pct)
+            self.shield = max(self.shield, grant) if powerup in self.buff_timers else grant
+            self.buff_timers[powerup] = (pygame.time.get_ticks(), 'shield', grant)
+            return
+
         if powerup in self.buff_timers:
+            _, attr, bonus = self.buff_timers[powerup]
+            self.buff_timers[powerup] = (pygame.time.get_ticks(), attr, bonus)
             return
 
         if powerup == 'AttackPowerup':
@@ -266,6 +275,8 @@ class Player(Entity):
             if now - start >= constants.BUFF_DURATIONS.get(name, 0):
                 if name == 'AttackPowerup':
                     self.gun.damage -= bonus
+                elif name == 'ShieldPowerup':
+                    self.shield = 0
                 else:
                     setattr(self, attr, getattr(self, attr) - bonus)
                 del self.buff_timers[name]
