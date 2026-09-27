@@ -76,7 +76,15 @@ class Bullet:
     def damage_player(self, player):
 
         player.hit = True
-        player.health -= int(self.damage)
+        dmg = int(self.damage)
+
+        if player.shield > 0:
+            absorbed = min(player.shield, dmg)
+            player.shield -= absorbed
+            dmg -= absorbed
+
+        if dmg > 0:
+            player.health -= dmg
 
         for relic in player.relics:
             relic.on_hit(player)
