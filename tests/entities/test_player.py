@@ -95,3 +95,55 @@ def test_apply_health_powerup_heals_but_caps_at_max_health_and_has_no_timer():
 
     assert player.health == player.max_health
     assert "HealthPowerup" not in player.buff_timers
+
+
+def test_apply_shield_powerup_grants_shield_and_expiry_leaves_health_untouched(monkeypatch):
+    _set_ticks(monkeypatch, 0)
+    player = Player()
+    start_health = player.health
+
+    player.apply_powerup("ShieldPowerup")
+    _, pct = constants.BUFF_VALUES["ShieldPowerup"]
+    grant = int(player.max_health * pct)
+    assert player.shield == grant
+    assert player.health == start_health
+
+    duration = constants.BUFF_DURATIONS["ShieldPowerup"]
+    _set_ticks(monkeypatch, duration)
+    player.update_powerups()
+
+    assert player.shield == 0
+    assert player.health == start_health
+    assert "ShieldPowerup" not in player.buff_timers
+
+
+def test_apply_shield_powerup_twice_while_active_refreshes_without_stacking(monkeypatch):
+    _set_ticks(monkeypatch, 0)
+    player = Player()
+
+    player.apply_powerup("ShieldPowerup")
+    once_shield = player.shield
+
+    _set_ticks(monkeypatch, 5000)
+    player.apply_powerup("ShieldPowerup")
+
+    assert player.shield == once_shield
+    start, _, _ = player.buff_timers["ShieldPowerup"]
+    assert start == 5000
+
+
+def test_health_powerup_while_shielded_does_not_cause_health_loss_after_shield_expires(monkeypatch):
+    _set_ticks(monkeypatch, 0)
+    player = Player()
+    player.health = player.max_health - 5
+
+    player.apply_powerup("ShieldPowerup")
+    player.apply_powerup("HealthPowerup")
+    assert player.health == player.max_health
+
+    duration = constants.BUFF_DURATIONS["ShieldPowerup"]
+    _set_ticks(monkeypatch, duration)
+    player.update_powerups()
+
+    assert player.health == player.max_health
+    assert player.shield == 0
