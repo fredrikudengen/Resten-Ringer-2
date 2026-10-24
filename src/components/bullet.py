@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import pygame
 from pygame.math import Vector2
 
@@ -22,6 +24,7 @@ class Bullet:
         max_range,
         team,
         knockback_strength,
+        sprite=None,
     ):
         self.piercing  = False
         self.pos       = Vector2(pos)
@@ -34,6 +37,9 @@ class Bullet:
         self.alive     = True
         self.team      = team
         self.knockback_strength = knockback_strength
+        self.sprite    = sprite
+        # pygame roterer mot klokka, og skjerm-y peker ned → negativ vinkel
+        self._angle    = -math.degrees(math.atan2(self.direction.y, self.direction.x))
 
         self._distance_travelled = 0.0
 
@@ -59,7 +65,10 @@ class Bullet:
 
     def draw(self, screen: pygame.Surface, camera):
         dr = camera.apply(self.rect)
-        pygame.draw.circle(screen, self.color, dr.center, self.radius)
+        if self.sprite is not None:
+            self.sprite.draw(screen, dr, frame="default", angle=self._angle)
+        else:
+            pygame.draw.circle(screen, self.color, dr.center, self.radius)
 
     def damage_enemy(self, enemy):
         enemy.hit = True
