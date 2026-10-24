@@ -33,6 +33,7 @@ class WardenBoss(Enemy, MovementMixin):
     """
     name = "warden_boss"
     speed = 100
+    accel_time_ms = 500
     health = 2000
     damage = 55
     attack_range = 12100  # 110 px
