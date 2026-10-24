@@ -37,10 +37,14 @@ class PathfindingMixin:
                 y += y_steps
 
     def _micro_wander(self, room, goal_g, max_depth):
-        """BFS: finn NESTE grid-steg mot goal_g."""
+        """Neste waypoint mot goal_g for korte vandreturer (BFS + string-pulling)."""
+        return self._farthest_visible(room, self._bfs_path(room, goal_g, max_depth))
+
+    def _bfs_path(self, room, goal_g, max_depth):
+        """BFS: liste med tiles fra første steg til goal_g, tom hvis ikke nåbar innen max_depth."""
         start = self._grid_pos()
         if start == goal_g:
-            return None
+            return []
 
         q = deque([start])
         came_from = {start: None}
@@ -50,12 +54,7 @@ class PathfindingMixin:
         while q:
             x, y = q.popleft()
             if (x, y) == goal_g:
-                cur = (x, y)
-                prev = came_from[cur]
-                while prev and prev != start:
-                    cur = prev
-                    prev = came_from[cur]
-                return cur
+                return self._reconstruct_path(came_from, (x, y), start)
 
             if depth[(x, y)] >= max_depth:
                 continue
@@ -70,21 +69,19 @@ class PathfindingMixin:
                 depth[(nx, ny)] = depth[(x, y)] + 1
                 q.append((nx, ny))
 
-        return None
-
-    def _astar_next_step(self, room, goal_g, max_expansions):
-        """Neste nabo-tile på A*-stien mot goal_g (eller None)."""
-        path = self._astar_path(room, goal_g, max_expansions)
-        return path[0] if path else None
+        return []
 
     def _smoothed_next_waypoint(self, room, goal_g, max_expansions):
-        """Fjerneste tile på A*-stien som er i siktlinje (string-pulling).
+        """Neste waypoint mot goal_g (A* + string-pulling)."""
+        return self._farthest_visible(room, self._astar_path(room, goal_g, max_expansions))
 
-        A* på 4-retnings-grid gir L-formede stier (først horisontalt, så
+    def _farthest_visible(self, room, path):
+        """Fjerneste tile på stien som er i siktlinje (string-pulling), eller None.
+
+        Grid-søk med 4 retninger gir L-formede stier (først horisontalt, så
         vertikalt). Ved å gå mot det fjerneste synlige punktet på stien blir
         bevegelsen rett/diagonal i åpne rom, men følger fortsatt stien rundt vegger.
         """
-        path = self._astar_path(room, goal_g, max_expansions)
         if not path:
             return None
         sx, sy = self._grid_pos()
