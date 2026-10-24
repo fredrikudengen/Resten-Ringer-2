@@ -45,6 +45,8 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         self._noise_t            = 0.0
         self._noise_phase        = (random.uniform(0, 2 * math.pi), random.uniform(0, 2 * math.pi))
 
+        self._init_burst()
+
     # ------------------------- PUBLIC API -------------------------
 
     def move(self, player, obstacles, room, dt_ms):
@@ -127,6 +129,8 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         return "idle"
 
     def _is_moving(self) -> bool:
+        if self._burst_paused():
+            return False
         return self.state == "chase" or self.state == "search" or (
             self.state == "idle" and self.wander_goal_g is not None
         )
@@ -149,7 +153,8 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
         self.sprite.draw(
             screen, draw_rect, frame=self._sprite_frame(),
-            flip_x=self.facing_left, moving=self._is_moving()
+            flip_x=self.facing_left, moving=self._is_moving(),
+            gait_phase=self._gait_phase(),
         )
         self._draw_healthbar(screen, camera)
 

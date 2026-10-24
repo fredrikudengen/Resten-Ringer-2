@@ -24,6 +24,9 @@ from src.components.gun import EnemyPistol, EnemyRifle
 # accel_time_ms    : ms fra stillstand til full fart (inerti). Lav = kvikk, høy = tung/glir mer i svinger
 # dir_noise_deg    : maks vinkelavvik (grader) fra målretningen, driver sakte. 0 = rett linje
 # dir_noise_hz     : hvor raskt retningsavviket driver. Høyere = mer vinglete
+# burst_move_ms    : lengde på hvert hopp (ms). Sammen med burst_pause_ms gir det hopp-pause-hopp.
+# burst_pause_ms   : pause mellom hopp (ms). 0 på en av dem = jevn bevegelse. Gait-spretten følger hoppet.
+# burst_jitter     : tilfeldig variasjon per fase (0.25 = ±25 %), så rytmen ikke blir mekanisk
 # health           : HP. Pistolskudd gjør 20 skade, så health=40 → 2 skudd
 # damage           : Skade ved treff (melee) eller via gun (ranged)
 # detection_radius : Pikselradius der fienden oppdager spilleren (krever siktlinje)

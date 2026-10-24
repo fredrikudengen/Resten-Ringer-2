@@ -1,4 +1,5 @@
 import math
+import random
 
 from pygame.math import Vector2
 
@@ -9,6 +10,55 @@ class MovementMixin:
     accel_time_ms = constants.ENEMY_ACCEL_TIME_MS
     dir_noise_deg = constants.ENEMY_DIR_NOISE_DEG
     dir_noise_hz  = constants.ENEMY_DIR_NOISE_HZ
+
+    # Burst-bevegelse (#22): hopp, pause, hopp. Av hvis en av fasene er 0.
+    burst_move_ms  = 0
+    burst_pause_ms = 0
+    burst_jitter   = 0.25  # ±andel tilfeldig variasjon per fase
+
+    # ---------- BURST ----------
+
+    def _init_burst(self):
+        """Kalles fra Enemy.__init__. Tilfeldig startpunkt i første hopp så fiender ikke hopper i takt."""
+        self._burst_moving    = True
+        self._burst_hops      = 0
+        self._burst_phase_len = self._burst_phase_length(True) if self._bursting() else 1.0
+        self._burst_left_ms   = self._burst_phase_len * random.random()
+
+    def _bursting(self):
+        return self.burst_move_ms > 0 and self.burst_pause_ms > 0
+
+    def _burst_phase_length(self, moving):
+        base = self.burst_move_ms if moving else self.burst_pause_ms
+        if self.burst_jitter <= 0:
+            return float(base)
+        return base * random.uniform(1 - self.burst_jitter, 1 + self.burst_jitter)
+
+    def _advance_burst(self, dt_ms):
+        self._burst_left_ms -= dt_ms
+        while self._burst_left_ms <= 0:
+            self._burst_moving = not self._burst_moving
+            if self._burst_moving:
+                self._burst_hops += 1
+            self._burst_phase_len = self._burst_phase_length(self._burst_moving)
+            self._burst_left_ms += self._burst_phase_len
+
+    def _burst_paused(self):
+        return self._bursting() and not self._burst_moving
+
+    def _gait_phase(self):
+        """Gait-fase (0..1) synket med hoppet, eller None (Sprite bruker da klokka).
+
+        Ett hopp = en halv gait-syklus = én sprett (|sin| går 0 → topp → 0).
+        Annethvert hopp bruker andre halvdel, så sway/lean fortsetter jevnt.
+        """
+        if not self._bursting() or not self._burst_moving:
+            return None
+        progress = 1.0 - self._burst_left_ms / self._burst_phase_len
+        progress = max(0.0, min(1.0, progress))
+        return 0.5 * (self._burst_hops % 2) + 0.5 * progress
+
+    # ---------- STEERING ----------
 
     def _direction_noise_deg(self, dt_ms, dist_to_target):
         """Sakte drivende vinkelavvik (grader) for målretningen.
@@ -116,7 +166,13 @@ class MovementMixin:
         """Gå mot en piksel-posisjon med normalisert fart."""
         direction = Vector2(target_px[0] - self.pos.x, target_px[1] - self.pos.y)
         dist = direction.length()
-        if dist > 1e-6:
+
+        if self._bursting():
+            self._advance_burst(dt_ms)
+
+        if self._burst_paused():
+            self._steer(0, 0, dt_ms, obstacles)  # pause: inertien bremser hoppet mykt ned
+        elif dist > 1e-6:
             direction /= dist
             direction.rotate_ip(self._direction_noise_deg(dt_ms, dist))
             self._steer(direction.x * self.speed, direction.y * self.speed, dt_ms, obstacles)
