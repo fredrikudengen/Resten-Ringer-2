@@ -66,7 +66,6 @@ class RangedEnemy(Enemy):
     def move(self, player, obstacles, room, dt_ms: int):
         """Full AI update — replaces Enemy.move() for ranged enemies."""
         now = pygame.time.get_ticks()
-        prev_x = self.pos.x
 
         # Always tick gun reload
         self.gun.update_reload()

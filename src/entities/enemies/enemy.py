@@ -97,7 +97,6 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             dt_ms: millisekunder siden forrige frame
         """
         now = pygame.time.get_ticks()
-        prev_x = self.pos.x
 
         if self.health <= 0:
             self.alive         = False

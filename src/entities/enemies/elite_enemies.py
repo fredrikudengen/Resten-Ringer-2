@@ -45,7 +45,11 @@ class ScoutEnemy(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.sprite = Sprite(
-            frames={"idle": "enemy_scout"},
+            frames={
+                "idle": "enemy/scout/idle/idle",
+                "walk": [f"enemy/scout/walk/{i}" for i in range(2)],
+                "hurt": "enemy/scout/idle/idle",
+            },
             base_size=(self.width, self.height),
             fallback_color=self.color,
             gait={"walk": {"cycle_ms": 400, "bounce": 14, "sway": 2, "lean": 3}},
@@ -53,7 +57,6 @@ class ScoutEnemy(Enemy):
 
     def move(self, player, obstacles, room, dt_ms):
         now = pygame.time.get_ticks()
-        prev_x = self.pos.x
 
         if self.health <= 0:
             self.alive = False
@@ -67,12 +70,31 @@ class ScoutEnemy(Enemy):
         player_center = player.rect.center
 
         self.update_knockback(obstacles)
-        self._move_towards(player_center, obstacles, dt_ms)
+
+        T = constants.TILE_SIZE
+        goal_g = (player_center[0] // T, player_center[1] // T)
+        waypoint_g = self._smoothed_next_waypoint(room, goal_g, max_expansions=512)
+        if waypoint_g == goal_g:
+            # Fri sikt til spillerens tile – gå rett mot spilleren, ikke tile-senteret
+            self._move_towards(player_center, obstacles, dt_ms)
+        elif waypoint_g:
+            target_px = self._center_of_tile(*waypoint_g)
+            self._move_towards(target_px, obstacles, dt_ms)
+        else:
+            self._move_towards(player_center, obstacles, dt_ms)
 
         if now >= self.attack_cooldown_until and self.rect.colliderect(player.rect):
             self._damage_player(player, self.damage)
             self.attack_cooldown_until = now + self.attack_cooldown
             self.apply_knockback(player.rect, 4)
+
+        self._update_facing()
+
+    def _sprite_frame(self) -> str:
+        return "idle" if self.state == "dead" else "walk"
+
+    def _is_moving(self) -> bool:
+        return self.state != "dead" and not self._burst_paused() and not self._flinching()
 
 
 class AssassinEnemy(Enemy):
@@ -110,7 +132,7 @@ class AssassinEnemy(Enemy):
         self._lunge_start = pygame.Vector2()
         self._lunge_cooldown_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy_assass"},
+            frames={"idle": "enemy/assassin/enemy_assassin", "hurt": "enemy/assassin/enemy_assassin"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -312,7 +334,7 @@ class SlowEnemy(WindupMeleeMixin, Enemy):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy_slow"},
+            frames={"idle": "enemy/slow/enemy_slow", "hurt": "enemy/slow/enemy_slow"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -345,7 +367,7 @@ class BruteEnemy(WindupMeleeMixin, Enemy):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy_brute"},
+            frames={"idle": "enemy/brute/enemy_brute", "hurt": "enemy/brute/enemy_brute"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -377,7 +399,7 @@ class TankEnemy(WindupMeleeMixin, Enemy):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy_tank"},
+            frames={"idle": "enemy/tank/enemy_tank", "hurt": "enemy/tank/enemy_tank"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
