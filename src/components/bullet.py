@@ -71,10 +71,8 @@ class Bullet:
             pygame.draw.circle(screen, self.color, dr.center, self.radius)
 
     def damage_enemy(self, enemy):
-        enemy.hit = True
         enemy.health -= self.damage
-
-        enemy.apply_knockback(self.rect, self.knockback_strength)
+        enemy.on_hit(self.rect, self.knockback_strength)
 
         if enemy.health <= 0:
             enemy.alive = False
