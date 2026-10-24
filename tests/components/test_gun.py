@@ -1,6 +1,6 @@
 import pygame
 
-from components.gun import Pistol, Shotgun, SniperRifle
+from components.gun import MachineGun, Pistol, Shotgun, SniperRifle
 
 # Guns compare pygame.time.get_ticks() against an internal "last event"
 # timestamp that starts at 0, so tests start the clock well past 0 to
@@ -95,3 +95,12 @@ def test_sniper_rifle_shot_is_piercing(monkeypatch):
 
     assert len(bullets) == 1
     assert bullets[0].piercing is True
+
+
+def test_knockback_scales_with_weapon_type(monkeypatch):
+    _set_ticks(monkeypatch, BASE_TICK)
+
+    assert MachineGun.knockback_strength < Pistol.knockback_strength < SniperRifle.knockback_strength
+
+    bullet = SniperRifle().shoot((0, 0), pygame.math.Vector2(1, 0))[0]
+    assert bullet.knockback_strength == SniperRifle.knockback_strength
