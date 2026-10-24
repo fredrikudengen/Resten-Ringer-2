@@ -95,7 +95,7 @@ class ScoutEnemy(Enemy):
         return "idle" if self.state == "dead" else "walk"
 
     def _is_moving(self) -> bool:
-        return self.state != "dead"
+        return self.state != "dead" and not self._burst_paused()
 
 
 class AssassinEnemy(Enemy):
