@@ -7,6 +7,7 @@ from pygame.math import Vector2
 
 from src.components.bullet import Bullet
 from src.view.sound_manager import sound
+from src.view.sprite import Sprite
 
 class Gun:
 
@@ -15,6 +16,7 @@ class Gun:
     bullet_speed:  float = 600.0
     bullet_radius: int   = 5
     bullet_color:  tuple = (220, 220, 50)
+    bullet_sprite: str | None = None   # sti under assets/sprites, None = tegnet sirkel
     max_range:     float = 800.0
     name:          str   = "Gun"
     team:          str   = "player"
@@ -27,6 +29,16 @@ class Gun:
         self._last_shot_at: int        = 0
         self._reload_start: int | None = None
         self.current_ammo: int = self.max_ammo
+
+        # Én delt Sprite per våpen, slik at skalert bilde caches på tvers av skudd
+        self._bullet_sprite: Sprite | None = None
+        if self.bullet_sprite is not None:
+            size = (self.bullet_radius * 2, self.bullet_radius * 2)
+            self._bullet_sprite = Sprite(
+                frames={"default": self.bullet_sprite},
+                base_size=size,
+                fallback_color=self.bullet_color,
+            )
 
     @property
     def is_reloading(self) -> bool:
@@ -105,7 +117,8 @@ class Gun:
             color     = self.bullet_color,
             max_range = self.max_range,
             team      = self.team,
-            knockback_strength = self.knockback_strength
+            knockback_strength = self.knockback_strength,
+            sprite    = self._bullet_sprite,
         )
 
 
@@ -118,6 +131,7 @@ class Pistol(Gun):
     bullet_speed   = 650.0
     bullet_radius  = 10
     bullet_color   = (220, 220, 50)
+    bullet_sprite  = "bullet/fredrik-pistol"
     spread         = 4
     max_range      = 800.0
     max_ammo       = 12
