@@ -147,6 +147,9 @@ class Sprite:
 
         return frames[self._anim_index[state]]
 
+    def has_frame(self, state: str) -> bool:
+        return state in self._animations
+
     def current_frame_index(self, state: str) -> int:
         return self._anim_index.get(state, 0)
 
