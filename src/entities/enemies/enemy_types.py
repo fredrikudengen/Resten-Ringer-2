@@ -21,6 +21,7 @@ from src.components.gun import EnemyPistol, EnemyRifle
 #
 # --- Nyttige verdier å justere ---
 # speed            : px per sekund. Spilleren er ~430, så 400 = omtrent like rask
+# accel_time_ms    : ms fra stillstand til full fart (inerti). Lav = kvikk, høy = tung/glir mer i svinger
 # health           : HP. Pistolskudd gjør 20 skade, så health=40 → 2 skudd
 # damage           : Skade ved treff (melee) eller via gun (ranged)
 # detection_radius : Pikselradius der fienden oppdager spilleren (krever siktlinje)
@@ -36,6 +37,7 @@ class SwarmEnemy(Enemy):
     """
     name              = "swarm_enemy"
     speed             = 400
+    accel_time_ms     = 150
     health            = 40
     damage            = 8
     detection_radius  = 700
@@ -64,6 +66,7 @@ class FastEnemy(Enemy):
     """
     name              = "fast_enemy"
     speed             = 440
+    accel_time_ms     = 300
     health            = 45
     damage            = 12
     detection_radius  = 700
@@ -108,6 +111,7 @@ class ShooterEnemy(RangedEnemy):
     min_range_px       = 130
 
     speed              = 250
+    accel_time_ms      = 200
     health             = 75
     detection_radius   = 800
     knockback_strength = 0
@@ -144,6 +148,7 @@ class MarksmanEnemy(RangedEnemy):
     reposition_interval = 600
 
     speed              = 240
+    accel_time_ms      = 250
     health             = 120
     detection_radius   = 900
     knockback_strength = 0

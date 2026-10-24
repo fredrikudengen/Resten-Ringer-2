@@ -28,6 +28,7 @@ class ScoutEnemy(Enemy):
     """
     name               = "scout_enemy"
     speed              = 330
+    accel_time_ms      = 150
     health             = 55
     damage             = 10
     attack_range       = 4225
@@ -71,9 +72,12 @@ class ScoutEnemy(Enemy):
 
         T = constants.TILE_SIZE
         goal_g = (player_center[0] // T, player_center[1] // T)
-        next_tile_g = self._astar_next_step(room, goal_g, max_expansions=512)
-        if next_tile_g:
-            target_px = self._center_of_tile(*next_tile_g)
+        waypoint_g = self._smoothed_next_waypoint(room, goal_g, max_expansions=512)
+        if waypoint_g == goal_g:
+            # Fri sikt til spillerens tile – gå rett mot spilleren, ikke tile-senteret
+            self._move_towards(player_center, obstacles, dt_ms)
+        elif waypoint_g:
+            target_px = self._center_of_tile(*waypoint_g)
             self._move_towards(target_px, obstacles, dt_ms)
         else:
             self._move_towards(player_center, obstacles, dt_ms)
@@ -100,6 +104,7 @@ class AssassinEnemy(Enemy):
     """
     name              = "assassin_enemy"
     speed             = 400
+    accel_time_ms     = 120
     health            = 65
     damage            = 35
     detection_radius  = 800
@@ -302,6 +307,7 @@ class SlowEnemy(WindupMeleeMixin, Enemy):
     """
     name              = "slow_enemy"
     speed             = 280
+    accel_time_ms     = 400
     health            = 90
     damage            = 26
     detection_radius  = 600
@@ -332,6 +338,7 @@ class BruteEnemy(WindupMeleeMixin, Enemy):
     """
     name              = "brute_enemy"
     speed             = 330
+    accel_time_ms     = 450
     health            = 160
     damage            = 34
     detection_radius  = 700
@@ -361,6 +368,7 @@ class TankEnemy(WindupMeleeMixin, Enemy):
     """
     name              = "tank_enemy"
     speed             = 310
+    accel_time_ms     = 550
     health            = 300
     damage            = 28
     detection_radius  = 700
