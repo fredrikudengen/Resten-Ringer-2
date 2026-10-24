@@ -1,3 +1,5 @@
+import math
+
 from pygame.math import Vector2
 
 from src.core import constants
@@ -5,6 +7,27 @@ from src.core import constants
 class MovementMixin:
 
     accel_time_ms = constants.ENEMY_ACCEL_TIME_MS
+    dir_noise_deg = constants.ENEMY_DIR_NOISE_DEG
+    dir_noise_hz  = constants.ENEMY_DIR_NOISE_HZ
+
+    def _direction_noise_deg(self, dt_ms, dist_to_target):
+        """Sakte drivende vinkelavvik (grader) for målretningen.
+
+        Sum av to sinuser med tilfeldig fase per fiende og ikke-rasjonelt
+        frekvensforhold, så det ikke ser periodisk ut. Tones ned nær målet så
+        fienden fortsatt treffer spilleren/waypoints presist.
+        """
+        if self.dir_noise_deg <= 0:
+            return 0.0
+
+        self._noise_t += dt_ms / 1000.0
+        w = 2 * math.pi * self.dir_noise_hz
+        p1, p2 = self._noise_phase
+        raw = 0.6 * math.sin(w * self._noise_t + p1) + 0.4 * math.sin(w * 2.37 * self._noise_t + p2)
+
+        T = constants.TILE_SIZE
+        fade = max(0.0, min(1.0, (dist_to_target - 0.5 * T) / (1.5 * T)))
+        return self.dir_noise_deg * raw * fade
 
     def _steer(self, desired_vx, desired_vy, dt_ms, obstacles):
         """Glid self.velocity mot ønsket hastighet med begrenset akselerasjon, og flytt.
@@ -95,6 +118,7 @@ class MovementMixin:
         dist = direction.length()
         if dist > 1e-6:
             direction /= dist
+            direction.rotate_ip(self._direction_noise_deg(dt_ms, dist))
             self._steer(direction.x * self.speed, direction.y * self.speed, dt_ms, obstacles)
         return self._dist2(int(self.pos.x), int(self.pos.y), int(target_px[0]), int(target_px[1])) <= (24 * 24)
 

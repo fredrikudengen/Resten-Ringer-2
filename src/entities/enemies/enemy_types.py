@@ -22,6 +22,8 @@ from src.components.gun import EnemyPistol, EnemyRifle
 # --- Nyttige verdier å justere ---
 # speed            : px per sekund. Spilleren er ~430, så 400 = omtrent like rask
 # accel_time_ms    : ms fra stillstand til full fart (inerti). Lav = kvikk, høy = tung/glir mer i svinger
+# dir_noise_deg    : maks vinkelavvik (grader) fra målretningen, driver sakte. 0 = rett linje
+# dir_noise_hz     : hvor raskt retningsavviket driver. Høyere = mer vinglete
 # health           : HP. Pistolskudd gjør 20 skade, så health=40 → 2 skudd
 # damage           : Skade ved treff (melee) eller via gun (ranged)
 # detection_radius : Pikselradius der fienden oppdager spilleren (krever siktlinje)
