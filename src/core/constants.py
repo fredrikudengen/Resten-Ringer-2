@@ -33,6 +33,10 @@ ENEMY_WANDER_INTERVAL_MS = (1200, 2500)  # (min, max) pause
 ENEMY_ACCEL_TIME_MS = 250  # tid fra stillstand til full fart; 0 = ingen inerti (overstyr med accel_time_ms per fiende)
 ENEMY_DIR_NOISE_DEG = 15   # maks vinkelavvik fra målretningen; 0 = av (overstyr med dir_noise_deg per fiende)
 ENEMY_DIR_NOISE_HZ = 0.35  # hvor raskt avviket driver (overstyr med dir_noise_hz per fiende)
+ENEMY_FLINCH_MS = 120            # hvor lenge fienden stopper opp når den treffes; 0 = ingen stopp (overstyr med flinch_ms)
+ENEMY_FLINCH_COOLDOWN_MS = 300   # min. tid mellom stopp, så raske våpen ikke stunlocker fiender
+ENEMY_HURT_FLASH_MS = 100        # hvor lenge hurt-visuellen vises for fiender uten flinch (flinch_ms = 0), f.eks. boss
+ENEMY_HURT_TINT = (70, 70, 70)   # additiv blink på spriten når fienden treffes (sammen med "hurt"-frame)
 
 # XP og level
 XP_BASE = 100  # XP til level 2

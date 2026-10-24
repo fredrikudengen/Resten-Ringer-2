@@ -12,6 +12,8 @@ from src.entities.enemies.movement import MovementMixin
 class Enemy(PathfindingMixin, MovementMixin, Entity):
 
     detection_radius = 0  # px; None = alltid oppdaget (se ScoutEnemy)
+    flinch_ms        = constants.ENEMY_FLINCH_MS
+    knockback_taken_mult = 1.0  # ganges med våpenets knockback_strength; lav = tung/vanskelig å dytte
 
     def __init__(self, x, y):
 
@@ -47,7 +49,42 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
         self._init_burst()
 
+        # Treff-reaksjon (#25)
+        self.flinch_until        = 0
+        self.hurt_until          = 0
+        self._flinch_ready_at    = 0
+
     # ------------------------- PUBLIC API -------------------------
+
+    def on_hit(self, source_rect, knockback_strength):
+        """Reaksjon når fienden treffes: knockback, kort stopp (flinch) og hurt-visuell.
+
+        Hurt-visuellen (tint + "hurt"-frame) vises i flinch_ms ved hvert treff. Selve
+        stoppet har cooldown, så raske våpen ikke stunlocker fienden.
+        """
+        now = pygame.time.get_ticks()
+        self.hit = True
+        self.apply_knockback(source_rect, knockback_strength * self.knockback_taken_mult)
+        hurt_ms = self.flinch_ms if self.flinch_ms > 0 else constants.ENEMY_HURT_FLASH_MS
+        self.hurt_until = now + hurt_ms
+
+        if self.flinch_ms > 0 and now >= self._flinch_ready_at:
+            self.flinch_until = now + self.flinch_ms
+            self._flinch_ready_at = self.flinch_until + constants.ENEMY_FLINCH_COOLDOWN_MS
+            self.velocity.update(0, 0)  # stopp opp, så knockbacken faktisk synes
+
+    def _flinching(self) -> bool:
+        return pygame.time.get_ticks() < self.flinch_until
+
+    def _hurt(self) -> bool:
+        return pygame.time.get_ticks() < self.hurt_until
+
+    def _hurt_visual(self, frame: str) -> tuple[str, tuple[int, int, int] | None]:
+        """(frame, tint) for tegning: tint + "hurt"-frame (hvis spriten har en) mens fienden er truffet."""
+        if not self._hurt():
+            return frame, None
+        hurt_frame = "hurt" if self.sprite.has_frame("hurt") else frame
+        return hurt_frame, constants.ENEMY_HURT_TINT
 
     def move(self, player, obstacles, room, dt_ms):
         """
@@ -60,7 +97,6 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             dt_ms: millisekunder siden forrige frame
         """
         now = pygame.time.get_ticks()
-        prev_x = self.pos.x
 
         if self.health <= 0:
             self.alive         = False
@@ -121,15 +157,22 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         elif self.state == "dead":
             return
 
-        dx = self.pos.x - prev_x
-        if abs(dx) > 1e-3:
-            self.facing_left = dx < 0
+        self._update_facing()
+
+    def _update_facing(self):
+        """Snu spriten etter fiendens egen bevegelse (velocity), ikke posisjonsendring.
+
+        Knockback flytter pos uten å endre velocity, så fienden snur seg ikke når den treffes.
+        Liten dødsone så den ikke flimrer når farten er nesten null.
+        """
+        if abs(self.velocity.x) > 5.0:
+            self.facing_left = self.velocity.x < 0
 
     def _sprite_frame(self) -> str:
         return "idle"
 
     def _is_moving(self) -> bool:
-        if self._burst_paused():
+        if self._burst_paused() or self._flinching():
             return False
         return self.state == "chase" or self.state == "search" or (
             self.state == "idle" and self.wander_goal_g is not None
@@ -151,8 +194,9 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         # else:
         #     color = self.color
 
+        frame, tint = self._hurt_visual(self._sprite_frame())
         self.sprite.draw(
-            screen, draw_rect, frame=self._sprite_frame(),
+            screen, draw_rect, frame=frame, tint=tint,
             flip_x=self.facing_left, moving=self._is_moving(),
             gait_phase=self._gait_phase(),
         )

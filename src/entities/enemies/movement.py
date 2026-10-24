@@ -170,8 +170,8 @@ class MovementMixin:
         if self._bursting():
             self._advance_burst(dt_ms)
 
-        if self._burst_paused():
-            self._steer(0, 0, dt_ms, obstacles)  # pause: inertien bremser hoppet mykt ned
+        if self._burst_paused() or self._flinching():
+            self._steer(0, 0, dt_ms, obstacles)  # pause/flinch: står i ro (knockback virker fortsatt)
         elif dist > 1e-6:
             direction /= dist
             direction.rotate_ip(self._direction_noise_deg(dt_ms, dist))

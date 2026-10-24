@@ -47,6 +47,7 @@ class ScoutEnemy(Enemy):
             frames={
                 "idle": "enemy/scout/idle/idle",
                 "walk": [f"enemy/scout/walk/{i}" for i in range(2)],
+                "hurt": "enemy/scout/idle/idle",
             },
             base_size=(self.width, self.height),
             fallback_color=self.color,
@@ -55,7 +56,6 @@ class ScoutEnemy(Enemy):
 
     def move(self, player, obstacles, room, dt_ms):
         now = pygame.time.get_ticks()
-        prev_x = self.pos.x
 
         if self.health <= 0:
             self.alive = False
@@ -87,15 +87,13 @@ class ScoutEnemy(Enemy):
             self.attack_cooldown_until = now + self.attack_cooldown
             self.apply_knockback(player.rect, 4)
 
-        dx = self.pos.x - prev_x
-        if abs(dx) > 1e-3:
-            self.facing_left = dx < 0
+        self._update_facing()
 
     def _sprite_frame(self) -> str:
         return "idle" if self.state == "dead" else "walk"
 
     def _is_moving(self) -> bool:
-        return self.state != "dead" and not self._burst_paused()
+        return self.state != "dead" and not self._burst_paused() and not self._flinching()
 
 
 class AssassinEnemy(Enemy):
@@ -132,7 +130,7 @@ class AssassinEnemy(Enemy):
         self._lunge_start = pygame.Vector2()
         self._lunge_cooldown_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy/assassin/enemy_assassin"},
+            frames={"idle": "enemy/assassin/enemy_assassin", "hurt": "enemy/assassin/enemy_assassin"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -194,6 +192,9 @@ class AssassinEnemy(Enemy):
                 self._lunge_direction = (player.pos - self.pos).normalize()
                 self._lunge_start = pygame.Vector2(self.pos)
                 self.state = "lunge"
+                # Lunge nullstiller velocity, så retningen settes eksplisitt her
+                if abs(self._lunge_direction.x) > 1e-3:
+                    self.facing_left = self._lunge_direction.x < 0
 
         elif self.state == "lunge":
             if (self.pos - self._lunge_start).length() > self._LUNGE_MAX_DIST:
@@ -221,6 +222,8 @@ class AssassinEnemy(Enemy):
 
         elif self.state == "dead":
             return
+
+        self._update_facing()
 
 
 # ===========================================================================
@@ -301,6 +304,8 @@ class WindupMeleeMixin:
         elif self.state == "dead":
             return
 
+        self._update_facing()
+
 class SlowEnemy(WindupMeleeMixin, Enemy):
     """
     Sier seg vel selv.
@@ -321,12 +326,13 @@ class SlowEnemy(WindupMeleeMixin, Enemy):
     height            = 112
     wander_radius     = 2
     knockback_friction= 0.6
+    knockback_taken_mult = 0.7
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy/slow/enemy_slow"},
+            frames={"idle": "enemy/slow/enemy_slow", "hurt": "enemy/slow/enemy_slow"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -339,6 +345,7 @@ class BruteEnemy(WindupMeleeMixin, Enemy):
     name              = "brute_enemy"
     speed             = 330
     accel_time_ms     = 450
+    flinch_ms         = 80
     health            = 160
     damage            = 34
     detection_radius  = 700
@@ -352,12 +359,13 @@ class BruteEnemy(WindupMeleeMixin, Enemy):
     height            = 112
     wander_radius     = 3
     knockback_friction= 0.5
+    knockback_taken_mult = 0.6
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy/brute/enemy_brute"},
+            frames={"idle": "enemy/brute/enemy_brute", "hurt": "enemy/brute/enemy_brute"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -369,6 +377,7 @@ class TankEnemy(WindupMeleeMixin, Enemy):
     name              = "tank_enemy"
     speed             = 310
     accel_time_ms     = 550
+    flinch_ms         = 60
     health            = 300
     damage            = 28
     detection_radius  = 700
@@ -382,12 +391,13 @@ class TankEnemy(WindupMeleeMixin, Enemy):
     height            = 128
     wander_radius     = 2
     knockback_friction= 0.4
+    knockback_taken_mult = 0.5
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy/tank/enemy_tank"},
+            frames={"idle": "enemy/tank/enemy_tank", "hurt": "enemy/tank/enemy_tank"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )

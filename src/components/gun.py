@@ -24,6 +24,7 @@ class Gun:
     max_ammo:        int = -1
     reload_time_ms:  int = 2000
     spread:          float = 0.0
+    knockback_strength: float = 1.0   # knockback på målet som treffes; på fiender ganges den med knockback_taken_mult
 
     def __init__(self):
         self._last_shot_at: int        = 0
@@ -137,7 +138,7 @@ class Pistol(Gun):
     max_ammo       = 12
     reload_time_ms = 1400
     team = "player"
-    knockback_strength = 2
+    knockback_strength = 1
 
 
 class Shotgun(Gun):
@@ -153,7 +154,7 @@ class Shotgun(Gun):
     max_ammo       = 6
     reload_time_ms = 2000
     team = "player"
-    knockback_strength = 4
+    knockback_strength = 3
 
     def _fire(self, origin, direction) -> list[Bullet]:
         return [self._make_bullet(origin, direction)
@@ -172,7 +173,7 @@ class MachineGun(Gun):
     max_ammo       = 30
     reload_time_ms = 2500
     team = "player"
-    knockback_strength = 1
+    knockback_strength = 0.6
 
 class SniperRifle(Gun):
     name           = "Sniper"
@@ -185,7 +186,7 @@ class SniperRifle(Gun):
     max_ammo       = 5
     reload_time_ms = 2800
     team = "player"
-    knockback_strength = 3
+    knockback_strength = 5
 
     def _fire(self, origin, direction) -> list[Bullet]:
         b = self._make_bullet(origin, direction)
