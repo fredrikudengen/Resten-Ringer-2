@@ -40,6 +40,7 @@ class ScoutEnemy(Enemy):
     width              = 96
     height             = 96
     knockback_friction = 0.75
+    knockback_taken_mult = 0.8
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -119,6 +120,7 @@ class AssassinEnemy(Enemy):
     _LUNGE_SPEED      = 650
     _LUNGE_AREA       = 330000
     _LUNGE_COOLDOWN   = 3000
+    knockback_taken_mult = 0.7
 
     def __init__(self, x, y):
         super().__init__(x, y)

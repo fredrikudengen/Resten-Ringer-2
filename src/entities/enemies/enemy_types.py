@@ -86,6 +86,7 @@ class FastEnemy(Enemy):
     height            = 64
     wander_radius     = 5
     knockback_friction= 0.7
+    knockback_taken_mult = 0.9
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -129,6 +130,7 @@ class ShooterEnemy(RangedEnemy):
     height             = 36
     wander_radius      = 5
     knockback_friction= 0.8
+    knockback_taken_mult = 0.9
 
     def __init__(self, x, y):
         super().__init__(x, y)
