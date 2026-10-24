@@ -30,6 +30,7 @@ BUFF_ATTACK_MULTIPLIER = 1.75
 # gameplay – enemy
 LOSE_SIGHT_TIME = 2400
 ENEMY_WANDER_INTERVAL_MS = (1200, 2500)  # (min, max) pause
+ENEMY_ACCEL_TIME_MS = 250  # tid fra stillstand til full fart; 0 = ingen inerti (overstyr med accel_time_ms per fiende)
 
 # XP og level
 XP_BASE = 100  # XP til level 2

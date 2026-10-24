@@ -37,6 +37,9 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
         self.facing_left         = False
 
+        self.velocity            = pygame.math.Vector2(0, 0)  # px/s, styres via _steer()
+        self._steered            = False
+
     # ------------------------- PUBLIC API -------------------------
 
     def move(self, player, obstacles, room, dt_ms):
@@ -214,11 +217,13 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         """Håndter search state. Gå mot siste kjente posisjon."""
         T = constants.TILE_SIZE
         goal_g = (self.last_seen_pos[0] // T, self.last_seen_pos[1] // T)
-        next_tile_g = self._astar_next_step(room, goal_g, max_expansions=512)
-        if next_tile_g:
-            target_px = self._center_of_tile(*next_tile_g)
-            reached = self._move_towards(target_px, obstacles, dt_ms)
+        waypoint_g = self._smoothed_next_waypoint(room, goal_g, max_expansions=512)
+        if waypoint_g and waypoint_g != goal_g:
+            target_px = self._center_of_tile(*waypoint_g)
+            self._move_towards(target_px, obstacles, dt_ms)
+            reached = False  # et mellompunkt på stien avslutter ikke søket
         else:
+            # Fri sikt til målet (eller ingen sti) – gå rett mot siste kjente posisjon
             reached = self._move_towards(self.last_seen_pos, obstacles, dt_ms)
 
         timedout = self.search_started and (now - self.search_started > constants.LOSE_SIGHT_TIME)
@@ -261,10 +266,3 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             if not room.is_blocked(nx, ny):
                 return (nx, ny)
         return None
-
-    def _get_first_step(self, came_from, node, start):
-        path = []
-        while node != start:
-            path.append(node)
-            node = came_from[node]
-        return path[-1] if path else None
