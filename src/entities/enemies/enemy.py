@@ -1,3 +1,4 @@
+import math
 import random
 
 import pygame
@@ -39,6 +40,10 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
         self.velocity            = pygame.math.Vector2(0, 0)  # px/s, styres via _steer()
         self._steered            = False
+
+        # Retningsstøy (#21): egen klokke og fase per fiende så de ikke svinger i takt
+        self._noise_t            = 0.0
+        self._noise_phase        = (random.uniform(0, 2 * math.pi), random.uniform(0, 2 * math.pi))
 
     # ------------------------- PUBLIC API -------------------------
 

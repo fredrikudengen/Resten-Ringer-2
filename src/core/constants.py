@@ -31,6 +31,8 @@ BUFF_ATTACK_MULTIPLIER = 1.75
 LOSE_SIGHT_TIME = 2400
 ENEMY_WANDER_INTERVAL_MS = (1200, 2500)  # (min, max) pause
 ENEMY_ACCEL_TIME_MS = 250  # tid fra stillstand til full fart; 0 = ingen inerti (overstyr med accel_time_ms per fiende)
+ENEMY_DIR_NOISE_DEG = 15   # maks vinkelavvik fra målretningen; 0 = av (overstyr med dir_noise_deg per fiende)
+ENEMY_DIR_NOISE_HZ = 0.35  # hvor raskt avviket driver (overstyr med dir_noise_hz per fiende)
 
 # XP og level
 XP_BASE = 100  # XP til level 2
