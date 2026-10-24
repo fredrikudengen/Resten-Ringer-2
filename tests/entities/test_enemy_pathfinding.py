@@ -115,6 +115,35 @@ def test_idle_wander_does_not_end_at_intermediate_waypoint(monkeypatch):
     assert enemy.wander_goal_g == (6, 1)
 
 
+class _BigEnemy(_TestEnemy):
+    width  = 96  # som ScoutEnemy – nesten en hel tile
+    height = 96
+
+
+def test_body_path_clear_in_open_room():
+    room = _FakeRoom()
+    enemy = _BigEnemy(0, 0)
+    enemy.pos.update(1 * T + T // 2, 1 * T + T // 2)
+
+    assert enemy._body_path_clear(room, enemy.pos, enemy._center_of_tile(6, 4))
+
+
+def test_waypoint_skips_node_where_body_would_clip_corner():
+    # Tynn siktlinje (1,1)->(6,2) går forbi hjørnet (2,2), men en 96px kropp gjør ikke det
+    room = _FakeRoom(blocked={(2, 2)})
+    enemy = _BigEnemy(0, 0)
+    enemy.pos.update(1 * T + T // 2, 1 * T + T // 2)
+    enemy._sync_rect_from_pos()
+    goal = (6, 2)
+
+    assert enemy._has_los(room, 1, 1, *goal)
+    assert not enemy._body_path_clear(room, enemy.pos, enemy._center_of_tile(*goal))
+
+    waypoint = enemy._smoothed_next_waypoint(room, goal, max_expansions=512)
+    assert waypoint != goal
+    assert enemy._body_path_clear(room, enemy.pos, enemy._center_of_tile(*waypoint))
+
+
 def test_search_heads_straight_for_last_seen_pos_in_open_room():
     room = _FakeRoom()
     enemy = _enemy_at_tile(1, 1)

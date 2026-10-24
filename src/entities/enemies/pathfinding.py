@@ -3,6 +3,8 @@ import math
 from heapq import heappush, heappop
 from collections import deque
 
+from src.core import constants
+
 class PathfindingMixin:
 
     def _has_los(self, room, enemy_x, enemy_y, player_x, player_y):
@@ -86,9 +88,36 @@ class PathfindingMixin:
             return None
         sx, sy = self._grid_pos()
         for node in reversed(path):
-            if self._has_los(room, sx, sy, *node):
+            if not self._has_los(room, sx, sy, *node):
+                continue
+            # Tynn siktlinje er ikke nok – hele kroppen må komme forbi hjørnene
+            if self._body_path_clear(room, self.pos, self._center_of_tile(*node)):
                 return node
         return path[0]
+
+    def _body_path_clear(self, room, start_px, end_px, margin=4, step=8):
+        """True hvis fiendens rect (+ margin) kan feies fra start_px til end_px uten å treffe blokkerte tiles."""
+        T = constants.TILE_SIZE
+        half_w = self.width / 2 + margin
+        half_h = self.height / 2 + margin
+        x0, y0 = start_px
+        x1, y1 = end_px
+        dist = math.hypot(x1 - x0, y1 - y0)
+        n = max(1, math.ceil(dist / step))
+
+        for i in range(n + 1):
+            t = i / n
+            cx = x0 + (x1 - x0) * t
+            cy = y0 + (y1 - y0) * t
+            gx_min = int((cx - half_w) // T)
+            gx_max = int((cx + half_w - 1e-6) // T)
+            gy_min = int((cy - half_h) // T)
+            gy_max = int((cy + half_h - 1e-6) // T)
+            for gx in range(gx_min, gx_max + 1):
+                for gy in range(gy_min, gy_max + 1):
+                    if room.is_blocked(gx, gy):
+                        return False
+        return True
 
     def _astar_path(self, room, goal_g, max_expansions):
         """Liste med tiles fra første steg til goal_g (eller nærmeste nådde tile).
