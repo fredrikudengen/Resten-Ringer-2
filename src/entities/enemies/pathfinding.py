@@ -73,12 +73,37 @@ class PathfindingMixin:
         return None
 
     def _astar_next_step(self, room, goal_g, max_expansions):
+        """Neste nabo-tile på A*-stien mot goal_g (eller None)."""
+        path = self._astar_path(room, goal_g, max_expansions)
+        return path[0] if path else None
+
+    def _smoothed_next_waypoint(self, room, goal_g, max_expansions):
+        """Fjerneste tile på A*-stien som er i siktlinje (string-pulling).
+
+        A* på 4-retnings-grid gir L-formede stier (først horisontalt, så
+        vertikalt). Ved å gå mot det fjerneste synlige punktet på stien blir
+        bevegelsen rett/diagonal i åpne rom, men følger fortsatt stien rundt vegger.
+        """
+        path = self._astar_path(room, goal_g, max_expansions)
+        if not path:
+            return None
+        sx, sy = self._grid_pos()
+        for node in reversed(path):
+            if self._has_los(room, sx, sy, *node):
+                return node
+        return path[0]
+
+    def _astar_path(self, room, goal_g, max_expansions):
+        """Liste med tiles fra første steg til goal_g (eller nærmeste nådde tile).
+
+        Tom liste hvis start == mål, start/mål er blokkert, eller ingen fremgang.
+        """
         start = self._grid_pos()
-        
+
         if start == goal_g:
-            return None
+            return []
         if room.is_blocked(*goal_g) or room.is_blocked(*start):
-            return None
+            return []
         
         def h(a, b):
             return abs(a[0] - b[0]) + abs(a[1] - b[1])
@@ -108,7 +133,7 @@ class PathfindingMixin:
             expansions += 1
             
             if current == goal_g:
-                return self._get_first_step(came_from, current, start)
+                return self._reconstruct_path(came_from, current, start)
             
             h_current = h(current, goal_g)
             if h_current < best_h:
@@ -133,6 +158,14 @@ class PathfindingMixin:
                     heappush(openh, (f_score, h_val, next(counter), neighbor))
         
         if best_node != start:
-            return self._get_first_step(came_from, best_node, start)
-        
-        return None
+            return self._reconstruct_path(came_from, best_node, start)
+
+        return []
+
+    def _reconstruct_path(self, came_from, node, start):
+        path = []
+        while node != start:
+            path.append(node)
+            node = came_from[node]
+        path.reverse()
+        return path
