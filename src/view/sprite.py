@@ -53,8 +53,14 @@ class Sprite:
         alpha: int = 255,
         y_offset: int = 0,
         moving: bool = True,
+        gait_phase: float | None = None,
     ) -> tuple[int, int]:
-        path, x_offset, y_offset, angle = self._resolve_frame(frame, flip_x, y_offset, angle, moving)
+        """gait_phase: valgfri posisjon i gait-syklusen (0..1). Hvis satt, brukes den
+        i stedet for klokka – lar eieren synke animasjonen med egen bevegelse (f.eks. burst-hopp).
+        """
+        path, x_offset, y_offset, angle = self._resolve_frame(
+            frame, flip_x, y_offset, angle, moving, gait_phase
+        )
 
         base = self._get_surface(path, flip_x) if path else None
 
@@ -73,15 +79,18 @@ class Sprite:
         return x_offset, y_offset
 
     def _resolve_frame(
-        self, frame: str, flip_x: bool, y_offset: int, angle: float, moving: bool = True
+        self, frame: str, flip_x: bool, y_offset: int, angle: float, moving: bool = True,
+        gait_phase: float | None = None,
     ) -> tuple[str | None, int, int, float]:
         if moving and frame in self._gait:
-            path, sway_x, bounce_y, lean_angle = self._gait_frame(frame)
+            path, sway_x, bounce_y, lean_angle = self._gait_frame(frame, gait_phase)
             if flip_x:
                 sway_x = -sway_x
                 lean_angle = -lean_angle
             return path, sway_x, bounce_y, lean_angle
 
+        # Stillestående: neste bevegelse starter gait-syklusen fra 0 (bounce = 0, ingen hopp i bildet)
+        self._gait_phase_start.pop(frame, None)
         return self._current_path(frame), 0, y_offset, angle
 
     @staticmethod
@@ -138,20 +147,26 @@ class Sprite:
 
         return frames[self._anim_index[state]]
 
+    def has_frame(self, state: str) -> bool:
+        return state in self._animations
+
     def current_frame_index(self, state: str) -> int:
         return self._anim_index.get(state, 0)
 
-    def _gait_frame(self, state: str) -> tuple[str | None, int, int, float]:
+    def _gait_frame(self, state: str, phase: float | None = None) -> tuple[str | None, int, int, float]:
         cfg = self._gait[state]
         frames = self._animations[state]  # må ha nøyaktig 2 elementer
 
-        now = pygame.time.get_ticks()
-        if self._last_frame_name != state or state not in self._gait_phase_start:
-            self._gait_phase_start[state] = now
+        if phase is None:
+            now = pygame.time.get_ticks()
+            if self._last_frame_name != state or state not in self._gait_phase_start:
+                self._gait_phase_start[state] = now
 
-        cycle_ms = cfg["cycle_ms"]
-        elapsed = now - self._gait_phase_start[state]
-        theta = 2 * math.pi * ((elapsed % cycle_ms) / cycle_ms)
+            cycle_ms = cfg["cycle_ms"]
+            elapsed = now - self._gait_phase_start[state]
+            phase = (elapsed % cycle_ms) / cycle_ms
+
+        theta = 2 * math.pi * phase
 
         bounce_y = -cfg["bounce"] * abs(math.sin(theta))
         sway_x = cfg["sway"] * math.cos(theta)

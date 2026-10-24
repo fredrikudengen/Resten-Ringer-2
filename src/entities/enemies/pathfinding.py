@@ -3,6 +3,8 @@ import math
 from heapq import heappush, heappop
 from collections import deque
 
+from src.core import constants
+
 class PathfindingMixin:
 
     def _has_los(self, room, enemy_x, enemy_y, player_x, player_y):
@@ -37,10 +39,14 @@ class PathfindingMixin:
                 y += y_steps
 
     def _micro_wander(self, room, goal_g, max_depth):
-        """BFS: finn NESTE grid-steg mot goal_g."""
+        """Neste waypoint mot goal_g for korte vandreturer (BFS + string-pulling)."""
+        return self._farthest_visible(room, self._bfs_path(room, goal_g, max_depth))
+
+    def _bfs_path(self, room, goal_g, max_depth):
+        """BFS: liste med tiles fra første steg til goal_g, tom hvis ikke nåbar innen max_depth."""
         start = self._grid_pos()
         if start == goal_g:
-            return None
+            return []
 
         q = deque([start])
         came_from = {start: None}
@@ -50,12 +56,7 @@ class PathfindingMixin:
         while q:
             x, y = q.popleft()
             if (x, y) == goal_g:
-                cur = (x, y)
-                prev = came_from[cur]
-                while prev and prev != start:
-                    cur = prev
-                    prev = came_from[cur]
-                return cur
+                return self._reconstruct_path(came_from, (x, y), start)
 
             if depth[(x, y)] >= max_depth:
                 continue
@@ -70,15 +71,65 @@ class PathfindingMixin:
                 depth[(nx, ny)] = depth[(x, y)] + 1
                 q.append((nx, ny))
 
-        return None
+        return []
 
-    def _astar_next_step(self, room, goal_g, max_expansions):
+    def _smoothed_next_waypoint(self, room, goal_g, max_expansions):
+        """Neste waypoint mot goal_g (A* + string-pulling)."""
+        return self._farthest_visible(room, self._astar_path(room, goal_g, max_expansions))
+
+    def _farthest_visible(self, room, path):
+        """Fjerneste tile på stien som er i siktlinje (string-pulling), eller None.
+
+        Grid-søk med 4 retninger gir L-formede stier (først horisontalt, så
+        vertikalt). Ved å gå mot det fjerneste synlige punktet på stien blir
+        bevegelsen rett/diagonal i åpne rom, men følger fortsatt stien rundt vegger.
+        """
+        if not path:
+            return None
+        sx, sy = self._grid_pos()
+        for node in reversed(path):
+            if not self._has_los(room, sx, sy, *node):
+                continue
+            # Tynn siktlinje er ikke nok – hele kroppen må komme forbi hjørnene
+            if self._body_path_clear(room, self.pos, self._center_of_tile(*node)):
+                return node
+        return path[0]
+
+    def _body_path_clear(self, room, start_px, end_px, margin=4, step=8):
+        """True hvis fiendens rect (+ margin) kan feies fra start_px til end_px uten å treffe blokkerte tiles."""
+        T = constants.TILE_SIZE
+        half_w = self.width / 2 + margin
+        half_h = self.height / 2 + margin
+        x0, y0 = start_px
+        x1, y1 = end_px
+        dist = math.hypot(x1 - x0, y1 - y0)
+        n = max(1, math.ceil(dist / step))
+
+        for i in range(n + 1):
+            t = i / n
+            cx = x0 + (x1 - x0) * t
+            cy = y0 + (y1 - y0) * t
+            gx_min = int((cx - half_w) // T)
+            gx_max = int((cx + half_w - 1e-6) // T)
+            gy_min = int((cy - half_h) // T)
+            gy_max = int((cy + half_h - 1e-6) // T)
+            for gx in range(gx_min, gx_max + 1):
+                for gy in range(gy_min, gy_max + 1):
+                    if room.is_blocked(gx, gy):
+                        return False
+        return True
+
+    def _astar_path(self, room, goal_g, max_expansions):
+        """Liste med tiles fra første steg til goal_g (eller nærmeste nådde tile).
+
+        Tom liste hvis start == mål, start/mål er blokkert, eller ingen fremgang.
+        """
         start = self._grid_pos()
-        
+
         if start == goal_g:
-            return None
+            return []
         if room.is_blocked(*goal_g) or room.is_blocked(*start):
-            return None
+            return []
         
         def h(a, b):
             return abs(a[0] - b[0]) + abs(a[1] - b[1])
@@ -108,7 +159,7 @@ class PathfindingMixin:
             expansions += 1
             
             if current == goal_g:
-                return self._get_first_step(came_from, current, start)
+                return self._reconstruct_path(came_from, current, start)
             
             h_current = h(current, goal_g)
             if h_current < best_h:
@@ -133,6 +184,14 @@ class PathfindingMixin:
                     heappush(openh, (f_score, h_val, next(counter), neighbor))
         
         if best_node != start:
-            return self._get_first_step(came_from, best_node, start)
-        
-        return None
+            return self._reconstruct_path(came_from, best_node, start)
+
+        return []
+
+    def _reconstruct_path(self, came_from, node, start):
+        path = []
+        while node != start:
+            path.append(node)
+            node = came_from[node]
+        path.reverse()
+        return path

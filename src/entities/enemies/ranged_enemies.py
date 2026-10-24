@@ -149,9 +149,7 @@ class RangedEnemy(Enemy):
         elif self.state == "dead":
             return
 
-        dx = self.pos.x - prev_x
-        if abs(dx) > 1e-3:
-            self.facing_left = dx < 0
+        self._update_facing()
 
     # =========================================================
     # DRAW — extra colour coding for new states
@@ -248,7 +246,7 @@ class RangedEnemy(Enemy):
         if away.length_squared() < 1e-6:
             return
         away = away.normalize()
-        self._slide_move(away.x * self.speed, away.y * self.speed, dt_ms, obstacles)
+        self._steer(away.x * self.speed, away.y * self.speed, dt_ms, obstacles)
 
     def _find_los_tile(self, room, player) -> tuple[int, int] | None:
         """

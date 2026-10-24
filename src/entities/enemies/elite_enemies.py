@@ -28,6 +28,7 @@ class ScoutEnemy(Enemy):
     """
     name               = "scout_enemy"
     speed              = 330
+    accel_time_ms      = 150
     health             = 55
     damage             = 10
     attack_range       = 4225
@@ -39,14 +40,12 @@ class ScoutEnemy(Enemy):
     width              = 96
     height             = 96
     knockback_friction = 0.75
+    knockback_taken_mult = 0.8
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.sprite = Sprite(
-            frames={
-                "idle": "enemy/scout/idle/idle",
-                "walk": [f"enemy/scout/walk/{i}" for i in range(2)],
-            },
+            frames={"idle": "enemy_scout"},
             base_size=(self.width, self.height),
             fallback_color=self.color,
             gait={"walk": {"cycle_ms": 400, "bounce": 14, "sway": 2, "lean": 3}},
@@ -68,30 +67,12 @@ class ScoutEnemy(Enemy):
         player_center = player.rect.center
 
         self.update_knockback(obstacles)
-
-        T = constants.TILE_SIZE
-        goal_g = (player_center[0] // T, player_center[1] // T)
-        next_tile_g = self._astar_next_step(room, goal_g, max_expansions=512)
-        if next_tile_g:
-            target_px = self._center_of_tile(*next_tile_g)
-            self._move_towards(target_px, obstacles, dt_ms)
-        else:
-            self._move_towards(player_center, obstacles, dt_ms)
+        self._move_towards(player_center, obstacles, dt_ms)
 
         if now >= self.attack_cooldown_until and self.rect.colliderect(player.rect):
             self._damage_player(player, self.damage)
             self.attack_cooldown_until = now + self.attack_cooldown
             self.apply_knockback(player.rect, 4)
-
-        dx = self.pos.x - prev_x
-        if abs(dx) > 1e-3:
-            self.facing_left = dx < 0
-
-    def _sprite_frame(self) -> str:
-        return "idle" if self.state == "dead" else "walk"
-
-    def _is_moving(self) -> bool:
-        return self.state != "dead"
 
 
 class AssassinEnemy(Enemy):
@@ -100,6 +81,7 @@ class AssassinEnemy(Enemy):
     """
     name              = "assassin_enemy"
     speed             = 400
+    accel_time_ms     = 120
     health            = 65
     damage            = 35
     detection_radius  = 800
@@ -116,6 +98,7 @@ class AssassinEnemy(Enemy):
     _LUNGE_SPEED      = 650
     _LUNGE_AREA       = 330000
     _LUNGE_COOLDOWN   = 3000
+    knockback_taken_mult = 0.7
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -127,7 +110,7 @@ class AssassinEnemy(Enemy):
         self._lunge_start = pygame.Vector2()
         self._lunge_cooldown_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy/assassin/enemy_assassin"},
+            frames={"idle": "enemy_assass"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -189,6 +172,9 @@ class AssassinEnemy(Enemy):
                 self._lunge_direction = (player.pos - self.pos).normalize()
                 self._lunge_start = pygame.Vector2(self.pos)
                 self.state = "lunge"
+                # Lunge nullstiller velocity, så retningen settes eksplisitt her
+                if abs(self._lunge_direction.x) > 1e-3:
+                    self.facing_left = self._lunge_direction.x < 0
 
         elif self.state == "lunge":
             if (self.pos - self._lunge_start).length() > self._LUNGE_MAX_DIST:
@@ -216,6 +202,8 @@ class AssassinEnemy(Enemy):
 
         elif self.state == "dead":
             return
+
+        self._update_facing()
 
 
 # ===========================================================================
@@ -296,12 +284,15 @@ class WindupMeleeMixin:
         elif self.state == "dead":
             return
 
+        self._update_facing()
+
 class SlowEnemy(WindupMeleeMixin, Enemy):
     """
     Sier seg vel selv.
     """
     name              = "slow_enemy"
     speed             = 280
+    accel_time_ms     = 400
     health            = 90
     damage            = 26
     detection_radius  = 600
@@ -315,12 +306,13 @@ class SlowEnemy(WindupMeleeMixin, Enemy):
     height            = 112
     wander_radius     = 2
     knockback_friction= 0.6
+    knockback_taken_mult = 0.7
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy/slow/enemy_slow"},
+            frames={"idle": "enemy_slow"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -332,6 +324,8 @@ class BruteEnemy(WindupMeleeMixin, Enemy):
     """
     name              = "brute_enemy"
     speed             = 330
+    accel_time_ms     = 450
+    flinch_ms         = 80
     health            = 160
     damage            = 34
     detection_radius  = 700
@@ -345,12 +339,13 @@ class BruteEnemy(WindupMeleeMixin, Enemy):
     height            = 112
     wander_radius     = 3
     knockback_friction= 0.5
+    knockback_taken_mult = 0.6
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy/brute/enemy_brute"},
+            frames={"idle": "enemy_brute"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -361,6 +356,8 @@ class TankEnemy(WindupMeleeMixin, Enemy):
     """
     name              = "tank_enemy"
     speed             = 310
+    accel_time_ms     = 550
+    flinch_ms         = 60
     health            = 300
     damage            = 28
     detection_radius  = 700
@@ -374,12 +371,13 @@ class TankEnemy(WindupMeleeMixin, Enemy):
     height            = 128
     wander_radius     = 2
     knockback_friction= 0.4
+    knockback_taken_mult = 0.5
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy/tank/enemy_tank"},
+            frames={"idle": "enemy_tank"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )

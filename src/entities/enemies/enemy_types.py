@@ -21,12 +21,21 @@ from src.components.gun import EnemyPistol, EnemyRifle
 #
 # --- Nyttige verdier å justere ---
 # speed            : px per sekund. Spilleren er ~430, så 400 = omtrent like rask
+# accel_time_ms    : ms fra stillstand til full fart (inerti). Lav = kvikk, høy = tung/glir mer i svinger
+# dir_noise_deg    : maks vinkelavvik (grader) fra målretningen, driver sakte. 0 = rett linje
+# dir_noise_hz     : hvor raskt retningsavviket driver. Høyere = mer vinglete
+# burst_move_ms    : lengde på hvert hopp (ms). Sammen med burst_pause_ms gir det hopp-pause-hopp.
+# burst_pause_ms   : pause mellom hopp (ms). 0 på en av dem = jevn bevegelse. Gait-spretten følger hoppet.
+# burst_jitter     : tilfeldig variasjon per fase (0.25 = ±25 %), så rytmen ikke blir mekanisk
+# flinch_ms        : hvor lenge fienden stopper opp når den treffes. 0 = ingen stopp (bare blink/hurt-sprite)
+#                    Ved treff vises "hurt"-framen i Sprite (+ ENEMY_HURT_TINT) i flinch_ms
 # health           : HP. Pistolskudd gjør 20 skade, så health=40 → 2 skudd
 # damage           : Skade ved treff (melee) eller via gun (ranged)
 # detection_radius : Pikselradius der fienden oppdager spilleren (krever siktlinje)
 # attack_cooldown  : Millisekunder mellom angrep
-# knockback_strength: Hvor langt spilleren kastes ved treff (høyere = lengre)
+# knockback_strength: Hvor langt spilleren kastes når fienden treffer HAM (høyere = lengre)
 # knockback_friction: Hvor raskt knockback bremser (0.0 = stopper straks, 1.0 = glir evig)
+# knockback_taken_mult: Ganges med våpenets knockback_strength når fienden blir truffet (1.0 = normal, lav = tung)
 # ===========================================================================
 
 
@@ -36,6 +45,7 @@ class SwarmEnemy(Enemy):
     """
     name              = "swarm_enemy"
     speed             = 400
+    accel_time_ms     = 150
     health            = 40
     damage            = 8
     detection_radius  = 700
@@ -46,12 +56,12 @@ class SwarmEnemy(Enemy):
     width             = 64
     height            = 64
     wander_radius     = 6
-    knockback_friction= 0.95
+    knockback_friction= 0.8
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.sprite = Sprite(
-            frames={"idle": ["enemy/fast/enemy_fast", "enemy/fast/enemy_fast"]},
+            frames={"idle": ["enemy/swarm/enemy_swarm", "enemy/swarm/enemy_swarm"], "hurt": "enemy/swarm/enemy_swarm"},
             base_size=(self.width, self.height),
             fallback_color=self.color,
             gait={"idle": {"cycle_ms": 400, "bounce": 14, "sway": 2, "lean": 3}}
@@ -64,6 +74,7 @@ class FastEnemy(Enemy):
     """
     name              = "fast_enemy"
     speed             = 440
+    accel_time_ms     = 300
     health            = 45
     damage            = 12
     detection_radius  = 700
@@ -74,12 +85,13 @@ class FastEnemy(Enemy):
     width             = 64
     height            = 64
     wander_radius     = 5
-    knockback_friction= 0.9
+    knockback_friction= 0.7
+    knockback_taken_mult = 0.9
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.sprite = Sprite(
-            frames={"idle": ["enemy/swarm/enemy_swarm", "enemy/swarm/enemy_swarm"]},
+            frames={"idle": ["enemy/fast/enemy_fast", "enemy/fast/enemy_fast"], "hurt": "enemy/fast/enemy_fast"},
             base_size=(self.width, self.height),
             fallback_color=self.color,
             gait={"idle": {"cycle_ms": 500, "bounce": 14, "sway": 2, "lean": 3}}
@@ -108,6 +120,7 @@ class ShooterEnemy(RangedEnemy):
     min_range_px       = 130
 
     speed              = 250
+    accel_time_ms      = 200
     health             = 75
     detection_radius   = 800
     knockback_strength = 0
@@ -117,11 +130,12 @@ class ShooterEnemy(RangedEnemy):
     height             = 36
     wander_radius      = 5
     knockback_friction= 0.8
+    knockback_taken_mult = 0.9
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.sprite = Sprite(
-            frames={"idle": "enemy/shooter/enemy_shoot"},
+            frames={"idle": "enemy/shooter/enemy_shoot", "hurt": "enemy/shooter/enemy_shoot"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -130,7 +144,8 @@ class ShooterEnemy(RangedEnemy):
         super().draw(screen, camera)
         if self.state not in ("dead", "reload"):
             draw_rect = camera.apply(self.rect)
-            self.sprite.draw(screen, draw_rect, flip_x=self.facing_left)
+            frame, tint = self._hurt_visual("idle")
+            self.sprite.draw(screen, draw_rect, frame=frame, tint=tint, flip_x=self.facing_left)
 
 
 class MarksmanEnemy(RangedEnemy):
@@ -144,6 +159,7 @@ class MarksmanEnemy(RangedEnemy):
     reposition_interval = 600
 
     speed              = 240
+    accel_time_ms      = 250
     health             = 120
     detection_radius   = 900
     knockback_strength = 0
@@ -158,7 +174,7 @@ class MarksmanEnemy(RangedEnemy):
         super().__init__(x, y)
 
         self.sprite = Sprite(
-            frames={"idle": "enemy/sniper/enemy_sniper"},
+            frames={"idle": "enemy/sniper/enemy_sniper", "hurt": "enemy/sniper/enemy_sniper"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -167,4 +183,5 @@ class MarksmanEnemy(RangedEnemy):
         super().draw(screen, camera)
         if self.state not in ("dead", "reload"):
             draw_rect = camera.apply(self.rect)
-            self.sprite.draw(screen, draw_rect, flip_x=self.facing_left)
+            frame, tint = self._hurt_visual("idle")
+            self.sprite.draw(screen, draw_rect, frame=frame, tint=tint, flip_x=self.facing_left)

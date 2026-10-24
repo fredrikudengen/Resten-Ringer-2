@@ -33,6 +33,9 @@ class WardenBoss(Enemy, MovementMixin):
     """
     name = "warden_boss"
     speed = 100
+    accel_time_ms = 500
+    flinch_ms     = 0
+    knockback_taken_mult = 0
     health = 2000
     damage = 55
     attack_range = 12100  # 110 px
@@ -71,7 +74,7 @@ class WardenBoss(Enemy, MovementMixin):
         self._lunge_cooldown_until = 0
         self._daze_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy/warden/enemy_warden"},
+            frames={"idle": "enemy/warden/enemy_warden", "hurt": "enemy/warden/enemy_warden"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -157,7 +160,8 @@ class WardenBoss(Enemy, MovementMixin):
         # else:
         #     body_color = self.color
 
-        self.sprite.draw(screen, draw_rect)
+        frame, tint = self._hurt_visual("idle")
+        self.sprite.draw(screen, draw_rect, frame=frame, tint=tint)
         pygame.draw.rect(screen, (255, 255, 120), draw_rect, 4)
         self._draw_healthbar(screen, camera)
         self._draw_boss_hud(screen)

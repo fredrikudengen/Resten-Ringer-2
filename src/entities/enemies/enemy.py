@@ -1,3 +1,4 @@
+import math
 import random
 
 import pygame
@@ -11,6 +12,8 @@ from src.entities.enemies.movement import MovementMixin
 class Enemy(PathfindingMixin, MovementMixin, Entity):
 
     detection_radius = 0  # px; None = alltid oppdaget (se ScoutEnemy)
+    flinch_ms        = constants.ENEMY_FLINCH_MS
+    knockback_taken_mult = 1.0  # ganges med våpenets knockback_strength; lav = tung/vanskelig å dytte
 
     def __init__(self, x, y):
 
@@ -37,7 +40,51 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
         self.facing_left         = False
 
+        self.velocity            = pygame.math.Vector2(0, 0)  # px/s, styres via _steer()
+        self._steered            = False
+
+        # Retningsstøy (#21): egen klokke og fase per fiende så de ikke svinger i takt
+        self._noise_t            = 0.0
+        self._noise_phase        = (random.uniform(0, 2 * math.pi), random.uniform(0, 2 * math.pi))
+
+        self._init_burst()
+
+        # Treff-reaksjon (#25)
+        self.flinch_until        = 0
+        self.hurt_until          = 0
+        self._flinch_ready_at    = 0
+
     # ------------------------- PUBLIC API -------------------------
+
+    def on_hit(self, source_rect, knockback_strength):
+        """Reaksjon når fienden treffes: knockback, kort stopp (flinch) og hurt-visuell.
+
+        Hurt-visuellen (tint + "hurt"-frame) vises i flinch_ms ved hvert treff. Selve
+        stoppet har cooldown, så raske våpen ikke stunlocker fienden.
+        """
+        now = pygame.time.get_ticks()
+        self.hit = True
+        self.apply_knockback(source_rect, knockback_strength * self.knockback_taken_mult)
+        hurt_ms = self.flinch_ms if self.flinch_ms > 0 else constants.ENEMY_HURT_FLASH_MS
+        self.hurt_until = now + hurt_ms
+
+        if self.flinch_ms > 0 and now >= self._flinch_ready_at:
+            self.flinch_until = now + self.flinch_ms
+            self._flinch_ready_at = self.flinch_until + constants.ENEMY_FLINCH_COOLDOWN_MS
+            self.velocity.update(0, 0)  # stopp opp, så knockbacken faktisk synes
+
+    def _flinching(self) -> bool:
+        return pygame.time.get_ticks() < self.flinch_until
+
+    def _hurt(self) -> bool:
+        return pygame.time.get_ticks() < self.hurt_until
+
+    def _hurt_visual(self, frame: str) -> tuple[str, tuple[int, int, int] | None]:
+        """(frame, tint) for tegning: tint + "hurt"-frame (hvis spriten har en) mens fienden er truffet."""
+        if not self._hurt():
+            return frame, None
+        hurt_frame = "hurt" if self.sprite.has_frame("hurt") else frame
+        return hurt_frame, constants.ENEMY_HURT_TINT
 
     def move(self, player, obstacles, room, dt_ms):
         """
@@ -111,14 +158,23 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         elif self.state == "dead":
             return
 
-        dx = self.pos.x - prev_x
-        if abs(dx) > 1e-3:
-            self.facing_left = dx < 0
+        self._update_facing()
+
+    def _update_facing(self):
+        """Snu spriten etter fiendens egen bevegelse (velocity), ikke posisjonsendring.
+
+        Knockback flytter pos uten å endre velocity, så fienden snur seg ikke når den treffes.
+        Liten dødsone så den ikke flimrer når farten er nesten null.
+        """
+        if abs(self.velocity.x) > 5.0:
+            self.facing_left = self.velocity.x < 0
 
     def _sprite_frame(self) -> str:
         return "idle"
 
     def _is_moving(self) -> bool:
+        if self._burst_paused() or self._flinching():
+            return False
         return self.state == "chase" or self.state == "search" or (
             self.state == "idle" and self.wander_goal_g is not None
         )
@@ -139,9 +195,11 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         # else:
         #     color = self.color
 
+        frame, tint = self._hurt_visual(self._sprite_frame())
         self.sprite.draw(
-            screen, draw_rect, frame=self._sprite_frame(),
-            flip_x=self.facing_left, moving=self._is_moving()
+            screen, draw_rect, frame=frame, tint=tint,
+            flip_x=self.facing_left, moving=self._is_moving(),
+            gait_phase=self._gait_phase(),
         )
         self._draw_healthbar(screen, camera)
 
@@ -187,10 +245,11 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
     def _idle(self, room, obstacles, dt_ms, now):
         """Håndter idle state med micro-wander."""
         if self.wander_goal_g is not None:
-            next_tile_g = self._micro_wander(room, self.wander_goal_g, self.wander_radius)
-            if next_tile_g:
-                target_px = self._center_of_tile(*next_tile_g)
-                wander_end = self._move_towards(target_px, obstacles, dt_ms)
+            waypoint_g = self._micro_wander(room, self.wander_goal_g, self.wander_radius)
+            if waypoint_g:
+                target_px = self._center_of_tile(*waypoint_g)
+                reached = self._move_towards(target_px, obstacles, dt_ms)
+                wander_end = reached and waypoint_g == self.wander_goal_g  # mellompunkt avslutter ikke turen
             else:
                 wander_end = True  
 
@@ -214,11 +273,13 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         """Håndter search state. Gå mot siste kjente posisjon."""
         T = constants.TILE_SIZE
         goal_g = (self.last_seen_pos[0] // T, self.last_seen_pos[1] // T)
-        next_tile_g = self._astar_next_step(room, goal_g, max_expansions=512)
-        if next_tile_g:
-            target_px = self._center_of_tile(*next_tile_g)
-            reached = self._move_towards(target_px, obstacles, dt_ms)
+        waypoint_g = self._smoothed_next_waypoint(room, goal_g, max_expansions=512)
+        if waypoint_g and waypoint_g != goal_g:
+            target_px = self._center_of_tile(*waypoint_g)
+            self._move_towards(target_px, obstacles, dt_ms)
+            reached = False  # et mellompunkt på stien avslutter ikke søket
         else:
+            # Fri sikt til målet (eller ingen sti) – gå rett mot siste kjente posisjon
             reached = self._move_towards(self.last_seen_pos, obstacles, dt_ms)
 
         timedout = self.search_started and (now - self.search_started > constants.LOSE_SIGHT_TIME)
@@ -261,10 +322,3 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             if not room.is_blocked(nx, ny):
                 return (nx, ny)
         return None
-
-    def _get_first_step(self, came_from, node, start):
-        path = []
-        while node != start:
-            path.append(node)
-            node = came_from[node]
-        return path[-1] if path else None
