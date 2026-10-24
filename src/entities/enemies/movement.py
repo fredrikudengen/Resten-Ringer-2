@@ -1,6 +1,48 @@
 from pygame.math import Vector2
 
+from src.core import constants
+
 class MovementMixin:
+
+    accel_time_ms = constants.ENEMY_ACCEL_TIME_MS
+
+    def _steer(self, desired_vx, desired_vy, dt_ms, obstacles):
+        """Glid self.velocity mot ønsket hastighet med begrenset akselerasjon, og flytt.
+
+        Gir buer når retningen endres og litt overshoot når målet snur.
+        """
+        self._steered = True
+        desired = Vector2(desired_vx, desired_vy)
+
+        if self.accel_time_ms <= 0:
+            self.velocity = desired
+        else:
+            accel = self.speed / (self.accel_time_ms / 1000.0)
+            max_delta = accel * dt_ms / 1000.0
+            diff = desired - self.velocity
+            if diff.length() > max_delta:
+                diff.scale_to_length(max_delta)
+            self.velocity += diff
+
+        if desired.length_squared() == 0 and self.velocity.length() < 1.0:
+            self.velocity.update(0, 0)
+            return
+
+        start_x, start_y = self.pos.x, self.pos.y
+        self._slide_move(self.velocity.x, self.velocity.y, dt_ms, obstacles)
+
+        # Nullstill aksen som ble blokkert av vegg, så farten ikke bygger seg opp inn i den
+        dt = dt_ms / 1000.0
+        if abs(self.velocity.x * dt) > 1e-6 and abs(self.pos.x - start_x) < 1e-6:
+            self.velocity.x = 0
+        if abs(self.velocity.y * dt) > 1e-6 and abs(self.pos.y - start_y) < 1e-6:
+            self.velocity.y = 0
+
+    def coast(self, obstacles, dt_ms):
+        """Kalles én gang per frame etter move(). Bremser mykt hvis fienden ikke styrte."""
+        if not self._steered and self.velocity.length_squared() > 0:
+            self._steer(0, 0, dt_ms, obstacles)
+        self._steered = False
 
     def _slide_move(self, vx, vy, dt_ms, obstacles):
         """Smooth bevegelse med wall sliding."""
@@ -53,11 +95,12 @@ class MovementMixin:
         dist = direction.length()
         if dist > 1e-6:
             direction /= dist
-            self._slide_move(direction.x * self.speed, direction.y * self.speed, dt_ms, obstacles)
+            self._steer(direction.x * self.speed, direction.y * self.speed, dt_ms, obstacles)
         return self._dist2(int(self.pos.x), int(self.pos.y), int(target_px[0]), int(target_px[1])) <= (24 * 24)
 
     def _lunge(self, vx, vy, dt_ms, obstacles):
             """Lunge attack, returns when it hits an obstacle"""
+            self.velocity.update(0, 0)  # lunge er instant – starter fra stillstand etterpå
             dt = dt_ms / 1000.0
             dx_total = vx * dt
             dy_total = vy * dt

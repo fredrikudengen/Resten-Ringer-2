@@ -30,6 +30,7 @@ class World:
         for enemy in self.enemies[:]:
 
             enemy.move(player, self.obstacles, self.current_room, dt_ms)
+            enemy.coast(self.obstacles, dt_ms)
             enemy.apply_separation(self.enemies, obstacles)
             enemy.apply_player_separation(player, obstacles)
 

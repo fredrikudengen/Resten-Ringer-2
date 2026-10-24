@@ -248,7 +248,7 @@ class RangedEnemy(Enemy):
         if away.length_squared() < 1e-6:
             return
         away = away.normalize()
-        self._slide_move(away.x * self.speed, away.y * self.speed, dt_ms, obstacles)
+        self._steer(away.x * self.speed, away.y * self.speed, dt_ms, obstacles)
 
     def _find_los_tile(self, room, player) -> tuple[int, int] | None:
         """
