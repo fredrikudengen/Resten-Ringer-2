@@ -15,7 +15,7 @@ from src.entities.enemies.enemy import Enemy
 # ScoutEnemy      : Vet alltid hvor du er, så ingen detection radius
 # AssassinEnemy   : Rask melee + lunge-angrep med windup
 # SlowEnemy       : Treg men slår hardt, windup-angrep
-# BruteEnemy      : Stor, høy damage og lang rekkevidde
+# BruteEnemy      : Stor, høy damage, windup-slag + tung lunge
 # TankEnemy       : Mest helse, også mye damage
 #
 # --- Stat-referanse ---
@@ -97,9 +97,95 @@ class ScoutEnemy(Enemy):
         return self.state != "dead" and not self._burst_paused() and not self._flinching()
 
 
-class AssassinEnemy(Enemy):
+# ===========================================================================
+# LUNGE MIXIN
+# ===========================================================================
+# AssassinEnemy og BruteEnemy bruker lunge: fienden stopper (windup), kaster
+# seg så i rett linje mot spilleren og skader alt den treffer på veien.
+# Stopper ved vegg eller etter _LUNGE_MAX_DIST. Hver fiende har egen tuning.
+# ===========================================================================
+
+class LungeMixin:
+    """Lunge-angrep oppå en annen move() (Enemy.move eller WindupMeleeMixin.move).
+
+    Legges først i arvelisten. Tar over move() bare mens fienden er i
+    "lunge_windup"/"lunge"; ellers kjører vanlig move() og lunge startes
+    etterpå hvis fienden jager og spilleren er innenfor rekkevidde.
     """
-    Har et eget lunge angrep.
+    _LUNGE_WINDUP   = 600      # ms stillstand før hoppet (telegraph)
+    _LUNGE_MAX_DIST = 500      # px før lungen avsluttes
+    _LUNGE_SPEED    = 650      # px/s under lungen
+    _LUNGE_AREA     = 330000   # maks avstand² for å starte lunge
+    _LUNGE_MIN_AREA = 0        # min avstand², så nærkamp-fiender ikke lunger på kloss hold
+    _LUNGE_COOLDOWN = 3000     # ms etter lungen før neste
+
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.lunge_hit             = False
+        self._lunge_windup_until   = 0
+        self._lunge_direction      = pygame.Vector2()
+        self._lunge_start          = pygame.Vector2()
+        self._lunge_cooldown_until = 0
+
+    def move(self, player, obstacles, room, dt_ms):
+        if self.health > 0 and self.state in ("lunge_windup", "lunge"):
+            self.update_knockback(obstacles)
+            self._update_lunge(player, obstacles, dt_ms, pygame.time.get_ticks())
+            self._update_facing()
+            return
+
+        super().move(player, obstacles, room, dt_ms)
+        self._try_start_lunge(player, room, pygame.time.get_ticks())
+
+    def _try_start_lunge(self, player, room, now):
+        if self.state != "chase" or now < self._lunge_cooldown_until:
+            return
+        dist2 = self._dist2(*player.rect.center, *self.rect.center)
+        if not self._LUNGE_MIN_AREA <= dist2 <= self._LUNGE_AREA:
+            return
+        if not self._has_los(room, *self._grid_pos(), *player._grid_pos()):
+            return
+        self.state = "lunge_windup"
+        self._lunge_windup_until = now + self._LUNGE_WINDUP
+
+    def _update_lunge(self, player, obstacles, dt_ms, now):
+        if self.state == "lunge_windup":
+            if now > self._lunge_windup_until:
+                self._begin_lunge(player)
+            return
+
+        if (self.pos - self._lunge_start).length() > self._LUNGE_MAX_DIST:
+            self._end_lunge(now)
+            return
+
+        hit_wall = self._lunge(self._lunge_direction.x * self._LUNGE_SPEED,
+                               self._lunge_direction.y * self._LUNGE_SPEED, dt_ms, obstacles)
+        if self.rect.colliderect(player.rect) and not self.lunge_hit:
+            self._damage_player(player, self.damage)
+            self.lunge_hit = True
+        if hit_wall:
+            self._end_lunge(now)
+
+    def _begin_lunge(self, player):
+        direction = pygame.Vector2(player.rect.center) - pygame.Vector2(self.rect.center)
+        if direction.length_squared() < 1e-6:
+            direction = pygame.Vector2(-1 if self.facing_left else 1, 0)
+        self._lunge_direction = direction.normalize()
+        self._lunge_start = pygame.Vector2(self.pos)
+        self.state = "lunge"
+        # Lunge nullstiller velocity, så retningen settes eksplisitt her
+        if abs(self._lunge_direction.x) > 1e-3:
+            self.facing_left = self._lunge_direction.x < 0
+
+    def _end_lunge(self, now):
+        self.state = "chase"
+        self._lunge_cooldown_until = now + self._LUNGE_COOLDOWN
+        self.lunge_hit = False
+
+
+class AssassinEnemy(LungeMixin, Enemy):
+    """
+    Rask melee med lunge.
     """
     name              = "assassin_enemy"
     speed             = 400
@@ -116,116 +202,22 @@ class AssassinEnemy(Enemy):
     height            = 64
     wander_radius     = 4
     knockback_friction= 0.75
+    knockback_taken_mult = 0.7
+    contact_self_knockback = 4
+    _LUNGE_WINDUP     = 600
     _LUNGE_MAX_DIST   = 500
     _LUNGE_SPEED      = 650
-    _LUNGE_AREA       = 330000
+    _LUNGE_AREA       = 330000  # ~575 px
     _LUNGE_COOLDOWN   = 3000
-    knockback_taken_mult = 0.7
 
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.lunge_hit = False
-        self._lunge_windup = 600
-        self._lunge_windup_until = 0
         self.state = "chase"
-        self._lunge_direction = pygame.Vector2()
-        self._lunge_start = pygame.Vector2()
-        self._lunge_cooldown_until = 0
         self.sprite = Sprite(
             frames={"idle": "enemy/assassin/enemy_assassin", "hurt": "enemy/assassin/enemy_assassin"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
-
-    def move(self, player, obstacles, room, dt_ms):
-        now = pygame.time.get_ticks()
-
-        if self.health <= 0:
-            self.alive = False
-            self.state = "dead"
-            self.wander_goal_g = None
-            return
-
-        if self.hit and self.state not in ("lunge", "lunge_windup", "attack"):
-            self.hit = False
-            self.last_seen_pos = player.rect.center
-            self.search_started = now
-            self.state = "search"
-
-        player_center = player.rect.center
-        enemy_center = self.rect.center
-        see_player = False
-
-        dist2_to_player = self._dist2(*player_center, *enemy_center)
-        if dist2_to_player <= self.detection_radius * self.detection_radius:
-            if self._has_los(room, *self._grid_pos(), *player._grid_pos()):
-                see_player = True
-                self.last_seen_pos = player_center
-                self.search_started = None
-
-        self.update_knockback(obstacles)
-
-        if self.state in ("idle", "walk"):
-            if self._reacted(see_player, now):
-                self.state = "chase"
-            else:
-                self._idle(room, obstacles, dt_ms, now)
-
-        elif self.state == "chase":
-            self.wander_goal_g = None
-            if see_player:
-                self._move_towards(player_center, obstacles, dt_ms)
-                if now >= self.attack_cooldown_until and self.rect.colliderect(player.rect):
-                    self._damage_player(player, self.damage)
-                    self.attack_cooldown_until = now + self.attack_cooldown
-                    self.apply_knockback(player.rect, 4)
-                elif dist2_to_player <= self._LUNGE_AREA and self._lunge_cooldown_until < now:
-                    self.state = "lunge_windup"
-                    self._lunge_windup_until = now + self._lunge_windup
-            else:
-                if self.last_seen_pos:
-                    self.state = "search"
-                    self.search_started = now
-                else:
-                    self.state = "idle"
-
-        elif self.state == "lunge_windup":
-            if now > self._lunge_windup_until:
-                self._lunge_direction = (player.pos - self.pos).normalize()
-                self._lunge_start = pygame.Vector2(self.pos)
-                self.state = "lunge"
-                # Lunge nullstiller velocity, så retningen settes eksplisitt her
-                if abs(self._lunge_direction.x) > 1e-3:
-                    self.facing_left = self._lunge_direction.x < 0
-
-        elif self.state == "lunge":
-            if (self.pos - self._lunge_start).length() > self._LUNGE_MAX_DIST:
-                self.state = "chase"
-                self._lunge_cooldown_until = now + self._LUNGE_COOLDOWN
-                self.lunge_hit = False
-            else:
-                hit = self._lunge(self._lunge_direction.x * self._LUNGE_SPEED,
-                                  self._lunge_direction.y * self._LUNGE_SPEED, dt_ms, obstacles)
-                if hit:
-                    self.state = "chase"
-                    self._lunge_cooldown_until = now + self._LUNGE_COOLDOWN
-                    self.lunge_hit = False
-                if self.rect.colliderect(player.rect) and not self.lunge_hit:
-                    self._damage_player(player, self.damage)
-                    self.lunge_hit = True
-
-        elif self.state == "search":
-            if see_player:
-                self.state = "chase"
-            elif self.last_seen_pos:
-                self._search(obstacles, room, dt_ms, now)
-            else:
-                self.state = "idle"
-
-        elif self.state == "dead":
-            return
-
-        self._update_facing()
 
 
 # ===========================================================================
@@ -340,9 +332,9 @@ class SlowEnemy(WindupMeleeMixin, Enemy):
         )
 
 
-class BruteEnemy(WindupMeleeMixin, Enemy):
+class BruteEnemy(LungeMixin, WindupMeleeMixin, Enemy):
     """
-    Mer skade enn slow og tank.
+    Mer skade enn slow og tank. Tung lunge: lengre windup og kortere hopp enn Assassin.
     """
     name              = "brute_enemy"
     speed             = 330
@@ -362,6 +354,12 @@ class BruteEnemy(WindupMeleeMixin, Enemy):
     wander_radius     = 3
     knockback_friction= 0.5
     knockback_taken_mult = 0.6
+    _LUNGE_WINDUP     = 750
+    _LUNGE_MAX_DIST   = 320
+    _LUNGE_SPEED      = 600
+    _LUNGE_AREA       = 90000   # 300 px
+    _LUNGE_MIN_AREA   = 25600   # 160 px – nærmere enn dette bruker den vanlig windup-slag
+    _LUNGE_COOLDOWN   = 4500
 
     def __init__(self, x, y):
         super().__init__(x, y)
