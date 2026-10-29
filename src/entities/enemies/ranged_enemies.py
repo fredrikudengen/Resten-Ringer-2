@@ -99,7 +99,7 @@ class RangedEnemy(Enemy):
 
         # --- state machine ---
         if self.state in ("idle", "walk"):
-            if see_player:
+            if self._reacted(see_player, now):
                 self.state               = "chase"
                 self._reposition_target  = None
             else:

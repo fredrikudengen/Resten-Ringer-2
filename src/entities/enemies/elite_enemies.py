@@ -166,7 +166,7 @@ class AssassinEnemy(Enemy):
         self.update_knockback(obstacles)
 
         if self.state in ("idle", "walk"):
-            if see_player:
+            if self._reacted(see_player, now):
                 self.state = "chase"
             else:
                 self._idle(room, obstacles, dt_ms, now)
@@ -268,7 +268,7 @@ class WindupMeleeMixin:
         self.update_knockback(obstacles)
 
         if self.state in ("idle", "walk"):
-            if see_player:
+            if self._reacted(see_player, now):
                 self.state = "chase"
             else:
                 self._idle(room, obstacles, dt_ms, now)
