@@ -33,6 +33,9 @@ from src.components.gun import EnemyPistol, EnemyRifle
 # damage           : Skade ved treff (melee) eller via gun (ranged)
 # detection_radius : Pikselradius der fienden oppdager spilleren (krever siktlinje)
 # attack_cooldown  : Millisekunder mellom angrep
+# reaction_ms      : ms fra fienden ser spilleren (fra idle) til den går i chase
+# stat_spread      : ±andel tilfeldig fart, reaksjonstid og aggressivitet per fiende ved spawn (0 = av).
+#                    Aggressivitet gir kortere attack_cooldown og større detection_radius
 # knockback_strength: Hvor langt spilleren kastes når fienden treffer HAM (høyere = lengre)
 # knockback_friction: Hvor raskt knockback bremser (0.0 = stopper straks, 1.0 = glir evig)
 # knockback_taken_mult: Ganges med våpenets knockback_strength når fienden blir truffet (1.0 = normal, lav = tung)

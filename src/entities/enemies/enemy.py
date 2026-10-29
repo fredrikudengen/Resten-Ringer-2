@@ -14,6 +14,8 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
     detection_radius = 0  # px; None = alltid oppdaget (se ScoutEnemy)
     flinch_ms        = constants.ENEMY_FLINCH_MS
     knockback_taken_mult = 1.0  # ganges med våpenets knockback_strength; lav = tung/vanskelig å dytte
+    reaction_ms      = constants.ENEMY_REACTION_MS
+    stat_spread      = constants.ENEMY_STAT_SPREAD
 
     def __init__(self, x, y):
 
@@ -22,7 +24,11 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         self.max_health = self.health
 
         now = pygame.time.get_ticks()
-        
+
+        # Variasjon per fiende (#23), så en gruppe ikke beveger seg som én klump
+        self._randomize_stats()
+        self._spotted_at         = None
+
         self.alive                 = True
         self.hit                   = False
         self.attack_cooldown_until = 0
@@ -53,6 +59,38 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         self.flinch_until        = 0
         self.hurt_until          = 0
         self._flinch_ready_at    = 0
+
+    def _randomize_stats(self):
+        """Gi fienden ±stat_spread tilfeldig fart, reaksjonstid og aggressivitet.
+
+        Aggressivitet > 1 betyr kortere attack_cooldown og større detection_radius.
+        Settes som instans-attributter, så klasseverdiene er uendret.
+        """
+        s = self.stat_spread
+        if s <= 0:
+            self.aggression = 1.0
+            return
+
+        self.speed       = self.speed * random.uniform(1 - s, 1 + s)
+        self.reaction_ms = self.reaction_ms * random.uniform(1 - s, 1 + s)
+        self.aggression  = random.uniform(1 - s, 1 + s)
+
+        if hasattr(self, "attack_cooldown"):
+            self.attack_cooldown = self.attack_cooldown / self.aggression
+        if self.detection_radius:
+            self.detection_radius = self.detection_radius * self.aggression
+
+    def _reacted(self, see_player, now) -> bool:
+        """True når fienden har sett spilleren sammenhengende i reaction_ms."""
+        if not see_player:
+            self._spotted_at = None
+            return False
+        if self._spotted_at is None:
+            self._spotted_at = now
+        if now - self._spotted_at < self.reaction_ms:
+            return False
+        self._spotted_at = None
+        return True
 
     # ------------------------- PUBLIC API -------------------------
 
@@ -126,7 +164,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         self.update_knockback(obstacles)
 
         if self.state in ("idle", "walk"):
-            if see_player:
+            if self._reacted(see_player, now):
                 self.state = "chase"
             else:
                 self._idle(room, obstacles, dt_ms, now)

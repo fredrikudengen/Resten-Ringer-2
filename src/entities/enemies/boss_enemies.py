@@ -36,6 +36,7 @@ class WardenBoss(Enemy, MovementMixin):
     accel_time_ms = 500
     flinch_ms     = 0
     knockback_taken_mult = 0
+    stat_spread = 0  # bossen skal være forutsigbar
     health = 2000
     damage = 55
     attack_range = 12100  # 110 px
