@@ -37,6 +37,8 @@ ENEMY_FLINCH_MS = 120            # hvor lenge fienden stopper opp når den treff
 ENEMY_FLINCH_COOLDOWN_MS = 300   # min. tid mellom stopp, så raske våpen ikke stunlocker fiender
 ENEMY_HURT_FLASH_MS = 100        # hvor lenge hurt-visuellen vises for fiender uten flinch (flinch_ms = 0), f.eks. boss
 ENEMY_HURT_TINT = (70, 70, 70)   # additiv blink på spriten når fienden treffes (sammen med "hurt"-frame)
+ENEMY_REACTION_MS = 250          # tid fra idle-fienden ser spilleren til den går i chase (overstyr med reaction_ms)
+ENEMY_STAT_SPREAD = 0.15         # ±andel tilfeldig variasjon per fiende ved spawn: fart, reaksjonstid, aggressivitet. 0 = av
 
 # XP og level
 XP_BASE = 100  # XP til level 2
