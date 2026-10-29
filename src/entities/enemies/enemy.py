@@ -14,6 +14,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
     detection_radius = 0  # px; None = alltid oppdaget (se ScoutEnemy)
     flinch_ms        = constants.ENEMY_FLINCH_MS
     knockback_taken_mult = 1.0  # ganges med våpenets knockback_strength; lav = tung/vanskelig å dytte
+    contact_self_knockback = 16  # fienden dyttes litt tilbake når den treffer spilleren
     reaction_ms      = constants.ENEMY_REACTION_MS
     stat_spread      = constants.ENEMY_STAT_SPREAD
 
@@ -176,7 +177,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
                 if now >= self.attack_cooldown_until and self.rect.colliderect(player.rect):
                     self._damage_player(player, self.damage)
                     self.attack_cooldown_until = now + self.attack_cooldown
-                    self.apply_knockback(player.rect, 16)  # liten self-knockback
+                    self.apply_knockback(player.rect, self.contact_self_knockback)
             else:
                 if self.last_seen_pos:
                     self.state = "search"
