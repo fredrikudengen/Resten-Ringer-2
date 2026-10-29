@@ -9,6 +9,7 @@ __pycache__/
 # Self-inserted
 notes.md
 CLAUDE.md
+/.claude
 
 # Distribution / packaging
 .Python
