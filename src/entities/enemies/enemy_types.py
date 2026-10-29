@@ -111,6 +111,9 @@ class FastEnemy(Enemy):
 # preferred_range_px : Ideell avstand til spilleren mens de skyter
 # min_range_px       : Vil aldri gå nærmere enn dette
 # gun_class          : Hvilken pistol de bruker (se components/gun.py)
+# strafe_speed_mult  : Andel av speed når de beveger seg sidelengs mens de skyter (0 = står stille)
+# strafe_interval_ms : (min, max) ms per sidelengs-intervall før de velger side på nytt
+# aim_error_deg      : Maks sikteavvik i grader, driver litt fra skudd til skudd (i tillegg til gun.spread)
 # ===========================================================================
 
 class ShooterEnemy(RangedEnemy):
@@ -160,6 +163,9 @@ class MarksmanEnemy(RangedEnemy):
     preferred_range_px = 460
     min_range_px       = 200
     reposition_interval = 600
+    strafe_speed_mult   = 0.35
+    strafe_interval_ms  = (600, 1200)
+    aim_error_deg       = 2.5
 
     speed              = 240
     accel_time_ms      = 250

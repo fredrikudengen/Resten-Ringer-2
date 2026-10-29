@@ -33,6 +33,9 @@ class RangedEnemy(Enemy):
     preferred_range_px : Ideal pixel distance to player while shooting (default 300)
     min_range_px       : Won't advance closer than this (default 140)
     reposition_interval: ms between LOS-position searches while chasing (default 800)
+    strafe_speed_mult  : Andel av speed når den beveger seg sidelengs mens den skyter (0 = står stille)
+    strafe_interval_ms : (min, max) ms per sidelengs-intervall før den velger side på nytt
+    aim_error_deg      : Maks sikteavvik i grader. Driver litt fra skudd til skudd (i tillegg til gun.spread)
     """
 
     # ---- override these in subclasses ----
@@ -40,6 +43,9 @@ class RangedEnemy(Enemy):
     preferred_range_px:   int   = 300
     min_range_px:         int   = 140
     reposition_interval:  int   = 800    # ms between reposition searches
+    strafe_speed_mult:    float = 0.6
+    strafe_interval_ms:   tuple = (400, 900)
+    aim_error_deg:        float = 6.0
 
     # ---- sensible defaults (subclass can still override) ----
     speed            = 100
@@ -58,6 +64,10 @@ class RangedEnemy(Enemy):
 
         self._reposition_target: tuple[int, int] | None = None
         self._next_reposition_at: int = 0
+
+        self._strafe_dir: int       = random.choice((-1, 1))
+        self._strafe_switch_at: int = 0
+        self._aim_offset_deg: float = 0.0
 
     # =========================================================
     # PUBLIC API — override of Enemy.move()
@@ -125,9 +135,9 @@ class RangedEnemy(Enemy):
                 self.state = "reload"
             else:
                 self._do_shoot(player_center)
-                # Drift slightly if player gets too close
-                if dist2 < self.min_range_px ** 2:
-                    self._retreat_from(player_center, obstacles, dt_ms)
+                # Sidelengs mens den skyter, og trekk unna hvis spilleren er for nær
+                self._strafe(player_center, obstacles, dt_ms, now,
+                             retreat=dist2 < self.min_range_px ** 2)
 
         elif self.state == "reload":
             # Back away a little while reloading — makes them feel less passive
@@ -149,6 +159,9 @@ class RangedEnemy(Enemy):
             return
 
         self._update_facing()
+        if self.state == "shoot":
+            # Se mot spilleren mens den skyter, ikke i strafe-retningen
+            self.facing_left = player_center[0] < self.rect.centerx
 
     # =========================================================
     # DRAW — extra colour coding for new states
@@ -229,12 +242,56 @@ class RangedEnemy(Enemy):
             player_center[0] - self.rect.centerx,
             player_center[1] - self.rect.centery,
         )
-        if direction.length_squared() == 0:
+        if direction.length_squared() == 0 or not self.gun.can_shoot():
             return
+        direction.rotate_ip(self._next_aim_offset())
         bullets = self.gun.shoot(self.rect.center, direction)
         self.pending_bullets.extend(bullets)
         if self.gun.is_reloading:
             self.state = "reload"
+
+    def _next_aim_offset(self) -> float:
+        """Sikteavvik (grader) for neste skudd: random walk innenfor ±aim_error_deg.
+
+        Avviket driver i stedet for å trekkes på nytt hver gang, så flere skudd
+        på rad kan bomme til samme side, som et sikte som vingler.
+        """
+        e = self.aim_error_deg
+        if e <= 0:
+            return 0.0
+        drifted = self._aim_offset_deg + random.uniform(-e, e) * 0.6
+        self._aim_offset_deg = max(-e, min(e, drifted))
+        return self._aim_offset_deg
+
+    def _strafe(self, player_center: tuple[int, int], obstacles, dt_ms: int,
+                now: int, retreat: bool = False):
+        """Beveg seg sidelengs (vinkelrett på spilleren) i korte intervaller.
+
+        Velger tilfeldig side ved hvert intervall og snur hvis den går i en vegg.
+        Med retreat=True trekker den seg samtidig bort fra spilleren.
+        """
+        to_player = Vector2(player_center[0] - self.rect.centerx,
+                            player_center[1] - self.rect.centery)
+        if to_player.length_squared() < 1e-6:
+            return
+        to_player.normalize_ip()
+
+        if now >= self._strafe_switch_at:
+            self._strafe_dir       = random.choice((-1, 1))
+            self._strafe_switch_at = now + random.randint(*self.strafe_interval_ms)
+
+        side    = Vector2(-to_player.y, to_player.x) * self._strafe_dir
+        desired = side * self.strafe_speed_mult
+        if retreat:
+            desired -= to_player
+        if desired.length_squared() < 1e-6:
+            return
+        if desired.length() > 1:
+            desired.scale_to_length(1)
+
+        self._steer(desired.x * self.speed, desired.y * self.speed, dt_ms, obstacles)
+        if self.velocity.length() < 1.0:
+            self._strafe_dir *= -1  # blokkert av vegg – snu
 
     def _retreat_from(self, target_pos: tuple[int, int], obstacles, dt_ms: int):
         """Move away from target_pos (used to maintain min_range while reloading/shooting)."""
