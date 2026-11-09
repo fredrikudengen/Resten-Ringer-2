@@ -1,39 +1,13 @@
 import pygame
 
-from core import constants
 from entities.enemies.boss_enemies import WardenBoss
+from fakes import set_ticks, FakePlayer
 
 DT = 16
 
 
-def _set_ticks(monkeypatch, value: int):
-    monkeypatch.setattr(pygame.time, "get_ticks", lambda: value)
-
-
-class _FakePlayer:
-    def __init__(self, center):
-        self.rect = pygame.Rect(0, 0, 32, 32)
-        self.rect.center = center
-        self.pos = pygame.Vector2(center)
-        self.health = 10_000
-        self.relics = []
-        self.alive = True
-        self.hurt_invincible_until = 0
-
-    @property
-    def is_invincible(self):
-        return False  # ingen iframes, så vi ser om lungen treffer flere ganger
-
-    def _grid_pos(self):
-        T = constants.TILE_SIZE
-        return (self.rect.centerx // T, self.rect.centery // T)
-
-    def apply_knockback(self, source_rect, strength):
-        pass
-
-
 def _make(monkeypatch, now=1000):
-    _set_ticks(monkeypatch, now)
+    set_ticks(monkeypatch, now)
     boss = WardenBoss(2000, 2000)
     boss._next_spawn_at = 10**9  # ingen minions i testene
     return boss
@@ -45,7 +19,7 @@ def test_lunge_cooldown_after_daze_is_relative_to_now_in_both_phases(monkeypatch
         boss._phase = phase
         boss.state = "dazed"
         boss._daze_until = 49_000
-        player = _FakePlayer((boss.rect.centerx + 500, boss.rect.centery))
+        player = FakePlayer((boss.rect.centerx + 500, boss.rect.centery), health=10_000)
 
         boss.move(player, [], None, DT)
 
@@ -55,7 +29,7 @@ def test_lunge_cooldown_after_daze_is_relative_to_now_in_both_phases(monkeypatch
 
 def test_lunge_damages_player_only_once(monkeypatch):
     boss = _make(monkeypatch)
-    player = _FakePlayer(boss.rect.center)
+    player = FakePlayer(boss.rect.center, health=10_000)
     boss.state = "lunge"
     boss._lunge_direction = pygame.Vector2(1, 0)
     boss._lunge_start = pygame.Vector2(boss.pos)
@@ -64,7 +38,7 @@ def test_lunge_damages_player_only_once(monkeypatch):
     t = 1000
     for _ in range(10):
         t += DT
-        _set_ticks(monkeypatch, t)
+        set_ticks(monkeypatch, t)
         player.rect.center = boss.rect.center  # spilleren blir stående inni bossen
         boss.move(player, [], None, DT)
 
@@ -73,7 +47,7 @@ def test_lunge_damages_player_only_once(monkeypatch):
 
 def test_lunge_starts_safely_when_standing_on_player(monkeypatch):
     boss = _make(monkeypatch)
-    player = _FakePlayer(boss.rect.center)
+    player = FakePlayer(boss.rect.center, health=10_000)
     boss.state = "lunge_windup"
     boss._lunge_windup_until = 0
     boss._lunge_hit = True
@@ -86,10 +60,11 @@ def test_lunge_starts_safely_when_standing_on_player(monkeypatch):
 
 
 def test_hud_fonts_are_created_once(monkeypatch):
+    from src.view import fonts  # samme modul som koden bruker (ikke view.fonts)
     calls = []
     real_sysfont = pygame.font.SysFont
     monkeypatch.setattr(pygame.font, "SysFont", lambda *a, **k: calls.append(a) or real_sysfont(*a, **k))
-    monkeypatch.setattr(WardenBoss, "_hud_fonts", None)
+    fonts.font.cache_clear()
 
     boss = _make(monkeypatch)
     screen = pygame.Surface((800, 600))

@@ -3,34 +3,15 @@ import random
 import pygame
 from pygame.math import Vector2
 
-from core import constants
 from entities.enemies.enemy_types import MarksmanEnemy, ShooterEnemy
 from entities.enemies.ranged_enemies import RangedEnemy
+from fakes import set_ticks, OpenRoom, FakePlayer
 
 DT = 16
 
 
-def _set_ticks(monkeypatch, value: int):
-    monkeypatch.setattr(pygame.time, "get_ticks", lambda: value)
-
-
-class _OpenRoom:
-    def is_blocked(self, gx, gy):
-        return False
-
-
-class _FakePlayer:
-    def __init__(self, center):
-        self.rect = pygame.Rect(0, 0, 32, 32)
-        self.rect.center = center
-
-    def _grid_pos(self):
-        T = constants.TILE_SIZE
-        return (self.rect.centerx // T, self.rect.centery // T)
-
-
 def _make(monkeypatch, now=1000, cls=ShooterEnemy):
-    _set_ticks(monkeypatch, now)
+    set_ticks(monkeypatch, now)
     monkeypatch.setattr(cls, "stat_spread", 0)
     enemy = cls(2000, 2000)
     enemy.dir_noise_deg = 0
@@ -111,10 +92,10 @@ def test_shooting_enemy_strafes_and_faces_player(monkeypatch):
     enemy = _make(monkeypatch)
     enemy.state = "shoot"
     enemy.detection_radius = 10_000
-    player = _FakePlayer((enemy.rect.centerx - 300, enemy.rect.centery))  # til venstre
+    player = FakePlayer((enemy.rect.centerx - 300, enemy.rect.centery))  # til venstre
     start = Vector2(enemy.pos)
 
-    enemy.move(player, [], _OpenRoom(), DT)
+    enemy.move(player, [], OpenRoom(), DT)
 
     assert enemy.state == "shoot"
     assert abs((enemy.pos - start).y) > 0

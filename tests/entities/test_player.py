@@ -1,11 +1,7 @@
-import pygame
 
 from core import constants
 from entities.player import Player
-
-
-def _set_ticks(monkeypatch, value: int):
-    monkeypatch.setattr(pygame.time, "get_ticks", lambda: value)
+from fakes import set_ticks
 
 
 def test_xp_to_next_follows_the_xp_scale_formula():
@@ -56,7 +52,7 @@ def test_level_up_grants_health_and_damage_bonuses():
 
 
 def test_apply_attack_powerup_increases_damage_and_reverts_after_duration(monkeypatch):
-    _set_ticks(monkeypatch, 0)
+    set_ticks(monkeypatch, 0)
     player = Player()
     base_damage = player.gun.damage
 
@@ -66,17 +62,17 @@ def test_apply_attack_powerup_increases_damage_and_reverts_after_duration(monkey
     assert player.gun.damage == base_damage + bonus
 
     duration = constants.BUFF_DURATIONS["AttackPowerup"]
-    _set_ticks(monkeypatch, duration - 1)
+    set_ticks(monkeypatch, duration - 1)
     player.update_powerups()
     assert player.gun.damage == base_damage + bonus
 
-    _set_ticks(monkeypatch, duration)
+    set_ticks(monkeypatch, duration)
     player.update_powerups()
     assert player.gun.damage == base_damage
 
 
 def test_apply_attack_powerup_twice_while_active_is_a_no_op(monkeypatch):
-    _set_ticks(monkeypatch, 0)
+    set_ticks(monkeypatch, 0)
     player = Player()
     base_damage = player.gun.damage
 
@@ -98,7 +94,7 @@ def test_apply_health_powerup_heals_but_caps_at_max_health_and_has_no_timer():
 
 
 def test_apply_shield_powerup_grants_shield_and_expiry_leaves_health_untouched(monkeypatch):
-    _set_ticks(monkeypatch, 0)
+    set_ticks(monkeypatch, 0)
     player = Player()
     start_health = player.health
 
@@ -109,7 +105,7 @@ def test_apply_shield_powerup_grants_shield_and_expiry_leaves_health_untouched(m
     assert player.health == start_health
 
     duration = constants.BUFF_DURATIONS["ShieldPowerup"]
-    _set_ticks(monkeypatch, duration)
+    set_ticks(monkeypatch, duration)
     player.update_powerups()
 
     assert player.shield == 0
@@ -118,13 +114,13 @@ def test_apply_shield_powerup_grants_shield_and_expiry_leaves_health_untouched(m
 
 
 def test_apply_shield_powerup_twice_while_active_refreshes_without_stacking(monkeypatch):
-    _set_ticks(monkeypatch, 0)
+    set_ticks(monkeypatch, 0)
     player = Player()
 
     player.apply_powerup("ShieldPowerup")
     once_shield = player.shield
 
-    _set_ticks(monkeypatch, 5000)
+    set_ticks(monkeypatch, 5000)
     player.apply_powerup("ShieldPowerup")
 
     assert player.shield == once_shield
@@ -133,7 +129,7 @@ def test_apply_shield_powerup_twice_while_active_refreshes_without_stacking(monk
 
 
 def test_health_powerup_while_shielded_does_not_cause_health_loss_after_shield_expires(monkeypatch):
-    _set_ticks(monkeypatch, 0)
+    set_ticks(monkeypatch, 0)
     player = Player()
     player.health = player.max_health - 5
 
@@ -142,7 +138,7 @@ def test_health_powerup_while_shielded_does_not_cause_health_loss_after_shield_e
     assert player.health == player.max_health
 
     duration = constants.BUFF_DURATIONS["ShieldPowerup"]
-    _set_ticks(monkeypatch, duration)
+    set_ticks(monkeypatch, duration)
     player.update_powerups()
 
     assert player.health == player.max_health
