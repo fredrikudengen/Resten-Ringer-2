@@ -8,12 +8,9 @@ from entities.enemies.elite_enemies import AssassinEnemy, BruteEnemy, ScoutEnemy
 from entities.enemies.enemy import Enemy
 from entities.enemies.enemy_types import FastEnemy, MarksmanEnemy, ShooterEnemy, SwarmEnemy
 from view.sprite import Sprite
+from fakes import set_ticks, OpenRoom, FakePlayer
 
 DT = 16
-
-
-def _set_ticks(monkeypatch, value: int):
-    monkeypatch.setattr(pygame.time, "get_ticks", lambda: value)
 
 
 class _TestEnemy(Enemy):
@@ -32,7 +29,7 @@ class _TestEnemy(Enemy):
 
 
 def _make(monkeypatch, now=1000):
-    _set_ticks(monkeypatch, now)
+    set_ticks(monkeypatch, now)
     return _TestEnemy(500, 500)
 
 
@@ -74,7 +71,7 @@ def test_flinching_enemy_does_not_steer_towards_target(monkeypatch):
     enemy = _make(monkeypatch)
     _hit_from_left(enemy)
 
-    _set_ticks(monkeypatch, 1000 + 50)
+    set_ticks(monkeypatch, 1000 + 50)
     enemy._move_towards((enemy.pos.x + 1000, enemy.pos.y), [], DT)
 
     assert enemy.velocity.length() == 0
@@ -84,7 +81,7 @@ def test_flinch_ends_after_flinch_ms(monkeypatch):
     enemy = _make(monkeypatch)
     _hit_from_left(enemy)
 
-    _set_ticks(monkeypatch, 1000 + enemy.flinch_ms)
+    set_ticks(monkeypatch, 1000 + enemy.flinch_ms)
     assert not enemy._flinching()
 
     enemy._move_towards((enemy.pos.x + 1000, enemy.pos.y), [], DT)
@@ -97,7 +94,7 @@ def test_flinch_has_cooldown_against_stunlock(monkeypatch):
 
     # Nytt treff rett etter at stoppet er over, men innenfor cooldown
     t = 1000 + enemy.flinch_ms + 10
-    _set_ticks(monkeypatch, t)
+    set_ticks(monkeypatch, t)
     enemy.velocity.update(enemy.speed, 0)
     _hit_from_left(enemy)
 
@@ -107,7 +104,7 @@ def test_flinch_has_cooldown_against_stunlock(monkeypatch):
     assert enemy.knockback_velocity.length() > 0
 
     # Etter cooldown kan den flinche igjen
-    _set_ticks(monkeypatch, 1000 + enemy.flinch_ms + constants.ENEMY_FLINCH_COOLDOWN_MS)
+    set_ticks(monkeypatch, 1000 + enemy.flinch_ms + constants.ENEMY_FLINCH_COOLDOWN_MS)
     _hit_from_left(enemy)
     assert enemy._flinching()
 
@@ -154,10 +151,10 @@ def test_hurt_visual_lasts_flinch_ms_then_returns_to_normal(monkeypatch):
     enemy.sprite = Sprite(frames={"idle": "x", "hurt": "y"}, base_size=(32, 32))
     _hit_from_left(enemy)
 
-    _set_ticks(monkeypatch, 1000 + enemy.flinch_ms - 1)
+    set_ticks(monkeypatch, 1000 + enemy.flinch_ms - 1)
     assert enemy._hurt_visual("idle")[0] == "hurt"
 
-    _set_ticks(monkeypatch, 1000 + enemy.flinch_ms)
+    set_ticks(monkeypatch, 1000 + enemy.flinch_ms)
     assert enemy._hurt_visual("idle") == ("idle", None)
 
 
@@ -166,11 +163,11 @@ def test_hurt_visual_shown_on_every_hit_even_during_flinch_cooldown(monkeypatch)
     _hit_from_left(enemy)
 
     t = 1000 + enemy.flinch_ms + 10  # stoppet er over, men cooldown gjelder
-    _set_ticks(monkeypatch, t)
+    set_ticks(monkeypatch, t)
     _hit_from_left(enemy)
 
     assert not enemy._flinching()
-    _set_ticks(monkeypatch, t + enemy.flinch_ms - 1)
+    set_ticks(monkeypatch, t + enemy.flinch_ms - 1)
     assert enemy._hurt()
 
 
@@ -179,34 +176,18 @@ def test_hurt_visual_without_flinch_uses_flash_duration(monkeypatch):
     enemy.flinch_ms = 0
     _hit_from_left(enemy)
 
-    _set_ticks(monkeypatch, 1000 + constants.ENEMY_HURT_FLASH_MS - 1)
+    set_ticks(monkeypatch, 1000 + constants.ENEMY_HURT_FLASH_MS - 1)
     assert enemy._hurt()
-    _set_ticks(monkeypatch, 1000 + constants.ENEMY_HURT_FLASH_MS)
+    set_ticks(monkeypatch, 1000 + constants.ENEMY_HURT_FLASH_MS)
     assert not enemy._hurt()
 
 
 def test_all_enemy_types_have_hurt_frame(monkeypatch):
-    _set_ticks(monkeypatch, 1000)
+    set_ticks(monkeypatch, 1000)
 
     for cls in (FastEnemy, SwarmEnemy, ShooterEnemy, MarksmanEnemy, ScoutEnemy,
                 AssassinEnemy, SlowEnemy, BruteEnemy, TankEnemy, WardenBoss):
         assert cls(500, 500).sprite.has_frame("hurt"), cls.__name__
-
-
-class _OpenRoom:
-    def is_blocked(self, gx, gy):
-        return False
-
-
-class _FakePlayer:
-    def __init__(self, center):
-        self.rect = pygame.Rect(0, 0, 32, 32)
-        self.rect.center = center
-        self.is_invincible = True  # ikke relevant her
-
-    def _grid_pos(self):
-        T = constants.TILE_SIZE
-        return (self.rect.centerx // T, self.rect.centery // T)
 
 
 def test_enemy_does_not_turn_around_when_knocked_back(monkeypatch):
@@ -214,8 +195,8 @@ def test_enemy_does_not_turn_around_when_knocked_back(monkeypatch):
     enemy.detection_radius = 10_000
     enemy.state = "chase"
     enemy.accel_time_ms = 250
-    player = _FakePlayer((enemy.rect.centerx + 400, enemy.rect.centery))
-    room = _OpenRoom()
+    player = FakePlayer((enemy.rect.centerx + 400, enemy.rect.centery), invincible=True)
+    room = OpenRoom()
 
     # Gå mot spilleren (til høyre) en stund
     for _ in range(20):
@@ -228,7 +209,7 @@ def test_enemy_does_not_turn_around_when_knocked_back(monkeypatch):
     enemy.on_hit(source, 20)
 
     for i in range(10):
-        _set_ticks(monkeypatch, 1000 + i * DT)
+        set_ticks(monkeypatch, 1000 + i * DT)
         start_x = enemy.pos.x
         enemy.move(player, [], room, DT)
         assert enemy.facing_left is False, f"snudde seg i frame {i}"
@@ -236,15 +217,15 @@ def test_enemy_does_not_turn_around_when_knocked_back(monkeypatch):
 
 
 def test_elite_melee_enemies_turn_towards_movement(monkeypatch):
-    _set_ticks(monkeypatch, 1000)
-    room = _OpenRoom()
+    set_ticks(monkeypatch, 1000)
+    room = OpenRoom()
 
     for cls in (AssassinEnemy, SlowEnemy, BruteEnemy, TankEnemy):
         enemy = cls(2000, 500)
         enemy.state = "chase"
         enemy.detection_radius = 10_000
         enemy.dir_noise_deg = 0
-        player = _FakePlayer((enemy.rect.centerx - 600, enemy.rect.centery))  # til venstre
+        player = FakePlayer((enemy.rect.centerx - 600, enemy.rect.centery), invincible=True)  # til venstre
 
         for _ in range(20):
             enemy.move(player, [], room, DT)

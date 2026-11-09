@@ -7,12 +7,9 @@ from pygame.math import Vector2
 from entities.enemies.enemy_types import MarksmanEnemy, ShooterEnemy
 from entities.player import Player
 from view.aim_arm import AimArm
+from fakes import set_ticks
 
 ASSETS = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sprites")
-
-
-def _set_ticks(monkeypatch, value: int):
-    monkeypatch.setattr(pygame.time, "get_ticks", lambda: value)
 
 
 def test_muzzle_follows_rotation_and_flip():
@@ -50,7 +47,7 @@ def test_gunmen_have_arm_sprites_on_disk():
 
 
 def test_arm_aims_at_target_and_relaxes_without_one(monkeypatch):
-    _set_ticks(monkeypatch, 1000)
+    set_ticks(monkeypatch, 1000)
     enemy = ShooterEnemy(2000, 2000)
     enemy._aim_offset_deg = 0.0
 
@@ -69,7 +66,7 @@ def test_arm_aims_at_target_and_relaxes_without_one(monkeypatch):
 
 
 def test_bullet_leaves_from_muzzle_not_center(monkeypatch):
-    _set_ticks(monkeypatch, 1000)
+    set_ticks(monkeypatch, 1000)
     enemy = ShooterEnemy(2000, 2000)
     enemy.gun.spread = 0
     monkeypatch.setattr(enemy, "_next_aim_offset", lambda: 0.0)

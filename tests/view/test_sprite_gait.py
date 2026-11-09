@@ -1,13 +1,9 @@
-import pygame
 import pytest
 
 from view.sprite import Sprite
+from fakes import set_ticks
 
 GAIT = {"walk": {"cycle_ms": 400, "bounce": 14, "sway": 2, "lean": 3}}
-
-
-def _set_ticks(monkeypatch, value: int):
-    monkeypatch.setattr(pygame.time, "get_ticks", lambda: value)
 
 
 def _sprite():
@@ -16,7 +12,7 @@ def _sprite():
 
 def test_gait_phase_overrides_clock(monkeypatch):
     sprite = _sprite()
-    _set_ticks(monkeypatch, 12345)  # vilkårlig klokke – skal ikke spille noen rolle
+    set_ticks(monkeypatch, 12345)  # vilkårlig klokke – skal ikke spille noen rolle
 
     _, _, bounce_start, _ = sprite._gait_frame("walk", phase=0.0)
     _, _, bounce_peak, _ = sprite._gait_frame("walk", phase=0.25)
@@ -35,27 +31,27 @@ def test_gait_phase_selects_frame_by_half_step():
 
 def test_without_gait_phase_uses_clock(monkeypatch):
     sprite = _sprite()
-    _set_ticks(monkeypatch, 1000)
+    set_ticks(monkeypatch, 1000)
     sprite._last_frame_name = "walk"
     sprite._gait_frame("walk")  # starter syklusen ved t=1000
 
-    _set_ticks(monkeypatch, 1100)  # 100ms = kvart syklus → topp
+    set_ticks(monkeypatch, 1100)  # 100ms = kvart syklus → topp
     _, _, bounce, _ = sprite._gait_frame("walk")
     assert bounce == -14
 
 
 def test_standing_still_resets_gait_cycle(monkeypatch):
     sprite = _sprite()
-    _set_ticks(monkeypatch, 1000)
+    set_ticks(monkeypatch, 1000)
     sprite._resolve_frame("walk", False, 0, 0.0, moving=True)
     sprite._last_frame_name = "walk"
 
-    _set_ticks(monkeypatch, 1100)
+    set_ticks(monkeypatch, 1100)
     sprite._resolve_frame("walk", False, 0, 0.0, moving=False)
     assert "walk" not in sprite._gait_phase_start
 
     # Neste bevegelse starter på fase 0 – ingen hopp midt i en sprett
-    _set_ticks(monkeypatch, 5000)
+    set_ticks(monkeypatch, 5000)
     _, _, bounce, _ = sprite._resolve_frame("walk", False, 0, 0.0, moving=True)
     assert bounce == 0
 
