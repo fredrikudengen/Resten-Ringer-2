@@ -2,6 +2,7 @@ import pygame
 
 from src.core import constants
 from src.view.sprite import Sprite
+from src.view.afterimage import AfterimageTrail
 from src.entities.enemies.enemy import Enemy
 
 # ===========================================================================
@@ -126,6 +127,14 @@ class LungeMixin:
         self._lunge_direction      = pygame.Vector2()
         self._lunge_start          = pygame.Vector2()
         self._lunge_cooldown_until = 0
+        self._lunge_trail          = AfterimageTrail()
+
+    def draw(self, screen, camera):
+        now = pygame.time.get_ticks()
+        self._lunge_trail.update(self.state == "lunge", self.rect.center,
+                                 self._sprite_frame(), self.facing_left, now)
+        self._lunge_trail.draw(screen, camera, self.sprite, (self.width, self.height), now)
+        super().draw(screen, camera)
 
     def move(self, player, obstacles, room, dt_ms):
         if self.health > 0 and self.state in ("lunge_windup", "lunge"):
@@ -198,8 +207,8 @@ class AssassinEnemy(LungeMixin, Enemy):
     knockback_strength= 24
     color             = (200, 30, 60)    # crimson
     xp_reward         = 28
-    width             = 64
-    height            = 64
+    width             = 80
+    height            = 80
     wander_radius     = 4
     knockback_friction= 0.75
     knockback_taken_mult = 0.7
@@ -214,10 +223,22 @@ class AssassinEnemy(LungeMixin, Enemy):
         super().__init__(x, y)
         self.state = "chase"
         self.sprite = Sprite(
-            frames={"idle": "enemy/assassin/enemy_assassin", "hurt": "enemy/assassin/enemy_assassin"},
+            frames={
+                "idle":   "enemy/assassin/enemy_assassin",
+                "hurt":   "enemy/assassin/enemy_assassin",
+                "windup": "enemy/assassin/enemy_assassin_windup",
+                "lunge":  "enemy/assassin/enemy_assassin_lunge",
+            },
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
+
+    def _sprite_frame(self) -> str:
+        if self.state == "lunge_windup":
+            return "windup"
+        if self.state == "lunge":
+            return "lunge"
+        return "idle"
 
 
 # ===========================================================================
@@ -230,6 +251,9 @@ class AssassinEnemy(LungeMixin, Enemy):
 
 class WindupMeleeMixin:
     """Felles move()-logikk for fiender med windup-angrep."""
+
+    _STRIKE_MS    = 180   # ms "strike"-framen vises etter at slaget går av
+    _strike_until = 0
 
     def move(self, player, obstacles, room, dt_ms):
         now = pygame.time.get_ticks()
@@ -286,6 +310,7 @@ class WindupMeleeMixin:
                     self._damage_player(player, self.damage)
                 self.state = "chase"
                 self.attack_cooldown_until = now + self.attack_cooldown
+                self._strike_until = now + self._STRIKE_MS
 
         elif self.state == "search":
             if see_player:
@@ -299,6 +324,14 @@ class WindupMeleeMixin:
             return
 
         self._update_facing()
+
+    def _sprite_frame(self) -> str:
+        """windup mens slaget (eller lungen) lades, strike mens det treffer, ellers idle."""
+        if self.state in ("attack", "lunge_windup"):
+            return "windup"
+        if self.state == "lunge" or pygame.time.get_ticks() < self._strike_until:
+            return "strike"
+        return "idle"
 
 class SlowEnemy(WindupMeleeMixin, Enemy):
     """
@@ -326,7 +359,12 @@ class SlowEnemy(WindupMeleeMixin, Enemy):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy/slow/enemy_slow", "hurt": "enemy/slow/enemy_slow"},
+            frames={
+                "idle":   "enemy/slow/enemy_slow",
+                "hurt":   "enemy/slow/enemy_slow",
+                "windup": "enemy/slow/enemy_slow_windup",
+                "strike": "enemy/slow/enemy_slow_strike",
+            },
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -365,7 +403,12 @@ class BruteEnemy(LungeMixin, WindupMeleeMixin, Enemy):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy/brute/enemy_brute", "hurt": "enemy/brute/enemy_brute"},
+            frames={
+                "idle":   "enemy/brute/enemy_brute",
+                "hurt":   "enemy/brute/enemy_brute",
+                "windup": "enemy/brute/enemy_brute_windup",
+                "strike": "enemy/brute/enemy_brute_strike",
+            },
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -397,7 +440,12 @@ class TankEnemy(WindupMeleeMixin, Enemy):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={"idle": "enemy/tank/enemy_tank", "hurt": "enemy/tank/enemy_tank"},
+            frames={
+                "idle":   "enemy/tank/enemy_tank",
+                "hurt":   "enemy/tank/enemy_tank",
+                "windup": "enemy/tank/enemy_tank_windup",
+                "strike": "enemy/tank/enemy_tank_strike",
+            },
             base_size=(self.width, self.height),
             fallback_color=self.color
         )

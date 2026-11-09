@@ -45,8 +45,8 @@ class WardenBoss(Enemy, MovementMixin):
     knockback_strength = 50
     color = (255, 180, 20)  # deep gold
     xp_reward = 300
-    width = 88
-    height = 88
+    width = 160
+    height = 160
     is_boss = True
 
     _PHASE1_SPAWN_INTERVAL = 6000
@@ -163,7 +163,6 @@ class WardenBoss(Enemy, MovementMixin):
 
         frame, tint = self._hurt_visual("idle")
         self.sprite.draw(screen, draw_rect, frame=frame, tint=tint)
-        pygame.draw.rect(screen, (255, 255, 120), draw_rect, 4)
         self._draw_healthbar(screen, camera)
         self._draw_boss_hud(screen)
 

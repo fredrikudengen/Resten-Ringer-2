@@ -2,8 +2,9 @@ import math
 
 import pygame
 from src.core import constants
-from src.view.asset_manager import assets
 from src.view.sprite import Sprite
+from src.view.afterimage import AfterimageTrail
+from src.view.aim_arm import AimArm
 from src.entities.entity import Entity
 from src.components.gun import Pistol, Shotgun, MachineGun, SniperRifle
 from src.character_data import CHARACTERS
@@ -66,7 +67,9 @@ class Player(Entity):
             },
         )
 
-        self._arm_surface: pygame.Surface | None = None  # lastes lazily
+        # Pivot (0,5) og munning (14,1) i arm-spritens kildepiksler
+        self._arm = AimArm("player/fredrik/arm", scale=self.width / 32, pivot=(0, 5), muzzle=(14, 1))
+        self._dash_trail = AfterimageTrail()
 
         self.selected_character = selected_character
         self.char_name          = char['name']
@@ -120,17 +123,7 @@ class Player(Entity):
 
     @property
     def muzzle_pos(self) -> tuple[int, int]:
-        s = self.width / 32
-        # Offset fra pivot (0,5) til munning (14,1) i sprite-space: (14, -4)
-        # Negativ y fordi munningen er 4px OVER pivot
-        y_off = 4 * s if not self.flip_x else -4 * s
-        offset = pygame.math.Vector2(14 * s, y_off)
-
-        rotated = offset.rotate(self.aim_angle)
-
-        mx = self._shoulder_world[0] + rotated.x
-        my = self._shoulder_world[1] - rotated.y  # screen y er invertert
-        return (int(mx), int(my))
+        return self._arm.muzzle(self._shoulder_world, self.aim_angle, self.flip_x)
 
     # ========== PUBLIC API ==========
 
@@ -190,38 +183,11 @@ class Player(Entity):
             draw_rect.centery + shoulder_offset_y,
         )
 
+        self._dash_trail.update(self.is_dashing, self.rect.center, frame, self.flip_x, now)
+        self._dash_trail.draw(screen, camera, self.sprite, (self.width, self.height), now)
+
         x_offset, y_offset = self.sprite.draw(screen, draw_rect, frame=frame, flip_x=self.flip_x)
-        self._draw_arm(screen, (shoulder[0] + x_offset, shoulder[1] + y_offset), aim_angle, self.flip_x)
-
-    def _draw_arm(self, screen, shoulder_pos, angle, flip_x):
-        if self._arm_surface is None:
-            raw = assets.get("player/fredrik/arm")
-            if raw is None:
-                return
-            s = self.width / 32
-            self._arm_surface = pygame.transform.scale(
-                raw, (int(raw.get_width() * s), int(raw.get_height() * s))
-            )
-
-        arm = self._arm_surface
-        s = self.width / 32
-        W, H = arm.get_size()
-        pivot_x = 1
-        pivot_y = int(5 * s)
-
-        if flip_x:
-            arm = pygame.transform.flip(arm, False, True)
-            pivot_y = H - pivot_y  # speil pivot_y etter vertikal flip
-        rotated = pygame.transform.rotate(arm, angle)
-
-        pivot_offset = pygame.math.Vector2(pivot_x - W / 2, pivot_y - H / 2)
-        rotated_offset = pivot_offset.rotate(-angle)
-
-        center = (
-            shoulder_pos[0] - rotated_offset.x,
-            shoulder_pos[1] - rotated_offset.y,
-        )
-        screen.blit(rotated, rotated.get_rect(center=center))
+        self._arm.draw(screen, (shoulder[0] + x_offset, shoulder[1] + y_offset), aim_angle, self.flip_x)
 
     def shoot(self, target_pos):
         direction = pygame.math.Vector2(
