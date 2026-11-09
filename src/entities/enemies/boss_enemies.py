@@ -73,6 +73,7 @@ class WardenBoss(Enemy, MovementMixin):
         self._lunge_direction = pygame.Vector2()
         self._lunge_start = pygame.Vector2()
         self._lunge_cooldown_until = 0
+        self._lunge_hit = False  # lungen skader spilleren maks én gang
         self._daze_until = 0
         self.sprite = Sprite(
             frames={"idle": "enemy/warden/enemy_warden", "hurt": "enemy/warden/enemy_warden"},
@@ -98,8 +99,8 @@ class WardenBoss(Enemy, MovementMixin):
 
         if self.state == "dazed":
             if self._daze_until < now:
-                self._lunge_cooldown_until = now + self._PHASE1_LUNGE_COOLDOWN if self._phase == 1 \
-                    else self._PHASE2_LUNGE_COOLDOWN
+                cooldown = self._PHASE1_LUNGE_COOLDOWN if self._phase == 1 else self._PHASE2_LUNGE_COOLDOWN
+                self._lunge_cooldown_until = now + cooldown
                 self.state = "chase"
             else:
                 return
@@ -117,8 +118,13 @@ class WardenBoss(Enemy, MovementMixin):
 
         elif self.state == "lunge_windup":
             if now > self._lunge_windup_until:
-                self._lunge_direction = (player.pos - self.pos).normalize()
+                direction = pygame.Vector2(player.rect.center) - pygame.Vector2(self.rect.center)
+                if direction.length_squared() < 1e-6:
+                    # Står oppå spilleren: lunge rett frem i stedet for å krasje på normalize()
+                    direction = pygame.Vector2(-1 if self.facing_left else 1, 0)
+                self._lunge_direction = direction.normalize()
                 self._lunge_start = pygame.Vector2(self.pos)
+                self._lunge_hit = False
                 self.state = "lunge"
 
         elif self.state == "attack":
@@ -141,8 +147,9 @@ class WardenBoss(Enemy, MovementMixin):
                     self._daze_until = pygame.time.get_ticks() + self._DAZE_DURATION_WALL
                     self.state = "dazed"
 
-                if self.rect.colliderect(player.rect):
+                if self.rect.colliderect(player.rect) and not self._lunge_hit:
                     self._damage_player(player, self.damage*1.5)
+                    self._lunge_hit = True
 
         elif self.state == "dead":
             return
@@ -191,7 +198,7 @@ class WardenBoss(Enemy, MovementMixin):
         screen.blit(panel_surf, panel.topleft)
         pygame.draw.rect(screen, (80, 70, 30), panel, 1)
 
-        font = pygame.font.SysFont("Arial", 20, bold=True)
+        font, hp_font = self._get_hud_fonts()
         label = font.render("VOKTEREN", True, (255, 220, 80))
         screen.blit(label, (bar_x, bar_y - 30))
 
@@ -205,13 +212,21 @@ class WardenBoss(Enemy, MovementMixin):
 
         pygame.draw.rect(screen, (180, 150, 40), (bar_x, bar_y, bar_w, bar_h), 2)
 
-        hp_font = pygame.font.SysFont("Arial", 15, bold=True)
         hp_text = hp_font.render(f"{max(0, int(self.health))} / {self._initial_health}", True, (220, 220, 220))
         tx = bar_x + (bar_w - hp_text.get_width()) // 2
         ty = bar_y + (bar_h - hp_text.get_height()) // 2
         screen.blit(hp_text, (tx, ty))
 
     # ---- HELPERS ----
+
+    _hud_fonts = None  # (tittel, HP-tekst), lastes én gang – SysFont er treg å kalle hver frame
+
+    @classmethod
+    def _get_hud_fonts(cls):
+        if cls._hud_fonts is None:
+            cls._hud_fonts = (pygame.font.SysFont("Arial", 20, bold=True),
+                              pygame.font.SysFont("Arial", 15, bold=True))
+        return cls._hud_fonts
 
     def _update_phase(self):
         if self._phase == 1 and self.health <= self._initial_health * 0.5:
