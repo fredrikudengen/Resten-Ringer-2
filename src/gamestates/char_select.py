@@ -5,6 +5,7 @@ import pygame
 from src.gamestates.basestate import BaseState, State
 from src.gamestates.ui_helpers import Button, draw_panel, C
 from src.character_data import CHARACTERS
+from src.view.fonts import font
 
 _CARD_W = 200
 _CARD_H = 340
@@ -17,12 +18,10 @@ class CharacterSelectState(BaseState):
         self._sm       = sm
         self._selected = sm.selected_character
         sw, sh = sm.screen.get_size()
-
-        pygame.font.init()
-        self._font_name = pygame.font.SysFont('consolas', 24, bold=True)
-        self._font_desc = pygame.font.SysFont('consolas', 17)
-        font_title      = pygame.font.SysFont('consolas', 52, bold=True)
-        font_btn        = pygame.font.SysFont('consolas', 20, bold=True)
+        self._font_name = font(24, bold=True)
+        self._font_desc = font(17)
+        font_title      = font(52, bold=True)
+        font_btn        = font(20, bold=True)
 
         self._title_surf = font_title.render('VELG KARAKTER', True, C['title'])
 

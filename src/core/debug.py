@@ -1,12 +1,11 @@
 import pygame
 
 from src.core.constants import TILE_SIZE
+from src.view.fonts import font
 
 enabled = False
 
 HITBOX_COLOR = (255, 0, 0)
-
-_font = None
 
 
 def toggle():
@@ -15,11 +14,7 @@ def toggle():
 
 
 def _get_font():
-    global _font
-    if _font is None:
-        pygame.font.init()
-        _font = pygame.font.SysFont("consolas", 14, bold=True)
-    return _font
+    return font(14, bold=True)
 
 
 def draw_hitbox(screen, camera, rect):
@@ -55,8 +50,8 @@ def draw_label(screen, camera, world_pos, text):
 
 def draw_overlay(screen, lines):
     if enabled:
-        font = _get_font()
-        surfs = [font.render(line, True, HITBOX_COLOR) for line in lines]
+        f = _get_font()
+        surfs = [f.render(line, True, HITBOX_COLOR) for line in lines]
         y = screen.get_height() - 8 - sum(s.get_height() + 2 for s in surfs)
         for surf in surfs:
             screen.blit(surf, (8, y))

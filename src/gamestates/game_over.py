@@ -4,6 +4,7 @@ import pygame
 
 from src.gamestates.basestate import BaseState, State
 from src.gamestates.ui_helpers import Button, draw_panel, C
+from src.view.fonts import font
 
 
 class GameOverState(BaseState):
@@ -15,11 +16,9 @@ class GameOverState(BaseState):
         self._sm      = sm
         self._entered = 0
         sw, sh = sm.screen.get_size()
-
-        pygame.font.init()
-        font_title     = pygame.font.SysFont('consolas', 42, bold=True)
-        font_btn       = pygame.font.SysFont('consolas', 20, bold=True)
-        self._font_stat = pygame.font.SysFont('consolas', 18)
+        font_title     = font(42, bold=True)
+        font_btn       = font(20, bold=True)
+        self._font_stat = font(18)
 
         self._title = font_title.render('YOU DIED', True, C['danger'])
 
