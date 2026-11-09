@@ -42,6 +42,7 @@ class ScoutEnemy(Enemy):
     height             = 96
     knockback_friction = 0.75
     knockback_taken_mult = 0.8
+    contact_self_knockback = 4
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -56,22 +57,15 @@ class ScoutEnemy(Enemy):
             gait={"walk": {"cycle_ms": 400, "bounce": 14, "sway": 2, "lean": 3}},
         )
 
-    def move(self, player, obstacles, room, dt_ms):
-        now = pygame.time.get_ticks()
+    def _react_to_hit(self, player, now):
+        self.hit = False  # jager uansett, så et treff endrer ingenting
 
-        if self.health <= 0:
-            self.alive = False
-            self.state = "dead"
-            self.wander_goal_g = None
-            return
+    def _sense(self, player, room) -> bool:
+        return True  # vet alltid hvor spilleren er, uten siktlinje
 
-        if self.hit:
-            self.hit = False
-
+    def _update_state(self, player, obstacles, room, dt_ms, now, see_player):
+        """Ingen idle/search: scouten går alltid rett på spilleren langs korteste sti."""
         player_center = player.rect.center
-
-        self.update_knockback(obstacles)
-
         T = constants.TILE_SIZE
         goal_g = (player_center[0] // T, player_center[1] // T)
         waypoint_g = self._smoothed_next_waypoint(room, goal_g, max_expansions=512)
@@ -84,12 +78,7 @@ class ScoutEnemy(Enemy):
         else:
             self._move_towards(player_center, obstacles, dt_ms)
 
-        if now >= self.attack_cooldown_until and self.rect.colliderect(player.rect):
-            self._damage_player(player, self.damage)
-            self.attack_cooldown_until = now + self.attack_cooldown
-            self.apply_knockback(player.rect, 4)
-
-        self._update_facing()
+        self._contact_attack(player, now)
 
     def _sprite_frame(self) -> str:
         return "idle" if self.state == "dead" else "walk"
@@ -107,7 +96,7 @@ class ScoutEnemy(Enemy):
 # ===========================================================================
 
 class LungeMixin:
-    """Lunge-angrep oppå en annen move() (Enemy.move eller WindupMeleeMixin.move).
+    """Lunge-angrep oppå Enemy sin felles move() (med eller uten WindupMeleeMixin).
 
     Legges først i arvelisten. Tar over move() bare mens fienden er i
     "lunge_windup"/"lunge"; ellers kjører vanlig move() og lunge startes
@@ -119,10 +108,11 @@ class LungeMixin:
     _LUNGE_AREA     = 330000   # maks avstand² for å starte lunge
     _LUNGE_MIN_AREA = 0        # min avstand², så nærkamp-fiender ikke lunger på kloss hold
     _LUNGE_COOLDOWN = 3000     # ms etter lungen før neste
+    _LUNGE_DAMAGE_MULT = 1.0   # skade = damage * denne når lungen treffer
 
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.lunge_hit             = False
+        self._lunge_hit            = False  # lungen skader spilleren maks én gang
         self._lunge_windup_until   = 0
         self._lunge_direction      = pygame.Vector2()
         self._lunge_start          = pygame.Vector2()
@@ -130,11 +120,15 @@ class LungeMixin:
         self._lunge_trail          = AfterimageTrail()
 
     def draw(self, screen, camera):
+        self._draw_lunge_trail(screen, camera)
+        super().draw(screen, camera)
+
+    def _draw_lunge_trail(self, screen, camera):
+        """Etterbilder bak fienden mens den lunger. Tegnes før (under) selve spriten."""
         now = pygame.time.get_ticks()
         self._lunge_trail.update(self.state == "lunge", self.rect.center,
-                                 self._sprite_frame(), self.facing_left, now)
+                                 self._visual_frame(), self.facing_left, now)
         self._lunge_trail.draw(screen, camera, self.sprite, (self.width, self.height), now)
-        super().draw(screen, camera)
 
     def move(self, player, obstacles, room, dt_ms):
         if self.health > 0 and self.state in ("lunge_windup", "lunge"):
@@ -169,11 +163,11 @@ class LungeMixin:
 
         hit_wall = self._lunge(self._lunge_direction.x * self._LUNGE_SPEED,
                                self._lunge_direction.y * self._LUNGE_SPEED, dt_ms, obstacles)
-        if self.rect.colliderect(player.rect) and not self.lunge_hit:
-            self._damage_player(player, self.damage)
-            self.lunge_hit = True
+        if self.rect.colliderect(player.rect) and not self._lunge_hit:
+            self._damage_player(player, self.damage * self._LUNGE_DAMAGE_MULT)
+            self._lunge_hit = True
         if hit_wall:
-            self._end_lunge(now)
+            self._end_lunge(now, hit_wall=True)
 
     def _begin_lunge(self, player):
         direction = pygame.Vector2(player.rect.center) - pygame.Vector2(self.rect.center)
@@ -181,15 +175,17 @@ class LungeMixin:
             direction = pygame.Vector2(-1 if self.facing_left else 1, 0)
         self._lunge_direction = direction.normalize()
         self._lunge_start = pygame.Vector2(self.pos)
+        self._lunge_hit = False
         self.state = "lunge"
         # Lunge nullstiller velocity, så retningen settes eksplisitt her
         if abs(self._lunge_direction.x) > 1e-3:
             self.facing_left = self._lunge_direction.x < 0
 
-    def _end_lunge(self, now):
+    def _end_lunge(self, now, hit_wall=False):
+        """Lungen er over (nådde _LUNGE_MAX_DIST eller traff en vegg)."""
         self.state = "chase"
         self._lunge_cooldown_until = now + self._LUNGE_COOLDOWN
-        self.lunge_hit = False
+        self._lunge_hit = False
 
 
 class AssassinEnemy(LungeMixin, Enemy):
@@ -250,80 +246,31 @@ class AssassinEnemy(LungeMixin, Enemy):
 # ===========================================================================
 
 class WindupMeleeMixin:
-    """Felles move()-logikk for fiender med windup-angrep."""
+    """Windup-angrep: stopper i rekkevidde, lader opp (attack_windup_ms) og slår.
+
+    Bruker Enemy sin felles tilstandsmaskin og fyller bare inn chase og "attack".
+    """
 
     _STRIKE_MS    = 180   # ms "strike"-framen vises etter at slaget går av
     _strike_until = 0
 
-    def move(self, player, obstacles, room, dt_ms):
-        now = pygame.time.get_ticks()
+    def _player_in_attack_range(self, player) -> bool:
+        return self._dist2(*player.rect.center, *self.rect.center) <= self.attack_range
 
-        if self.health <= 0:
-            self.alive = False
-            self.state = "dead"
-            self.wander_goal_g = None
-            return
+    def _chase(self, player, obstacles, room, dt_ms, now):
+        if now >= self.attack_cooldown_until and self._player_in_attack_range(player):
+            self.state = "attack"
+            self.attack_windup_until = now + self.attack_windup_ms
+        else:
+            self._move_towards(player.rect.center, obstacles, dt_ms)
 
-        if self.hit and self.state not in ("attack", "chase"):
-            self.hit = False
-            self.last_seen_pos = player.rect.center
-            self.search_started = now
-            self.state = "search"
-
-        player_center = player.rect.center
-        enemy_center = self.rect.center
-        see_player = False
-        dist2_to_player = self._dist2(*player_center, *enemy_center)
-
-        if dist2_to_player <= self.detection_radius * self.detection_radius:
-            if self._has_los(room, *self._grid_pos(), *player._grid_pos()):
-                see_player = True
-                self.last_seen_pos = player_center
-                self.search_started = None
-
-        self.update_knockback(obstacles)
-
-        if self.state in ("idle", "walk"):
-            if self._reacted(see_player, now):
-                self.state = "chase"
-            else:
-                self._idle(room, obstacles, dt_ms, now)
-
-        elif self.state == "chase":
-            self.wander_goal_g = None
-            if see_player:
-                if now >= self.attack_cooldown_until and dist2_to_player <= self.attack_range:
-                    self.state = "attack"
-                    self.attack_windup_until = now + self.attack_windup_ms
-                else:
-                    self._move_towards(player_center, obstacles, dt_ms)
-            else:
-                if self.last_seen_pos:
-                    self.state = "search"
-                    self.search_started = now
-                else:
-                    self.state = "idle"
-
-        elif self.state == "attack":
-            if now >= self.attack_windup_until:
-                if dist2_to_player <= self.attack_range:
-                    self._damage_player(player, self.damage)
-                self.state = "chase"
-                self.attack_cooldown_until = now + self.attack_cooldown
-                self._strike_until = now + self._STRIKE_MS
-
-        elif self.state == "search":
-            if see_player:
-                self.state = "chase"
-            elif self.last_seen_pos:
-                self._search(obstacles, room, dt_ms, now)
-            else:
-                self.state = "idle"
-
-        elif self.state == "dead":
-            return
-
-        self._update_facing()
+    def _update_special_state(self, player, obstacles, room, dt_ms, now, see_player):
+        if self.state == "attack" and now >= self.attack_windup_until:
+            if self._player_in_attack_range(player):
+                self._damage_player(player, self.damage)
+            self.state = "chase"
+            self.attack_cooldown_until = now + self.attack_cooldown
+            self._strike_until = now + self._STRIKE_MS
 
     def _sprite_frame(self) -> str:
         """windup mens slaget (eller lungen) lades, strike mens det treffer, ellers idle."""

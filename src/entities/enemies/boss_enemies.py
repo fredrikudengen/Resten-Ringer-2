@@ -5,7 +5,8 @@ import pygame
 from src.view.sprite import Sprite
 from src.entities.enemies.enemy import Enemy
 from src.entities.enemies.enemy_types import FastEnemy, SwarmEnemy
-from src.entities.enemies.movement import MovementMixin
+from src.entities.enemies.elite_enemies import LungeMixin, WindupMeleeMixin
+from src.view.fonts import font
 
 # ===========================================================================
 # BOSSER — boss_enemies.py
@@ -27,9 +28,11 @@ from src.entities.enemies.movement import MovementMixin
 # _DAZE_DURATION_WALL : Hvor lenge bossen er svimmel etter å treffe en vegg
 # ===========================================================================
 
-class WardenBoss(Enemy, MovementMixin):
+class WardenBoss(LungeMixin, WindupMeleeMixin, Enemy):
     """
-    Vokteren..
+    Vokteren. Bruker samme lunge og windup-slag som Brute (LungeMixin + WindupMeleeMixin),
+    men vet alltid hvor spilleren er, lunger på cooldown uansett avstand og blir svimmel
+    ("dazed") etter hver lunge i stedet for å jage videre med en gang.
     """
     name = "warden_boss"
     speed = 100
@@ -53,8 +56,10 @@ class WardenBoss(Enemy, MovementMixin):
     _PHASE2_SPAWN_INTERVAL = 5000
     _MINION_CAP = 6
     _MINION_CAP_PHASE2 = 9
+    _LUNGE_WINDUP = 1500
     _LUNGE_SPEED = 700
     _LUNGE_MAX_DIST = 1200
+    _LUNGE_DAMAGE_MULT = 1.5
     _PHASE1_LUNGE_COOLDOWN = 8000
     _PHASE2_LUNGE_COOLDOWN = 6000
     _DAZE_DURATION_WALL = 3000
@@ -63,17 +68,11 @@ class WardenBoss(Enemy, MovementMixin):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.state = "chase"
-        self._lunge_windup_until = 0
-        self._lunge_windup = 1500
         self.did_slam = False
         self._phase = 1
         self._next_spawn_at = pygame.time.get_ticks() + self._PHASE1_SPAWN_INTERVAL
         self._initial_health = self.health
         self.pending_spawns: list = []
-        self._lunge_direction = pygame.Vector2()
-        self._lunge_start = pygame.Vector2()
-        self._lunge_cooldown_until = 0
-        self._lunge_hit = False  # lungen skader spilleren maks én gang
         self._daze_until = 0
         self.sprite = Sprite(
             frames={"idle": "enemy/warden/enemy_warden", "hurt": "enemy/warden/enemy_warden"},
@@ -82,93 +81,44 @@ class WardenBoss(Enemy, MovementMixin):
         )
 
     def move(self, player, obstacles, room, dt_ms):
-        now = pygame.time.get_ticks()
-
         self._update_phase()
-        self._try_spawn(room, now)
+        self._try_spawn(room, pygame.time.get_ticks())
+        super().move(player, obstacles, room, dt_ms)
 
-        if self.health <= 0:
-            self.alive = False
-            self.state = "dead"
-            return
+    # ---- tilstandsmaskin (hooks fra Enemy / LungeMixin) ----
 
-        player_center = player.rect.center
-        enemy_center = self.rect.center
+    def _react_to_hit(self, player, now):
+        pass  # bossen lar seg ikke avbryte av treff
 
-        dist2_to_player = self._dist2(*player_center, *enemy_center)
+    def _sense(self, player, room) -> bool:
+        return True  # vet alltid hvor spilleren er
 
+    def _try_start_lunge(self, player, room, now):
+        """Lunger så snart cooldownen er over, uansett avstand og siktlinje."""
+        if self.state == "chase" and now > self._lunge_cooldown_until:
+            self.state = "lunge_windup"
+            self._lunge_windup_until = now + self._LUNGE_WINDUP
+
+    def _end_lunge(self, now, hit_wall=False):
+        """Svimmel etter lungen, lengst etter en vegg. Lunge-cooldownen starter når dazen er over."""
+        self.did_slam = True
+        self._daze_until = now + (self._DAZE_DURATION_WALL if hit_wall else self._DAZE_DURATION)
+        self._lunge_hit = False
+        self.state = "dazed"
+
+    def _update_special_state(self, player, obstacles, room, dt_ms, now, see_player):
         if self.state == "dazed":
             if self._daze_until < now:
                 cooldown = self._PHASE1_LUNGE_COOLDOWN if self._phase == 1 else self._PHASE2_LUNGE_COOLDOWN
                 self._lunge_cooldown_until = now + cooldown
                 self.state = "chase"
-            else:
-                return
-
-        elif self.state == "chase":
-            if now >= self.attack_cooldown_until and dist2_to_player <= (
-                self.attack_range):
-                    self.state = "attack"
-                    self.attack_windup_until = now + self.attack_windup_ms
-            else:
-                self._move_towards(player_center, obstacles, dt_ms)
-                if now > self._lunge_cooldown_until:
-                    self.state = "lunge_windup"
-                    self._lunge_windup_until = now + self._lunge_windup
-
-        elif self.state == "lunge_windup":
-            if now > self._lunge_windup_until:
-                direction = pygame.Vector2(player.rect.center) - pygame.Vector2(self.rect.center)
-                if direction.length_squared() < 1e-6:
-                    # Står oppå spilleren: lunge rett frem i stedet for å krasje på normalize()
-                    direction = pygame.Vector2(-1 if self.facing_left else 1, 0)
-                self._lunge_direction = direction.normalize()
-                self._lunge_start = pygame.Vector2(self.pos)
-                self._lunge_hit = False
-                self.state = "lunge"
-
-        elif self.state == "attack":
-            if now >= self.attack_windup_until:
-                if dist2_to_player <= self.attack_range:
-                    self._damage_player(player, self.damage)
-                self.state = "chase"
-                self.attack_cooldown_until = now + self.attack_cooldown
-
-        elif self.state == "lunge":
-            if (self.pos - self._lunge_start).length() > self._LUNGE_MAX_DIST:
-                self.did_slam = True
-                self._daze_until = now + self._DAZE_DURATION
-                self.state = "dazed"
-            else:
-                hit = self._lunge(self._lunge_direction.x * self._LUNGE_SPEED,
-                                  self._lunge_direction.y * self._LUNGE_SPEED, dt_ms, obstacles)
-                if hit:
-                    self.did_slam = True
-                    self._daze_until = pygame.time.get_ticks() + self._DAZE_DURATION_WALL
-                    self.state = "dazed"
-
-                if self.rect.colliderect(player.rect) and not self._lunge_hit:
-                    self._damage_player(player, self.damage*1.5)
-                    self._lunge_hit = True
-
-        elif self.state == "dead":
-            return
+        else:
+            super()._update_special_state(player, obstacles, room, dt_ms, now, see_player)
 
     def draw(self, screen, camera):
         draw_rect = camera.apply(self.rect)
-
-        # if self.state == "dead":
-        #     body_color = (80, 80, 80)
-        # elif self.state == "lunge_windup":
-        #     pulse = (pygame.time.get_ticks() // 150) % 2 == 0
-        #     body_color = (255, 255, 255) if pulse else self.color
-        # elif self._phase == 2:
-        #     pulse = (pygame.time.get_ticks() // 200) % 2 == 0
-        #     body_color = (255, 60, 20) if pulse else (255, 140, 20)
-        # else:
-        #     body_color = self.color
-
-        frame, tint = self._hurt_visual("idle")
+        self._draw_lunge_trail(screen, camera)
+        frame, tint = self._hurt_visual(self._visual_frame())
         self.sprite.draw(screen, draw_rect, frame=frame, tint=tint)
         self._draw_healthbar(screen, camera)
         self._draw_boss_hud(screen)
@@ -197,8 +147,7 @@ class WardenBoss(Enemy, MovementMixin):
         screen.blit(panel_surf, panel.topleft)
         pygame.draw.rect(screen, (80, 70, 30), panel, 1)
 
-        font, hp_font = self._get_hud_fonts()
-        label = font.render("VOKTEREN", True, (255, 220, 80))
+        label = font(20, bold=True, name="Arial").render("VOKTEREN", True, (255, 220, 80))
         screen.blit(label, (bar_x, bar_y - 30))
 
         pygame.draw.rect(screen, (30, 30, 35), (bar_x, bar_y, bar_w, bar_h))
@@ -211,21 +160,12 @@ class WardenBoss(Enemy, MovementMixin):
 
         pygame.draw.rect(screen, (180, 150, 40), (bar_x, bar_y, bar_w, bar_h), 2)
 
-        hp_text = hp_font.render(f"{max(0, int(self.health))} / {self._initial_health}", True, (220, 220, 220))
+        hp_text = font(15, bold=True, name="Arial").render(f"{max(0, int(self.health))} / {self._initial_health}", True, (220, 220, 220))
         tx = bar_x + (bar_w - hp_text.get_width()) // 2
         ty = bar_y + (bar_h - hp_text.get_height()) // 2
         screen.blit(hp_text, (tx, ty))
 
     # ---- HELPERS ----
-
-    _hud_fonts = None  # (tittel, HP-tekst), lastes én gang – SysFont er treg å kalle hver frame
-
-    @classmethod
-    def _get_hud_fonts(cls):
-        if cls._hud_fonts is None:
-            cls._hud_fonts = (pygame.font.SysFont("Arial", 20, bold=True),
-                              pygame.font.SysFont("Arial", 15, bold=True))
-        return cls._hud_fonts
 
     def _update_phase(self):
         if self._phase == 1 and self.health <= self._initial_health * 0.5:

@@ -91,64 +91,37 @@ class RangedEnemy(Enemy):
     # =========================================================
 
     def move(self, player, obstacles, room, dt_ms: int):
-        """Full AI update — replaces Enemy.move() for ranged enemies."""
-        now = pygame.time.get_ticks()
+        self.gun.update_reload()  # reload går også mens fienden er død/ute av sikte
+        super().move(player, obstacles, room, dt_ms)
 
-        # Always tick gun reload
-        self.gun.update_reload()
-
-        # --- death ---
-        if self.health <= 0:
-            self.alive  = False
-            self.state  = "dead"
-            return
-
+    def _react_to_hit(self, player, now):
+        """Husk hvor skuddet kom fra, men ikke avbryt det den holder på med."""
         if self.hit and self.state not in ("attack", "chase"):
             self.hit            = False
             self.last_seen_pos  = player.rect.center
             self.search_started = now
 
-        # --- sense player ---
-        player_center   = player.rect.center
-        enemy_center    = self.rect.center
-        dist2           = self._dist2(*player_center, *enemy_center)
-        has_los         = False
-        see_player      = False
+    def _sense(self, player, room) -> bool:
+        see_player = super()._sense(player, room)
+        self._aim_target = player.rect.center if see_player else None
+        return see_player
 
-        if dist2 <= self.detection_radius ** 2:
-            has_los = self._has_los(room, *self._grid_pos(), *player._grid_pos())
-            if has_los:
-                see_player         = True
-                self.last_seen_pos = player_center
-                self.search_started = None
-        self._aim_target = player_center if see_player else None
+    def _start_chase(self):
+        super()._start_chase()
+        self._reposition_target = None
 
-        self.update_knockback(obstacles)
+    def _chase(self, player, obstacles, room, dt_ms, now):
+        dist2 = self._dist2(*player.rect.center, *self.rect.center)
+        self._do_chase(player, obstacles, room, dist2, dt_ms, now)
 
-        # --- state machine ---
-        if self.state in ("idle", "walk"):
-            if self._reacted(see_player, now):
-                self.state               = "chase"
-                self._reposition_target  = None
-            else:
-                self._idle(room, obstacles, dt_ms, now)
+    def _update_special_state(self, player, obstacles, room, dt_ms, now, see_player):
+        player_center = player.rect.center
+        dist2 = self._dist2(*player_center, *self.rect.center)
 
-        elif self.state == "chase":
-            self.wander_goal_g = None
+        if self.state == "shoot":
             if not see_player:
-                if self.last_seen_pos:
-                    self.state          = "search"
-                    self.search_started = now
-                else:
-                    self.state = "idle"
-            else:
-                self._do_chase(player, obstacles, room, dist2, has_los, dt_ms, now)
-
-        elif self.state == "shoot":
-            if not see_player or not has_los:
-                # Lost sight — reposition
-                self.state              = "chase"
-                self._reposition_target = None
+                # Mistet sikte – finn en ny posisjon
+                self._start_chase()
             elif self.gun.is_reloading:
                 self.state = "reload"
             else:
@@ -158,25 +131,14 @@ class RangedEnemy(Enemy):
                              retreat=dist2 < self.min_range_px ** 2)
 
         elif self.state == "reload":
-            # Back away a little while reloading — makes them feel less passive
+            # Rygg litt mens den lader om, så den ikke virker passiv
             if see_player and dist2 < (self.preferred_range_px * 0.8) ** 2:
                 self._retreat_from(player_center, obstacles, dt_ms)
             if not self.gun.is_reloading:
                 self.state = "chase" if see_player else "search"
 
-        elif self.state == "search":
-            if see_player:
-                self.state              = "chase"
-                self._reposition_target = None
-            elif self.last_seen_pos:
-                self._search(obstacles, room, dt_ms, now)
-            else:
-                self.state = "idle"
-
-        elif self.state == "dead":
-            return
-
-        self._update_facing()
+    def _update_facing(self):
+        super()._update_facing()
         if self._aim_target is not None:
             # Se mot spilleren så lenge den sikter, ikke i strafe-retningen
             self.facing_left = self._aim_target[0] < self.rect.centerx
@@ -214,15 +176,14 @@ class RangedEnemy(Enemy):
     # PRIVATE HELPERS
     # =========================================================
 
-    def _do_chase(self, player, obstacles, room, dist2: float,
-                  has_los: bool, dt_ms: int, now: int):
+    def _do_chase(self, player, obstacles, room, dist2: float, dt_ms: int, now: int):
         """
         Move to a position that has LOS to the player at preferred range.
         Transitions to "shoot" once we're in a good spot.
         """
         in_range = (self.min_range_px ** 2) <= dist2 <= (self.preferred_range_px * 1.6) ** 2
 
-        if has_los and in_range and not self.gun.is_reloading:
+        if in_range and not self.gun.is_reloading:
             # Already in a good shooting position
             self.state              = "shoot"
             self._reposition_target = None
