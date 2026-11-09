@@ -5,6 +5,7 @@ import pygame
 
 from src.gamestates.basestate import BaseState, State
 from src.gamestates.ui_helpers import Button, C
+from src.view.fonts import font
 
 
 class MainMenuState(BaseState):
@@ -12,11 +13,9 @@ class MainMenuState(BaseState):
     def __init__(self, sm):
         self._sm = sm
         sw, sh   = sm.screen.get_size()
-
-        pygame.font.init()
-        font_title = pygame.font.SysFont('consolas', 52, bold=True)
-        font_btn   = pygame.font.SysFont('consolas', 22, bold=True)
-        font_sub   = pygame.font.SysFont('consolas', 16)
+        font_title = font(52, bold=True)
+        font_btn   = font(22, bold=True)
+        font_sub   = font(16)
 
         self._title    = font_title.render('Resten Ringer 2', True, C['title'])
         self._subtitle = font_sub.render('Klar for en runde til?', True, C['text_dim'])

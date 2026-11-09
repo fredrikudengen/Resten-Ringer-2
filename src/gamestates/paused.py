@@ -4,6 +4,7 @@ import pygame
 
 from src.gamestates.basestate import BaseState, State
 from src.gamestates.ui_helpers import Button, draw_overlay, draw_panel, C
+from src.view.fonts import font
 
 
 class PausedState(BaseState):
@@ -12,10 +13,8 @@ class PausedState(BaseState):
         self._sm      = sm
         self._playing = playing_state
         sw, sh = sm.screen.get_size()
-
-        pygame.font.init()
-        font_title = pygame.font.SysFont('consolas', 36, bold=True)
-        font_btn   = pygame.font.SysFont('consolas', 20, bold=True)
+        font_title = font(36, bold=True)
+        font_btn   = font(20, bold=True)
 
         self._title = font_title.render('PAUSED', True, C['title'])
 

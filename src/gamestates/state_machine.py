@@ -68,11 +68,11 @@ class StateMachine:
 
     def start_game(self):
 
-        from src.core import World
+        from src.core.world import World
         from src.entities import Player
         from src.core.camera import Camera
         from src.rooms.room_manager import RoomManager
-        from src.core import HUD
+        from src.core.ui import HUD
 
         self.world        = World()
         self.camera       = Camera(self.screen.get_width(), self.screen.get_height())

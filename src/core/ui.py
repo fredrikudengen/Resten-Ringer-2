@@ -1,6 +1,7 @@
 import pygame
 import math
 from src.core import constants
+from src.view.fonts import font
 
 _C = {
     "panel":       (15,  15,  20,  200),
@@ -111,11 +112,10 @@ class HUD:
     LEVELUP_DURATION_MS = 1800
 
     def __init__(self):
-        pygame.font.init()
-        self._font_label  = pygame.font.SysFont("consolas", self.LABEL_SIZE, bold=True)
-        self._font_level  = pygame.font.SysFont("consolas", self.LEVEL_SIZE, bold=True)
-        self._font_big    = pygame.font.SysFont("consolas", 26, bold=True)
-        self._font_small  = pygame.font.SysFont("consolas", 11, bold=True)
+        self._font_label  = font(self.LABEL_SIZE, bold=True)
+        self._font_level  = font(self.LEVEL_SIZE, bold=True)
+        self._font_big    = font(26, bold=True)
+        self._font_small  = font(11, bold=True)
 
         self._levelup_at  = None
         self._levelup_lvl = 1

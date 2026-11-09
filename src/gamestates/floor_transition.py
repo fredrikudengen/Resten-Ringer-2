@@ -4,6 +4,7 @@ import pygame
 
 from src.gamestates.basestate import BaseState, State
 from src.gamestates.ui_helpers import C
+from src.view.fonts import font
 
 _DISPLAY_DURATION_MS = 2300
 _FADE_IN_MS          = 500
@@ -14,10 +15,8 @@ class FloorTransitionState(BaseState):
     def __init__(self, sm):
         self._sm = sm
         self._entered_at = 0
-
-        pygame.font.init()
-        self._font_floor = pygame.font.SysFont("consolas", 48, bold=True)
-        self._font_sub   = pygame.font.SysFont("consolas", 18)
+        self._font_floor = font(48, bold=True)
+        self._font_sub   = font(18)
 
     def on_enter(self):
         self._sm.room_manager.advance_after_boss()
