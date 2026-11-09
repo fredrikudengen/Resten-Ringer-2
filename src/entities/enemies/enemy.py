@@ -127,7 +127,10 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
     def move(self, player, obstacles, room, dt_ms):
         """
-        Oppdater fienden én frame: sansing, state-maskin, bevegelse.
+        Oppdater fienden én frame: død → treff → sansing → knockback → tilstand → facing.
+
+        Rammeverket er felles for alle fiender. Fiendetypene overstyrer hookene under
+        (_chase, _update_special_state, _sense, _react_to_hit, ...) i stedet for hele move().
 
         Args:
             player: objekt med .rect (pygame.Rect)
@@ -143,60 +146,82 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             self.wander_goal_g = None
             return
 
+        self._react_to_hit(player, now)
+        see_player = self._sense(player, room)
+        self.update_knockback(obstacles)
+        self._update_state(player, obstacles, room, dt_ms, now, see_player)
+        self._update_facing()
+
+    # ------------------------- TILSTANDSMASKIN -------------------------
+
+    def _react_to_hit(self, player, now):
+        """Truffet mens den ikke jager: gå og let der spilleren står."""
         if self.hit and self.state not in ("attack", "chase"):
             self.hit            = False
             self.last_seen_pos  = player.rect.center
             self.search_started = now
             self.state          = "search"
 
+    def _sense(self, player, room) -> bool:
+        """True hvis spilleren er innenfor detection_radius og i siktlinje (oppdaterer last_seen_pos)."""
         player_center = player.rect.center
-        enemy_center  = self.rect.center
-        see_player    = False
-        
         self._debug_los = None
-        dist2_to_player = self._dist2(*player_center, *enemy_center)
-        if dist2_to_player <= self.detection_radius * self.detection_radius:
-            self._debug_los = player_center
-            if self._has_los(room, *self._grid_pos(), *player._grid_pos()):
-                see_player          = True
-                self.last_seen_pos  = player_center
-                self.search_started = None
+        r = self.detection_radius
+        if self._dist2(*player_center, *self.rect.center) > r * r:
+            return False
+        self._debug_los = player_center
+        if not self._has_los(room, *self._grid_pos(), *player._grid_pos()):
+            return False
+        self.last_seen_pos  = player_center
+        self.search_started = None
+        return True
 
-        self.update_knockback(obstacles)
-
+    def _update_state(self, player, obstacles, room, dt_ms, now, see_player):
+        """idle → chase → search er felles. Andre tilstander går til _update_special_state()."""
         if self.state in ("idle", "walk"):
             if self._reacted(see_player, now):
-                self.state = "chase"
+                self._start_chase()
             else:
                 self._idle(room, obstacles, dt_ms, now)
 
         elif self.state == "chase":
             self.wander_goal_g = None
             if see_player:
-                self._move_towards(player_center, obstacles, dt_ms)
-                if now >= self.attack_cooldown_until and self.rect.colliderect(player.rect):
-                    self._damage_player(player, self.damage)
-                    self.attack_cooldown_until = now + self.attack_cooldown
-                    self.apply_knockback(player.rect, self.contact_self_knockback)
-            else:
-                if self.last_seen_pos:
-                    self.state = "search"
-                    self.search_started = now
-                else:
-                    self.state = "idle"
-
-        elif self.state == "search":
-            if see_player:
-                self.state = "chase"
+                self._chase(player, obstacles, room, dt_ms, now)
             elif self.last_seen_pos:
-                self._search(obstacles, room, dt_ms, now) 
+                self.state = "search"
+                self.search_started = now
             else:
                 self.state = "idle"
 
-        elif self.state == "dead":
-            return
+        elif self.state == "search":
+            if see_player:
+                self._start_chase()
+            elif self.last_seen_pos:
+                self._search(obstacles, room, dt_ms, now)
+            else:
+                self.state = "idle"
 
-        self._update_facing()
+        else:
+            self._update_special_state(player, obstacles, room, dt_ms, now, see_player)
+
+    def _start_chase(self):
+        self.state = "chase"
+
+    def _chase(self, player, obstacles, room, dt_ms, now):
+        """Spilleren er i sikte. Vanlig melee: løp på og skad ved kontakt."""
+        self._move_towards(player.rect.center, obstacles, dt_ms)
+        self._contact_attack(player, now)
+
+    def _contact_attack(self, player, now):
+        """Skad spilleren ved berøring (med cooldown) og dytt fienden litt tilbake."""
+        if now >= self.attack_cooldown_until and self.rect.colliderect(player.rect):
+            self._damage_player(player, self.damage)
+            self.attack_cooldown_until = now + self.attack_cooldown
+            self.apply_knockback(player.rect, self.contact_self_knockback)
+
+    def _update_special_state(self, player, obstacles, room, dt_ms, now, see_player):
+        """Typespesifikke tilstander (attack, shoot, reload, dazed, ...). Vanlige fiender har ingen."""
 
     def _update_facing(self):
         """Snu spriten etter fiendens egen bevegelse (velocity), ikke posisjonsendring.
@@ -209,6 +234,11 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
 
     def _sprite_frame(self) -> str:
         return "idle"
+
+    def _visual_frame(self) -> str:
+        """_sprite_frame(), men "idle" hvis spriten mangler den framen (f.eks. ingen windup-tegning ennå)."""
+        frame = self._sprite_frame()
+        return frame if self.sprite.has_frame(frame) else "idle"
 
     def _is_moving(self) -> bool:
         if self._burst_paused() or self._flinching():
@@ -233,7 +263,7 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
         # else:
         #     color = self.color
 
-        frame, tint = self._hurt_visual(self._sprite_frame())
+        frame, tint = self._hurt_visual(self._visual_frame())
         self.sprite.draw(
             screen, draw_rect, frame=frame, tint=tint,
             flip_x=self.facing_left, moving=self._is_moving(),
