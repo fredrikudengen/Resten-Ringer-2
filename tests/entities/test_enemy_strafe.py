@@ -170,10 +170,13 @@ def test_shot_direction_includes_aim_offset(monkeypatch):
     enemy = _make(monkeypatch)
     monkeypatch.setattr(enemy, "_next_aim_offset", lambda: 5.0)
 
-    enemy._do_shoot(_player_right_of(enemy))
+    target = _player_right_of(enemy)
+    enemy._do_shoot(target)
 
     assert len(enemy.pending_bullets) == 1
-    angle = Vector2(1, 0).angle_to(enemy.pending_bullets[0].direction)
+    # Kula sikter fra skulderen (der armen roteres), ikke fra sentrum
+    aim = Vector2(target) - Vector2(enemy._shoulder_world())
+    angle = aim.angle_to(enemy.pending_bullets[0].direction)
     assert abs(angle - 5.0) < 1e-6
 
 

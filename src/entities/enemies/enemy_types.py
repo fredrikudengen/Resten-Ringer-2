@@ -132,11 +132,16 @@ class ShooterEnemy(RangedEnemy):
     knockback_strength = 0
     color              = (180, 80, 220)
     xp_reward          = 35
-    width              = 36
-    height             = 36
+    width              = 88
+    height             = 88
     wander_radius      = 5
     knockback_friction= 0.8
     knockback_taken_mult = 0.9
+    arm_sprite         = "enemy/shooter/arm"
+    arm_pivot          = (0, 2)
+    arm_muzzle         = (14, 0.5)
+    arm_shoulder       = (2.5, 1.5)
+    sprite_px          = 29
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -145,13 +150,6 @@ class ShooterEnemy(RangedEnemy):
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
-
-    def draw(self, screen, camera):
-        super().draw(screen, camera)
-        if self.state not in ("dead", "reload"):
-            draw_rect = camera.apply(self.rect)
-            frame, tint = self._hurt_visual("idle")
-            self.sprite.draw(screen, draw_rect, frame=frame, tint=tint, flip_x=self.facing_left)
 
 
 class MarksmanEnemy(RangedEnemy):
@@ -174,10 +172,15 @@ class MarksmanEnemy(RangedEnemy):
     knockback_strength = 0
     color              = (220, 60, 60)   # deep red
     xp_reward          = 55
-    width              = 40
-    height             = 40
+    width              = 92
+    height             = 92
     wander_radius      = 4
     knockback_friction= 0.7
+    arm_sprite         = "enemy/sniper/arm"
+    arm_pivot          = (0, 4)
+    arm_muzzle         = (20, 2.5)
+    arm_shoulder       = (-1, 0)
+    sprite_px          = 32
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -187,10 +190,3 @@ class MarksmanEnemy(RangedEnemy):
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
-
-    def draw(self, screen, camera):
-        super().draw(screen, camera)
-        if self.state not in ("dead", "reload"):
-            draw_rect = camera.apply(self.rect)
-            frame, tint = self._hurt_visual("idle")
-            self.sprite.draw(screen, draw_rect, frame=frame, tint=tint, flip_x=self.facing_left)

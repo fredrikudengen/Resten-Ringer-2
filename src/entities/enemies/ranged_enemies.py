@@ -8,6 +8,7 @@ from pygame.math import Vector2
 
 from src.core import constants, debug
 from src.view.sprite import Sprite
+from src.view.aim_arm import AimArm
 from src.entities.enemies.enemy import Enemy
 from src.components.gun import EnemyPistol
 
@@ -36,6 +37,10 @@ class RangedEnemy(Enemy):
     strafe_speed_mult  : Andel av speed når den beveger seg sidelengs mens den skyter (0 = står stille)
     strafe_interval_ms : (min, max) ms per sidelengs-intervall før den velger side på nytt
     aim_error_deg      : Maks sikteavvik i grader. Driver litt fra skudd til skudd (i tillegg til gun.spread)
+    arm_sprite         : Arm-sprite med våpen som sikter mot spilleren (None = ingen arm)
+    arm_pivot / arm_muzzle : Skulderfeste og munning i arm-spritens kildepiksler
+    arm_shoulder       : Skulderen i kropps-spriten, målt fra sprite-sentrum (vendt mot høyre)
+    sprite_px          : Bredden på kropps-spriten i kildepiksler (for skalering av armen)
     """
 
     # ---- override these in subclasses ----
@@ -46,6 +51,12 @@ class RangedEnemy(Enemy):
     strafe_speed_mult:    float = 0.6
     strafe_interval_ms:   tuple = (400, 900)
     aim_error_deg:        float = 6.0
+    arm_sprite:           str | None = None
+    arm_pivot:            tuple = (0, 0)
+    arm_muzzle:           tuple = (0, 0)
+    arm_shoulder:         tuple = (0, 0)
+    sprite_px:            int   = 32
+    _RELAXED_ARM_DEG:     float = -30.0  # armen senket når den ikke sikter på noen
 
     # ---- sensible defaults (subclass can still override) ----
     speed            = 100
@@ -68,6 +79,12 @@ class RangedEnemy(Enemy):
         self._strafe_dir: int       = random.choice((-1, 1))
         self._strafe_switch_at: int = 0
         self._aim_offset_deg: float = 0.0
+        self._aim_target: tuple[int, int] | None = None
+
+        self.arm = None
+        if self.arm_sprite:
+            self.arm = AimArm(self.arm_sprite, scale=self.width / self.sprite_px,
+                              pivot=self.arm_pivot, muzzle=self.arm_muzzle, shoulder=self.arm_shoulder)
 
     # =========================================================
     # PUBLIC API — override of Enemy.move()
@@ -104,6 +121,7 @@ class RangedEnemy(Enemy):
                 see_player         = True
                 self.last_seen_pos = player_center
                 self.search_started = None
+        self._aim_target = player_center if see_player else None
 
         self.update_knockback(obstacles)
 
@@ -159,9 +177,9 @@ class RangedEnemy(Enemy):
             return
 
         self._update_facing()
-        if self.state == "shoot":
-            # Se mot spilleren mens den skyter, ikke i strafe-retningen
-            self.facing_left = player_center[0] < self.rect.centerx
+        if self._aim_target is not None:
+            # Se mot spilleren så lenge den sikter, ikke i strafe-retningen
+            self.facing_left = self._aim_target[0] < self.rect.centerx
 
     # =========================================================
     # DRAW — extra colour coding for new states
@@ -170,23 +188,12 @@ class RangedEnemy(Enemy):
     def draw(self, screen, camera):
         draw_rect = camera.apply(self.rect)
 
-        if self.state == "idle":
-            color = self.color
-        elif self.state == "chase":
-            color = tuple(min(c + 40, 255) for c in self.color)
-        elif self.state == "search":
-            color = tuple(max(c - 40, 0) for c in self.color)
-        elif self.state == "shoot":
-            color = (255, 255, 255)   # white flash when shooting
-        elif self.state == "reload":
-            # Grey-ish tint + pulsing bar to telegraph "reloading"
-            color = (120, 120, 140)
-        elif self.state == "dead":
-            color = (80, 80, 80)
-        else:
-            color = self.color
-
-        pygame.draw.rect(screen, color, draw_rect)
+        if self.state != "dead":
+            frame, tint = self._hurt_visual("idle")
+            self.sprite.draw(screen, draw_rect, frame=frame, tint=tint, flip_x=self.facing_left)
+            if self.arm is not None:
+                shoulder = camera.apply_point(self._shoulder_world())
+                self.arm.draw(screen, shoulder, self.aim_angle(), self.facing_left, tint=tint)
 
         # Draw reload progress bar above enemy
         if self.state == "reload":
@@ -236,16 +243,42 @@ class RangedEnemy(Enemy):
             # No good tile found — approach cautiously
             self._move_towards(player.rect.center, obstacles, dt_ms)
 
+    def _shoulder_world(self) -> tuple[float, float]:
+        """Skulderen (der armen roteres) i verdenskoordinater. Uten arm: sentrum."""
+        if self.arm is None:
+            return self.rect.center
+        return self.arm.shoulder(self.rect.center, self.facing_left)
+
+    def aim_angle(self) -> float:
+        """Armens vinkel i grader mot klokka fra høyre, inkludert sikteavviket.
+
+        Sikter mot spilleren når den ser ham, ellers senket i den retningen den vender.
+        """
+        if self._aim_target is None:
+            return 180 - self._RELAXED_ARM_DEG if self.facing_left else self._RELAXED_ARM_DEG
+        sx, sy = self._shoulder_world()
+        base = math.degrees(math.atan2(-(self._aim_target[1] - sy), self._aim_target[0] - sx))
+        # _aim_offset_deg roterer med klokka på skjermen (y ned), altså minus i math-vinkel
+        return base - self._aim_offset_deg
+
     def _do_shoot(self, player_center: tuple[int, int]):
-        """Fire one bullet toward the player (respects gun fire rate)."""
+        """Fire one bullet toward the player (respects gun fire rate).
+
+        Med arm går kula ut fra munningen, i armens retning (skulder → spiller).
+        """
+        origin_x, origin_y = self._shoulder_world()
         direction = Vector2(
-            player_center[0] - self.rect.centerx,
-            player_center[1] - self.rect.centery,
+            player_center[0] - origin_x,
+            player_center[1] - origin_y,
         )
         if direction.length_squared() == 0 or not self.gun.can_shoot():
             return
         direction.rotate_ip(self._next_aim_offset())
-        bullets = self.gun.shoot(self.rect.center, direction)
+        muzzle = self.rect.center
+        if self.arm is not None:
+            angle = math.degrees(math.atan2(-direction.y, direction.x))
+            muzzle = self.arm.muzzle(self._shoulder_world(), angle, self.facing_left)
+        bullets = self.gun.shoot(muzzle, direction)
         self.pending_bullets.extend(bullets)
         if self.gun.is_reloading:
             self.state = "reload"
