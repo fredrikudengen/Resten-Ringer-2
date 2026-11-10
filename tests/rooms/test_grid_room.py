@@ -92,3 +92,91 @@ def test_reset_spawns_restores_original_layout():
 
     room.reset_spawns()
     assert room.spawns[2][2] == "enemy"
+
+
+# ---------- autotiling ----------
+
+# Lukket 6x5-rom med en vegg-klump (2x1) midt i, så alle vegg-typene er med.
+TILE_LINES = [
+    "######",
+    "#....#",
+    "#.##.#",
+    "#....#",
+    "######",
+]
+
+
+def _art_in(room, gx, gy, variants):
+    return room.tile_art[gy][gx] in variants
+
+
+def _wall_layers(room, gx, gy):
+    """(bunnlag, {kantlag}) for en vegg-tile, med kantene som nøklene i TILE_ART_EDGE."""
+    base, *layers = room.tile_art[gy][gx].split(constants.TILE_LAYER_SEP)
+    names = {v: k for k, v in constants.TILE_ART_EDGE.items()}
+    return base, {names[layer] for layer in layers}
+
+
+def test_top_wall_shows_its_front():
+    room = GridRoom(TILE_LINES, "combat")
+    assert _art_in(room, 2, 0, constants.TILE_ART_HORIZONTAL)
+
+
+def test_other_walls_fill_the_tile_with_an_edge_towards_the_floor():
+    room = GridRoom(TILE_LINES, "combat")
+    expected = {
+        (2, 4): {"n"},          # bunnvegg
+        (0, 2): {"e"},          # vestvegg
+        (5, 2): {"w"},          # østvegg
+        (0, 0): {"e_face"},     # øvre venstre hjørne, ved siden av toppveggens front
+        (5, 0): {"w_face"},
+        (0, 4): {"ne"},         # nedre venstre hjørne
+        (5, 4): {"nw"},
+    }
+    for (gx, gy), edges in expected.items():
+        base, layers = _wall_layers(room, gx, gy)
+        assert base in constants.TILE_ART_SOLID, (gx, gy)
+        assert layers == edges, (gx, gy)
+
+
+def test_wall_next_to_door_gets_edge_towards_the_doorway():
+    # Døra er gulv i terrenget, så veggen ved siden av får kant mot døråpningen
+    room = GridRoom(["#####", "#...#", "#...#", "##D##"], "combat", active_doors={"S"})
+    assert _wall_layers(room, 1, 3)[1] == {"n", "e"}
+    assert _wall_layers(room, 3, 3)[1] == {"n", "w"}
+
+
+def test_floor_tiles_get_floor_variants_and_void_gets_none():
+    room = GridRoom(["#,", "#."], "combat")
+    assert room.tile_art[0][1] is None
+    assert _art_in(room, 1, 1, constants.TILE_ART_FLOOR)
+
+
+def test_floor_variants_are_stable_and_varied():
+    lines = ["#" * 12] + ["#" + "." * 10 + "#" for _ in range(10)] + ["#" * 12]
+    a, b = GridRoom(lines, "combat"), GridRoom(lines, "combat")
+    floors = {a.tile_art[y][x] for y in range(1, 11) for x in range(1, 11)}
+    assert a.tile_art == b.tile_art
+    assert len(floors) > 1
+
+
+def test_has_wall_above_marks_floor_in_wall_shadow():
+    room = GridRoom(TILE_LINES, "combat")
+    assert room.has_wall_above(1, 1)        # rett under toppveggen
+    assert room.has_wall_above(2, 3)        # rett under vegg-klumpen
+    assert not room.has_wall_above(1, 2)    # gulv over
+
+
+def test_interior_pillar_is_drawn_solid_with_front_facing_south():
+    lines = [
+        "######",
+        "#....#",
+        "#.##.#",
+        "#.##.#",
+        "#....#",
+        "######",
+    ]
+    room = GridRoom(lines, "combat")
+    for gx in (2, 3):
+        assert _wall_layers(room, gx, 2)[0] in constants.TILE_ART_SOLID   # toppen av søylen
+        assert _art_in(room, gx, 3, constants.TILE_ART_HORIZONTAL)   # fronten mot sør

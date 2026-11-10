@@ -116,8 +116,8 @@ def test_idle_wander_does_not_end_at_intermediate_waypoint(monkeypatch):
 
 
 class _BigEnemy(_TestEnemy):
-    width  = 96  # som ScoutEnemy – nesten en hel tile
-    height = 96
+    width  = T - 16  # nesten en hel tile
+    height = T - 16
 
 
 def test_body_path_clear_in_open_room():
@@ -129,7 +129,7 @@ def test_body_path_clear_in_open_room():
 
 
 def test_waypoint_skips_node_where_body_would_clip_corner():
-    # Tynn siktlinje (1,1)->(6,2) går forbi hjørnet (2,2), men en 96px kropp gjør ikke det
+    # Tynn siktlinje (1,1)->(6,2) går forbi hjørnet (2,2), men en kropp på nesten en hel tile gjør ikke det
     room = _FakeRoom(blocked={(2, 2)})
     enemy = _BigEnemy(0, 0)
     enemy.pos.update(1 * T + T // 2, 1 * T + T // 2)

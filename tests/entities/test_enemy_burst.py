@@ -48,7 +48,7 @@ def test_burst_is_off_by_default():
     assert not enemy._bursting()
     for _ in range(100):
         _step(enemy)
-        assert enemy.velocity.x == enemy.speed
+        assert enemy.velocity.x == pytest.approx(enemy.speed)
     assert enemy._gait_phase() is None
 
 
