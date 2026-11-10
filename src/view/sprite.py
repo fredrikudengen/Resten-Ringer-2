@@ -17,7 +17,11 @@ class Sprite:
         default_duration: int = 150,
         fallback_color: tuple[int, int, int] = (255, 0, 255),
         gait: dict[str, dict] | None = None,
+        play_once: set[str] | None = None,
     ):
+        """play_once: animasjoner som spilles én gang og blir stående på siste frame
+        (f.eks. windup), i stedet for å gå i loop. Alle animasjoner med flere frames
+        starter på frame 0 hver gang de vises etter en annen frame."""
         # Normaliser: str → [str] slik at alt er en liste internt
         self._animations: dict[str, list[str]] = {
             k: ([v] if isinstance(v, str) else v)
@@ -28,6 +32,7 @@ class Sprite:
         self._base_size = base_size
         self._fallback_color = fallback_color
         self._gait: dict[str, dict] = gait or {}
+        self._play_once: set[str] = play_once or set()
 
         # Animasjons-state
         self._anim_index: dict[str, int] = {}
@@ -137,12 +142,16 @@ class Sprite:
         now = pygame.time.get_ticks()
         duration = self._frame_durations.get(state, self._default_duration)
 
-        if state not in self._anim_timer:
+        # Start fra begynnelsen når animasjonen vises på nytt (f.eks. hver windup)
+        if state not in self._anim_timer or self._last_frame_name != state:
             self._anim_index[state] = 0
             self._anim_timer[state] = now
 
         if now - self._anim_timer[state] >= duration:
-            self._anim_index[state] = (self._anim_index[state] + 1) % len(frames)
+            if state in self._play_once:
+                self._anim_index[state] = min(self._anim_index[state] + 1, len(frames) - 1)
+            else:
+                self._anim_index[state] = (self._anim_index[state] + 1) % len(frames)
             self._anim_timer[state] = now
 
         return frames[self._anim_index[state]]

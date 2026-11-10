@@ -233,7 +233,8 @@ class Enemy(PathfindingMixin, MovementMixin, Entity):
             self.facing_left = self.velocity.x < 0
 
     def _sprite_frame(self) -> str:
-        return "idle"
+        """walk når fienden beveger seg, ellers idle. Uten walk-frames blir det idle (se _visual_frame)."""
+        return "walk" if self._is_moving() else "idle"
 
     def _visual_frame(self) -> str:
         """_sprite_frame(), men "idle" hvis spriten mangler den framen (f.eks. ingen windup-tegning ennå)."""

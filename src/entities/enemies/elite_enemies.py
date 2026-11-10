@@ -273,12 +273,12 @@ class WindupMeleeMixin:
             self._strike_until = now + self._STRIKE_MS
 
     def _sprite_frame(self) -> str:
-        """windup mens slaget (eller lungen) lades, strike mens det treffer, ellers idle."""
+        """windup mens slaget (eller lungen) lades, strike mens det treffer, ellers walk/idle."""
         if self.state in ("attack", "lunge_windup"):
             return "windup"
         if self.state == "lunge" or pygame.time.get_ticks() < self._strike_until:
             return "strike"
-        return "idle"
+        return super()._sprite_frame()
 
 class SlowEnemy(WindupMeleeMixin, Enemy):
     """
@@ -309,9 +309,15 @@ class SlowEnemy(WindupMeleeMixin, Enemy):
             frames={
                 "idle":   "enemy/slow/enemy_slow",
                 "hurt":   "enemy/slow/enemy_slow",
-                "windup": "enemy/slow/enemy_slow_windup",
-                "strike": "enemy/slow/enemy_slow_strike",
+                "walk":   [f"enemy/slow/walk/{i}" for i in range(5)],
+                "windup": [f"enemy/slow/windup/{i}" for i in range(4)],
+                "strike": "enemy/slow/strike",
             },
+            frame_durations={
+                "walk":   120,
+                "windup": self.attack_windup_ms // 4,  # hele windupen fordelt på de fire framene
+            },
+            play_once={"windup"},
             base_size=(self.width, self.height),
             fallback_color=self.color
         )

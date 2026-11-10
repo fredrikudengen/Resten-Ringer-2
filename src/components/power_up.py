@@ -1,7 +1,6 @@
 import pygame
 from src.core import constants
 from src.view.sprite import Sprite
-from src.view.tileset import tileset
 
 ICON_SIZE = 64
 
@@ -24,12 +23,6 @@ class BasePowerup:
 
     def draw(self, screen, camera):
         draw_rect = camera.apply(self.rect)
-
-        floor_texture = tileset.get("floor_1")
-        if floor_texture is not None:
-            screen.blit(floor_texture, draw_rect)
-        else:
-            pygame.draw.rect(screen, constants.TILE_FLOOR_COLOR, draw_rect)
 
         icon_rect = pygame.Rect(0, 0, ICON_SIZE, ICON_SIZE)
         icon_rect.center = draw_rect.center
