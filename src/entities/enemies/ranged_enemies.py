@@ -277,8 +277,6 @@ class RangedEnemy(Enemy):
         direction = Vector2(
             player_center[0] - origin_x,
             player_center[1] - origin_y,
-            player_center[0] - origin_x,
-            player_center[1] - origin_y,
         )
         if direction.length_squared() == 0 or not self.gun.can_shoot():
             return

@@ -206,8 +206,6 @@ class AssassinEnemy(LungeMixin, Enemy):
     xp_reward         = 28
     width             = 80
     height            = 80
-    width             = 80
-    height            = 80
     wander_radius     = 4
     knockback_friction= 0.75
     knockback_taken_mult = 0.7
@@ -228,12 +226,6 @@ class AssassinEnemy(LungeMixin, Enemy):
                 "windup": "enemy/assassin/enemy_assassin_windup",
                 "lunge":  "enemy/assassin/enemy_assassin_lunge",
             },
-            frames={
-                "idle":   "enemy/assassin/enemy_assassin",
-                "hurt":   "enemy/assassin/enemy_assassin",
-                "windup": "enemy/assassin/enemy_assassin_windup",
-                "lunge":  "enemy/assassin/enemy_assassin_lunge",
-            },
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -244,14 +236,6 @@ class AssassinEnemy(LungeMixin, Enemy):
         if self.state == "lunge":
             return "lunge"
         return "idle"
-
-    def _sprite_frame(self) -> str:
-        if self.state == "lunge_windup":
-            return "windup"
-        if self.state == "lunge":
-            return "lunge"
-        return "idle"
-
 
 # ===========================================================================
 # WINDUP MELEE MIXIN
@@ -386,12 +370,6 @@ class BruteEnemy(LungeMixin, WindupMeleeMixin, Enemy):
                 "windup": "enemy/brute/enemy_brute_windup",
                 "strike": "enemy/brute/enemy_brute_strike",
             },
-            frames={
-                "idle":   "enemy/brute/enemy_brute",
-                "hurt":   "enemy/brute/enemy_brute",
-                "windup": "enemy/brute/enemy_brute_windup",
-                "strike": "enemy/brute/enemy_brute_strike",
-            },
             base_size=(self.width, self.height),
             fallback_color=self.color
         )
@@ -423,12 +401,6 @@ class TankEnemy(WindupMeleeMixin, Enemy):
         super().__init__(x, y)
         self.attack_windup_until = 0
         self.sprite = Sprite(
-            frames={
-                "idle":   "enemy/tank/enemy_tank",
-                "hurt":   "enemy/tank/enemy_tank",
-                "windup": "enemy/tank/enemy_tank_windup",
-                "strike": "enemy/tank/enemy_tank_strike",
-            },
             frames={
                 "idle":   "enemy/tank/enemy_tank",
                 "hurt":   "enemy/tank/enemy_tank",
