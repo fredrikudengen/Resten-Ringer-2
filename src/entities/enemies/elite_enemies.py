@@ -3,7 +3,6 @@ import pygame
 from src.core import constants
 from src.view.sprite import Sprite
 from src.view.afterimage import AfterimageTrail
-from src.view.afterimage import AfterimageTrail
 from src.entities.enemies.enemy import Enemy
 
 # ===========================================================================
@@ -280,13 +279,6 @@ class WindupMeleeMixin:
             return "strike"
         return super()._sprite_frame()
 
-    def _sprite_frame(self) -> str:
-        """windup mens slaget (eller lungen) lades, strike mens det treffer, ellers idle."""
-        if self.state in ("attack", "lunge_windup"):
-            return "windup"
-        if self.state == "lunge" or pygame.time.get_ticks() < self._strike_until:
-            return "strike"
-        return "idle"
 
 class SlowEnemy(WindupMeleeMixin, Enemy):
     """
