@@ -49,21 +49,21 @@ XP_DPS_BONUS_PER_LEVEL = 4
 # gameplay - door
 OPPOSITE = {"N": "S", "S": "N", "E": "W", "W": "E"}
 
-TILE_SIZE = 112
+# Tile-teksturene er 32x32 og tegnes 3x, samme pikselskala som spillerspritene.
+TILE_SIZE = 96
 
 # terrain tiles
 TILE_FLOOR = 0
-# Må matche gulvfargen som er bakt inn i tile-teksturene (resurrect-64),
-# ellers får man harde skjøter mot vegg-/hjørne-/dørtiles.
-TILE_FLOOR_COLOR = (90, 105, 136)
+# Fallback hvis en gulvtekstur mangler. Samme som gulvfargen i tilene (palett A2 «Betong»).
+TILE_FLOOR_COLOR = (47, 50, 47)
 
 TILE_WALL = 1
-TILE_WALL_COLOR = (80, 80, 80)
+TILE_WALL_COLOR = (66, 71, 68)
 
 TILE_VOID = 2  # ',' i kartfilene: utenfor rommet, tegnes ikke
 
 # bakgrunn utenfor rommet
-COLOR_BACKDROP = (24, 20, 37)
+COLOR_BACKDROP = (10, 11, 11)
 
 CHAR_TO_TILE: dict[str, int] = {
     '.': TILE_FLOOR,
@@ -71,16 +71,27 @@ CHAR_TO_TILE: dict[str, int] = {
     ',': TILE_VOID,
 }
 
-# wall tiles – navn i assets/tiles/. Flere navn = varianter, valgt
-# deterministisk ut fra tile-posisjon slik at de ikke flimrer.
-TILE_ART_HORIZONTAL    = ("wall_horizontal_1", "wall_horizontal_2")
-TILE_ART_VERTICAL_LEFT = ("wall_vertical_left_1", "wall_vertical_left_2")
-TILE_ART_VERTICAL_RIGHT = ("wall_vertical_right_1", "wall_vertical_right_2")
-# Corners come in one variant per side (left/right); the same art is reused
-# for both the top and bottom corner of that side by flipping it vertically
-# (see GridRoom._wall_art / TileSet.get's "|flipv" suffix).
-TILE_ART_CORNER_LEFT   = ("wall_corner_left",)
-TILE_ART_CORNER_RIGHT  = ("wall_corner_right",)
+# Tile-navn i assets/tiles/. Flere navn = varianter, valgt deterministisk ut
+# fra tile-posisjon slik at de ikke flimrer. Gjentatte navn = høyere vekt.
+TILE_ART_FLOOR = ("floor_1",) * 6 + ("floor_2",) * 3 + ("floor_3", "floor_4")
+TILE_ART_FLOOR_SHADOW = "floor_shadow"  # legges på gulv rett under en vegg
+
+# En vegg fyller alltid hele tilen, akkurat som kollisjonen:
+#   - gulv rett sør for veggen → toppvegg med front (murblokker og rør)
+#   - ellers                    → veggtopp, med kantlag på sidene som grenser mot gulv
+TILE_ART_HORIZONTAL = ("wall_horizontal_1", "wall_horizontal_2")
+TILE_ART_SOLID      = ("wall_solid_1", "wall_solid_2")
+# Kantlag som legges oppå veggtoppen. Tile-navn med "+" settes sammen av TileSet.
+TILE_ART_EDGE: dict[str, str] = {
+    "n":      "wall_edge_n",       # gulv mot nord (bunnvegg)
+    "e":      "wall_edge_e",       # gulv mot øst (vestvegg)
+    "w":      "wall_edge_w",       # gulv mot vest (østvegg)
+    "ne":     "wall_edge_ne",      # bare diagonalen mot nordøst er gulv (nedre venstre hjørne)
+    "nw":     "wall_edge_nw",
+    "e_face": "wall_edge_e_face",  # naboen i øst er en toppvegg med front (øvre venstre hjørne)
+    "w_face": "wall_edge_w_face",
+}
+TILE_LAYER_SEP = "+"
 
 # door
 DOOR_WIDTH = TILE_SIZE
@@ -90,9 +101,9 @@ COLOR_DOOR_CLOSED = (150, 50, 50)
 COLOR_DOOR_OPEN = (50, 150, 50)
 COLOR_DOOR_OUTLINE = (0, 0, 0)
 
-# door-tiles per side (N/S deler samme horisontale dør)
+# door-tiles per side. N sitter i toppveggens front, de andre i veggtoppen.
 DOOR_ART: dict[str, str] = {
-    "N": "door_horizontal",
+    "N": "door_top",
     "S": "door_horizontal",
     "W": "door_vertical_left",
     "E": "door_vertical_right",

@@ -63,15 +63,23 @@ class GridRoom:
     # ------------------------------------------------------------------ #
 
     def _build_tile_art(self) -> list[list[str | None]]:
-        """Velger teksturnavn for hver vegg-tile. None for gulv og void."""
+        """Velger teksturnavn for hver vegg- og gulv-tile. None for void."""
         return [
-            [
-                self._wall_art(x, y) if self.terrain[y][x] == constants.TILE_WALL
-                else None
-                for x in range(self.cols)
-            ]
+            [self._tile_art(x, y) for x in range(self.cols)]
             for y in range(self.rows)
         ]
+
+    def _tile_art(self, gx: int, gy: int) -> str | None:
+        tile = self.terrain[gy][gx]
+        if tile == constants.TILE_WALL:
+            return self._wall_art(gx, gy)
+        if tile == constants.TILE_FLOOR:
+            return self._pick_variant(constants.TILE_ART_FLOOR, gx, gy)
+        return None
+
+    def has_wall_above(self, gx: int, gy: int) -> bool:
+        """Om gulvet i (gx, gy) ligger rett under en vegg, og dermed i veggens skygge."""
+        return self._is_wall(gx, gy - 1)
 
     def _is_floor(self, gx: int, gy: int) -> bool:
         """Gulv = innenfor rommet og verken vegg eller void. Utenfor teller ikke."""
@@ -85,36 +93,29 @@ class GridRoom:
         return self.terrain[gy][gx] == constants.TILE_WALL
 
     def _wall_art(self, gx: int, gy: int) -> str:
+        """Veggen fyller alltid hele tilen, slik kollisjonen gjør.
+
+        Med gulv rett sør synes veggens front (toppvegg). Ellers synes bare
+        veggtoppen, med et kantlag mot hver side som grenser mot gulv.
+        """
+        if self._is_floor(gx, gy + 1):
+            return self._pick_variant(constants.TILE_ART_HORIZONTAL, gx, gy)
+
         n = self._is_floor(gx, gy - 1)
         e = self._is_floor(gx + 1, gy)
-        s = self._is_floor(gx, gy + 1)
         w = self._is_floor(gx - 1, gy)
-        se = self._is_floor(gx + 1, gy + 1)
-        sw = self._is_floor(gx - 1, gy + 1)
+        edges = []
+        if n: edges.append("n")
+        if e: edges.append("e")
+        if w: edges.append("w")
+        if not n and not e and self._is_floor(gx + 1, gy - 1): edges.append("ne")
+        if not n and not w and self._is_floor(gx - 1, gy - 1): edges.append("nw")
+        # Nabo med front (toppvegg): kanten følger fronten nedover.
+        if self._is_wall(gx + 1, gy) and self._is_floor(gx + 1, gy + 1): edges.append("e_face")
+        if self._is_wall(gx - 1, gy) and self._is_floor(gx - 1, gy + 1): edges.append("w_face")
 
-        # Løper veggen loddrett eller vannrett gjennom denne ruta?
-        vrun = self._is_wall(gx, gy - 1) or self._is_wall(gx, gy + 1)
-        hrun = self._is_wall(gx - 1, gy) or self._is_wall(gx + 1, gy)
-
-        if se and not s and not e:
-            variants = constants.TILE_ART_CORNER_LEFT
-        elif sw and not s and not w:
-            variants = constants.TILE_ART_CORNER_RIGHT
-        elif vrun and e and not w:
-            variants = constants.TILE_ART_VERTICAL_LEFT
-        elif vrun and w and not e:
-            variants = constants.TILE_ART_VERTICAL_RIGHT
-        elif s:
-            variants = constants.TILE_ART_HORIZONTAL
-        elif not hrun and e and not w:
-            variants = constants.TILE_ART_VERTICAL_LEFT
-        elif not hrun and w and not e:
-            variants = constants.TILE_ART_VERTICAL_RIGHT
-        else:
-            # Bunnhjørner og innelukkede tiles: vanlig horisontal vegg.
-            variants = constants.TILE_ART_HORIZONTAL
-
-        return self._pick_variant(variants, gx, gy)
+        base = self._pick_variant(constants.TILE_ART_SOLID, gx, gy)
+        return constants.TILE_LAYER_SEP.join([base] + [constants.TILE_ART_EDGE[k] for k in edges])
 
     @staticmethod
     def _pick_variant(variants: tuple[str, ...], gx: int, gy: int) -> str:

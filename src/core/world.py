@@ -125,15 +125,17 @@ class World:
 
                 dr = camera.apply(pygame.Rect(gx * size, gy * size, size, size))
 
-                if tile != constants.TILE_WALL:
-                    pygame.draw.rect(screen, constants.TILE_FLOOR_COLOR, dr)
-                    continue
-
                 texture = tileset.get(room.tile_art[gy][gx])
-                if texture is None:
-                    pygame.draw.rect(screen, constants.TILE_WALL_COLOR, dr)
-                else:
+                if texture is not None:
                     screen.blit(texture, dr)
+                else:
+                    fallback = constants.TILE_WALL_COLOR if tile == constants.TILE_WALL else constants.TILE_FLOOR_COLOR
+                    pygame.draw.rect(screen, fallback, dr)
+
+                if tile == constants.TILE_FLOOR and room.has_wall_above(gx, gy):
+                    shadow = tileset.get(constants.TILE_ART_FLOOR_SHADOW)
+                    if shadow is not None:
+                        screen.blit(shadow, dr)
 
     def draw_entities(self, screen: pygame.Surface, camera):
         for pu in self.powerups:
