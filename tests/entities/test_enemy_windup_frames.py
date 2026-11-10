@@ -1,6 +1,5 @@
 import os
 
-
 from entities.enemies.elite_enemies import SlowEnemy, BruteEnemy, TankEnemy, WindupMeleeMixin
 from fakes import set_ticks, OpenRoom, FakePlayer
 
